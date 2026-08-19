@@ -1,0 +1,154 @@
+# =============================================================================
+# .gitignore — Monorepo (apps: backend + frontend)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Operating System & Editor Files
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE & Editor configurations
+.idea/
+.vscode/
+.cursor/
+.zed/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# -----------------------------------------------------------------------------
+# 2. Python & Backend Environment (backend/)
+# -----------------------------------------------------------------------------
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+bin/
+lib/
+include/
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Logs
+*.log
+logs/
+
+# Testing & Type checking
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# -----------------------------------------------------------------------------
+# 3. Backend Storage, Session & Scraping Checkpoints (SENSITIF & UKURAN BESAR)
+# -----------------------------------------------------------------------------
+# Profil Browser (Cookies, session tokens, cache browser Chrome/Edge)
+backend/storage/sessions/*_profile/
+backend/storage/sessions/**/Default/
+backend/storage/sessions/**/Profile*/
+
+# File Export Dataset & Checkpoint Scraping (CSV/JSON ratusan ribu baris)
+backend/storage/exports/*.csv
+backend/storage/exports/*.json
+backend/storage/exports/*.parquet
+
+# Pertahankan struktur folder storage
+!backend/storage/sessions/README.md
+!backend/storage/sessions/.gitkeep
+!backend/storage/exports/README.md
+!backend/storage/exports/.gitkeep
+!backend/storage/dictionaries/README.md
+!backend/storage/dictionaries/.gitkeep
+
+# -----------------------------------------------------------------------------
+# 4. Model IndoBERT Weights (UKURAN BESAR >100 MB - Ditolak oleh GitHub)
+# -----------------------------------------------------------------------------
+backend/saved_models/**/*.pt
+backend/saved_models/**/*.bin
+backend/saved_models/**/*.safetensors
+backend/saved_models/**/*.onnx
+backend/saved_models/**/*.h5
+backend/saved_models/**/*.tflite
+backend/saved_models/**/*.pkl
+
+# Pertahankan metadata JSON dan README model
+!backend/saved_models/**/README.md
+!backend/saved_models/**/.gitkeep
+!backend/saved_models/**/model_config.json
+!backend/saved_models/**/label_mapping.json
+
+# -----------------------------------------------------------------------------
+# 5. PHP & Laravel Frontend (frontend/)
+# -----------------------------------------------------------------------------
+# Dependencies
+frontend/vendor/
+frontend/node_modules/
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# Environment & Auth
+frontend/.env
+frontend/.env.backup
+frontend/.env.production
+frontend/auth.json
+
+# Laravel Runtime Storage & Caches
+frontend/storage/*.key
+frontend/storage/pail
+frontend/storage/logs/*.log
+frontend/storage/framework/cache/data/*
+frontend/storage/framework/sessions/*
+frontend/storage/framework/views/*
+frontend/bootstrap/cache/*.php
+
+# Jangan abaikan .gitignore/.gitkeep di storage Laravel
+!frontend/storage/framework/cache/data/.gitignore
+!frontend/storage/framework/sessions/.gitignore
+!frontend/storage/framework/views/.gitignore
+!frontend/storage/logs/.gitignore
+!frontend/bootstrap/cache/.gitignore
+
+# Build Outputs
+frontend/public/build
+frontend/public/hot
+frontend/public/storage
+frontend/public/fonts-manifest.dev.json
+
+# Laravel IDE helpers & PHPUnit cache
+frontend/_ide_helper.php
+frontend/.phpactor.json
+frontend/.phpunit.result.cache
+frontend/.phpunit.cache
+
+# -----------------------------------------------------------------------------
+# 6. Playwright & Scratch Files
+# -----------------------------------------------------------------------------
+.playwright/
+playwright-report/
+test-results/
+scratch/
