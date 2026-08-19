@@ -60,14 +60,22 @@ SCRAPER_CONFIG = {
 # ---------------------------------------------------------------------------
 
 MODEL_CONFIG = {
-    "max_seq_len"   : 128,              # Panjang token maksimum untuk tokenizer
-    "batch_size"    : 32,              # Jumlah sampel per batch inferensi
-    "device"        : "cpu",           # "cuda" jika ada GPU, "cpu" untuk CPU
-    "label_mapping" : {
-        0: "Negatif",
-        1: "Netral",
-        2: "Positif",
-    },
+    "pretrained_model"  : "indobenchmark/indobert-base-p1",
+    "max_seq_len"       : 128,              # Panjang token maksimum untuk tokenizer
+    "batch_size"        : 32,               # Jumlah sampel per batch inferensi
+    "dropout_rate"      : 0.3,              # Dropout rate classifier head
+    "classes_lvl1"      : [
+        "non_hate_speech",   # 0
+        "hate_speech",       # 1
+    ],
+    "classes_lvl2"      : [
+        "tidak_relevan",           # 0
+        "delegitimasi_institusi",  # 1
+        "dehumanisasi",            # 2
+        "ajakan_kekerasan",        # 3
+        "hoax_pemicu_kebencian",   # 4
+        "kutukan_agama_personal",  # 5
+    ],
 }
 
 # ---------------------------------------------------------------------------
