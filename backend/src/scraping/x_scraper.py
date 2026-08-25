@@ -540,7 +540,7 @@ async def collect_post_urls(
     skipped_count = 0
 
     SCROLL_STEP_PX  = 600
-    STALE_LIMIT     = 5
+    STALE_LIMIT     = 8
 
     try:
         await page.goto(search_url, wait_until="domcontentloaded", timeout=config.goto_timeout_ms)

@@ -1,0 +1,19 @@
+{
+  "pretrained_model": "indobenchmark/indobert-base-p1",
+  "num_classes_lvl1": 2,
+  "num_classes_lvl2": 6,
+  "dropout_rate": 0.3,
+  "max_length": 128,
+  "classes_lvl1": [
+    "non_hate_speech",
+    "hate_speech"
+  ],
+  "classes_lvl2": [
+    "tidak_relevan",
+    "delegitimasi_institusi",
+    "dehumanisasi",
+    "ajakan_kekerasan",
+    "hoax_pemicu_kebencian",
+    "kutukan_agama_personal"
+  ]
+}

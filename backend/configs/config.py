@@ -21,7 +21,7 @@ EXPORTS_DIR     = STORAGE_DIR / "exports"
 DICT_DIR        = STORAGE_DIR / "dictionaries"
 
 # Direktori model IndoBERT
-MODEL_DIR       = BACKEND_DIR / "saved_models" / "indobert_sentiment"
+MODEL_DIR       = BACKEND_DIR / "saved_models"
 
 # ---------------------------------------------------------------------------
 # Path Sesi Login (Persistent Browser Profile)

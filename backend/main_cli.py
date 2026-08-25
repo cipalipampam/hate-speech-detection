@@ -19,6 +19,7 @@ import os
 import re
 import sys
 from pathlib import Path
+import pandas as pd
 
 # Pastikan direktori backend masuk ke sys.path dan konsol Windows mendukung UTF-8
 if hasattr(sys.stdout, "reconfigure"):
@@ -933,18 +934,202 @@ def handle_classification_menu():
 
 
 def handle_pipeline_menu():
-    """Placeholder untuk Modul 5: End-to-End Orchestrator."""
-    if HAS_RICH:
-        panel = Panel(
-            "[bold yellow]🚧 Modul Orchestrator: End-to-End Pipeline[/bold yellow]\n\n"
-            "Alur otomatis penuh: Validasi Auth -> Scrape Postingan -> Preprocess Teks -> Prediksi IndoBERT -> Rekapitulasi & Export CSV.\n"
-            "[dim]Status: Akan aktif setelah semua sub-modul selesai diimplementasikan.[/dim]",
-            box=box.ROUNDED,
-            border_style="yellow"
-        )
-        console.print(panel)
-    else:
-        print("\n[INFO] Modul Orchestrator (End-to-End) sedang dalam tahap pembuatan kode berikutnya.")
+    """Sub-menu interaktif Modul 5: Eksekusi Analisis Penuh (End-to-End Orchestrator)."""
+    while True:
+        if HAS_RICH:
+            console.print("\n[bold magenta]─── [MENU 5] EKSEKUSI ANALISIS PENUH (END-TO-END) ───[/bold magenta]")
+            console.print("[dim]Alur Otomatis Penuh: Validasi Sesi → Scraping → Preprocessing → IndoBERT → Statistik & Export CSV[/dim]")
+            console.print()
+            console.print("[1] 🚀 Jalankan Analisis Lengkap (X & Threads - Paralel ⚡)")
+            console.print("[2] 🐦 Jalankan Analisis Khusus X (Twitter)")
+            console.print("[3] 🧵 Jalankan Analisis Khusus Threads (Meta)")
+            console.print("[0] ⬅  Kembali ke Menu Utama")
+            choice = Prompt.ask("\nPilih opsi pipeline", choices=["1", "2", "3", "0"], default="1")
+        else:
+            print("\n--- MENU 5: ANALISIS PENUH END-TO-END ---")
+            print("1. Jalankan Analisis Lengkap (X & Threads)")
+            print("2. Jalankan Analisis Khusus X")
+            print("3. Jalankan Analisis Khusus Threads")
+            print("0. Kembali ke Menu Utama")
+            choice = input("\nPilih opsi [1/2/3/0]: ").strip()
+
+        if choice == "0":
+            break
+
+        platform_map = {
+            "1": "both",
+            "2": "x",
+            "3": "threads",
+        }
+        selected_platform = platform_map.get(choice, "both")
+
+        # ─── 1. Cek Ketersediaan Model ───
+        weights_file = MODEL_DIR / "best_model.pt"
+        if not weights_file.exists():
+            print_error(f"Model IndoBERT ('best_model.pt') belum ditemukan di: {MODEL_DIR}")
+            print_warning("Harap pastikan file bobot hasil training sudah diekstrak sebelum menjalankan pipeline end-to-end.")
+            input("\nTekan Enter untuk kembali...")
+            continue
+
+        # ─── 2. Input Parameter Analisis ───
+        if HAS_RICH:
+            console.print(f"\n[bold cyan]─── PARAMETER ANALISIS END-TO-END [{selected_platform.upper()}] ───[/bold cyan]")
+        
+        keywords, urls = _input_keywords_and_urls()
+        if not keywords and not urls:
+            print_warning("Tidak ada keyword atau URL yang dimasukkan. Analisis dibatalkan.")
+            continue
+
+        # Konfigurasi Tambahan
+        if HAS_RICH:
+            limit_str = Prompt.ask("Batas link/postingan yang di-scan per platform", default="30")
+            steps_str = Prompt.ask("Maksimal scroll scan per postingan (kedalaman komentar)", default="200")
+            headless_choice = Prompt.ask("Jalankan browser di latar belakang (Headless)?", choices=["y", "n"], default="n")
+        else:
+            limit_str = input("Batas link/postingan yang di-scan (default: 30): ").strip() or "30"
+            steps_str = input("Maksimal scroll scan per postingan (default: 200): ").strip() or "200"
+            headless_choice = input("Jalankan browser headless? [y/n] (default: n): ").strip().lower() or "n"
+
+        max_links = int(limit_str) if limit_str.isdigit() else 30
+        max_scroll_steps = int(steps_str) if steps_str.isdigit() else 200
+        headless = (headless_choice == "y")
+
+        # ─── 3. Eksekusi Pipeline ───
+        if HAS_RICH:
+            console.print(f"\n[bold green]▶ MEMULAI PIPELINE END-TO-END [{CURRENT_SEARCH_MODE.upper()}]...[/bold green]")
+        else:
+            print(f"\n>>> MEMULAI PIPELINE END-TO-END ({CURRENT_SEARCH_MODE.upper()})...")
+
+        def _cli_status_callback(msg: str):
+            if HAS_RICH:
+                console.print(f"  [cyan]ℹ[/cyan] {msg}")
+            else:
+                print(f"  [INFO] {msg}")
+
+        try:
+            from src.pipeline import run_pipeline_sync
+            
+            result = run_pipeline_sync(
+                keywords=keywords,
+                direct_urls=urls,
+                platform=selected_platform,
+                search_mode=CURRENT_SEARCH_MODE,
+                max_links=max_links,
+                max_scroll_steps=max_scroll_steps,
+                headless=headless,
+                export_csv=True,
+                status_callback=_cli_status_callback,
+            )
+
+            # Evaluasi Hasil
+            if result.get("status") == "error":
+                print_error(f"Pipeline gagal pada tahap {result.get('stage')}: {result.get('message')}")
+                if result.get("errors"):
+                    for err in result["errors"]:
+                        print_warning(f"  - {err}")
+                input("\nTekan Enter untuk kembali...")
+                continue
+
+            if result.get("status") == "warning":
+                print_warning(f"Peringatan: {result.get('message')}")
+                input("\nTekan Enter untuk kembali...")
+                continue
+
+            stats = result.get("statistics", {})
+            total_data = result.get("total_data", 0)
+            elapsed = result.get("elapsed_seconds", 0)
+            exported_file = result.get("exported_file", "")
+            df_final = result.get("dataframe", pd.DataFrame())
+
+            print_success(f"\n🎉 ANALISIS SELESAI DALAM {elapsed:.1f} DETIK! ({total_data:,} data terproses)")
+            print_info(f"📁 File CSV Lengkap Disimpan: {exported_file}")
+
+            # ─── Tampilan Laporan Statistik ───
+            if HAS_RICH:
+                # 1. Tabel Ringkasan Utama (Level 1)
+                main_table = Table(title="📊 Ringkasan Deteksi Ujaran Kebencian (Level 1)", box=box.ROUNDED)
+                main_table.add_column("Klasifikasi Sentimen", style="bold cyan", width=28)
+                main_table.add_column("Jumlah Data", justify="right", style="bold white", width=16)
+                main_table.add_column("Persentase", justify="right", style="bold yellow", width=16)
+
+                hate_cnt = stats.get("hate_speech_count", 0)
+                hate_pct = stats.get("hate_speech_pct", 0.0)
+                nonhate_cnt = stats.get("non_hate_speech_count", 0)
+                nonhate_pct = stats.get("non_hate_speech_pct", 0.0)
+
+                main_table.add_row("⚠️ Ujaran Kebencian (Hate Speech)", f"{hate_cnt:,}", f"{hate_pct:.2f}%")
+                main_table.add_row("✅ Opini Netral/Aman (Non-Hate)", f"{nonhate_cnt:,}", f"{nonhate_pct:.2f}%")
+                main_table.add_row("[bold]TOTAL OPINI TERANALISIS[/bold]", f"[bold]{total_data:,}[/bold]", "[bold]100.00%[/bold]")
+                console.print(main_table)
+
+                # 2. Tabel Breakdown Sub-Kategori (Level 2)
+                lvl2_table = Table(title="🏷️ Distribusi Sub-Kategori Ujaran Kebencian (Level 2)", box=box.ROUNDED)
+                lvl2_table.add_column("Sub-Kategori", style="bold magenta", width=28)
+                lvl2_table.add_column("Jumlah Data", justify="right", style="bold white", width=16)
+                lvl2_table.add_column("Proporsi", justify="right", style="bold yellow", width=16)
+
+                lvl2_data = stats.get("level2_breakdown", {})
+                for cat_name, cat_info in lvl2_data.items():
+                    lvl2_table.add_row(
+                        cat_name.replace("_", " ").title(),
+                        f"{cat_info['count']:,}",
+                        f"{cat_info['percentage']:.2f}%"
+                    )
+                console.print(lvl2_table)
+
+                # 3. Tabel Perbandingan Platform (jika multi-platform)
+                plat_data = stats.get("platform_breakdown", {})
+                if len(plat_data) > 1:
+                    plat_table = Table(title="🌐 Perbandingan Sentimen Antar Platform", box=box.ROUNDED)
+                    plat_table.add_column("Platform", style="bold cyan", width=18)
+                    plat_table.add_column("Total Data", justify="right", width=14)
+                    plat_table.add_column("Hate Speech", justify="right", style="red", width=14)
+                    plat_table.add_column("Non-Hate", justify="right", style="green", width=14)
+                    plat_table.add_column("% Hate Speech", justify="right", style="bold yellow", width=16)
+
+                    for p_name, p_info in plat_data.items():
+                        plat_table.add_row(
+                            p_name,
+                            f"{p_info['total']:,}",
+                            f"{p_info['hate_speech']:,}",
+                            f"{p_info['non_hate_speech']:,}",
+                            f"{p_info['hate_pct']:.2f}%"
+                        )
+                    console.print(plat_table)
+
+                # 4. Tabel Sampel Hasil
+                if not df_final.empty:
+                    sample_table = Table(title="🔍 Sampel Data Hasil Analisis (3 Baris Teratas)", box=box.ROUNDED)
+                    sample_table.add_column("Platform", style="dim", width=10)
+                    sample_table.add_column("User", style="yellow", width=12)
+                    sample_table.add_column("Isi Teks (Content)", style="white", max_width=45)
+                    sample_table.add_column("Level 1", style="bold", width=14)
+                    sample_table.add_column("Level 2", style="cyan", width=22)
+
+                    for _, row in df_final.head(3).iterrows():
+                        is_h = row.get("label_lvl1") == "hate_speech"
+                        lvl1_txt = f"[{'red' if is_h else 'green'}]{str(row.get('label_lvl1','')).upper()}[/{'red' if is_h else 'green'}]"
+                        sample_table.add_row(
+                            str(row.get("platform", "")),
+                            str(row.get("user_id", "")),
+                            str(row.get("content", ""))[:70] + "...",
+                            lvl1_txt,
+                            str(row.get("label_lvl2", "")),
+                        )
+                    console.print(sample_table)
+
+            else:
+                print(f"\n=== HASIL ANALISIS ({CURRENT_SEARCH_MODE.upper()}) ===")
+                print(f"Total Opini Teranalisis : {total_data:,}")
+                print(f"Hate Speech             : {stats.get('hate_speech_count', 0):,} ({stats.get('hate_speech_pct', 0.0):.2f}%)")
+                print(f"Non-Hate Speech         : {stats.get('non_hate_speech_count', 0):,} ({stats.get('non_hate_speech_pct', 0.0):.2f}%)")
+                print(f"File Hasil              : {exported_file}")
+
+        except Exception as e:
+            print_error(f"Terjadi kesalahan saat menjalankan pipeline end-to-end: {e}")
+            import traceback; traceback.print_exc()
+
+        input("\nTekan Enter untuk kembali ke menu pipeline...")
 
 
 # ---------------------------------------------------------------------------
@@ -981,7 +1166,7 @@ def main():
             menu_table.add_row("[2]", "🌐  Scraping Data Media Sosial (X / Threads)", "[green]Siap Pakai[/green]")
             menu_table.add_row("[3]", "🧹  Pembersihan & Preprocessing Teks", "[green]Siap Pakai[/green]")
             menu_table.add_row("[4]", "🤖  Inferensi & Uji Model IndoBERT", "[green]Siap Pakai[/green]")
-            menu_table.add_row("[5]", "🚀  Eksekusi Analisis Penuh (End-to-End)", "[yellow]Tahap 5[/yellow]")
+            menu_table.add_row("[5]", "🚀  Eksekusi Analisis Penuh (End-to-End)", "[green]Siap Pakai[/green]")
             menu_table.add_row("[0]", "🚪  Keluar dari Program", "[dim]Exit[/dim]")
 
             console.print("\n[bold]PILIHAN MENU UTAMA:[/bold]")
@@ -993,7 +1178,7 @@ def main():
             print("2. [🌐] Scraping Data Media Sosial (X / Threads) [Siap Pakai]")
             print("3. [🧹] Pembersihan & Preprocessing Teks [Siap Pakai]")
             print("4. [🤖] Inferensi & Uji Model IndoBERT [Siap Pakai]")
-            print("5. [🚀] Eksekusi Analisis Penuh (End-to-End) [Tahap 5]")
+            print("5. [🚀] Eksekusi Analisis Penuh (End-to-End) [Siap Pakai]")
             print("0. [🚪] Keluar")
             choice = input("\nMasukkan nomor menu [1/2/3/4/5/0]: ").strip()
 
@@ -1007,7 +1192,6 @@ def main():
             handle_classification_menu()
         elif choice == "5":
             handle_pipeline_menu()
-            input("\nTekan Enter untuk kembali ke menu utama...")
         elif choice == "0":
             if HAS_RICH:
                 console.print("\n[bold cyan]Terima kasih telah menggunakan sistem backend analisis sentimen. Sampai jumpa![/bold cyan]\n")

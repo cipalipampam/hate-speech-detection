@@ -211,11 +211,14 @@ class ModelLoader:
                 from configs.config import MODEL_DIR
                 self._model_dir = Path(MODEL_DIR)
             except ImportError:
-                self._model_dir = Path(__file__).resolve().parents[2] / "saved_models" / "indobert_sentiment"
+                self._model_dir = Path(__file__).resolve().parents[2] / "saved_models"
         else:
             self._model_dir = Path(model_dir)
 
-        # Cek ketersediaan file bobot terlebih dahulu
+        # Cek ketersediaan file bobot (dukung root saved_models maupun subfolder indobert_sentiment)
+        if not (self._model_dir / "best_model.pt").exists() and (self._model_dir / "indobert_sentiment" / "best_model.pt").exists():
+            self._model_dir = self._model_dir / "indobert_sentiment"
+
         weights_path = self._model_dir / "best_model.pt"
         if not weights_path.exists():
             raise FileNotFoundError(
