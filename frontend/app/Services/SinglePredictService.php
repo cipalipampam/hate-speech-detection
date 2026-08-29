@@ -18,6 +18,14 @@ class SinglePredictService
     ) {}
 
     /**
+     * Kirim teks ke FastAPI untuk diklasifikasi, simpan hasilnya ke database.
+     */
+    public function predict(string $text, ?int $userId = null, bool $preprocess = true): array
+    {
+        return $this->predictAndSave($text, $userId ?? auth()->id(), $preprocess);
+    }
+
+    /**
      * Kirim teks ke FastAPI untuk diklasifikasi, simpan hasilnya ke single_predictions.
      */
     public function predictAndSave(string $text, ?int $userId = null, bool $preprocess = true): array
@@ -50,13 +58,19 @@ class SinglePredictService
         return [
             'success' => true,
             'data'    => [
-                'id'             => $record->id,
-                'input_text'     => $record->input_text,
-                'clean_text'     => $record->clean_text,
-                'is_hate_speech' => ($record->label_lvl1 === 'hate_speech'),
-                'level1'         => $lvl1,
-                'level2'         => $lvl2,
-                'created_at'     => $record->created_at->format('d M Y, H:i'),
+                'id'                 => $record->id,
+                'input_text'         => $record->input_text,
+                'clean_text'         => $record->clean_text,
+                'is_hate_speech'     => ($record->label_lvl1 === 'hate_speech'),
+                'label_lvl1'         => $record->label_lvl1,
+                'label_lvl2'         => $record->label_lvl2,
+                'confidence_lvl1'    => $record->confidence_lvl1,
+                'confidence_lvl2'    => $record->confidence_lvl2,
+                'probabilities_lvl1' => $record->probabilities_lvl1,
+                'probabilities_lvl2' => $record->probabilities_lvl2,
+                'level1'             => $lvl1,
+                'level2'             => $lvl2,
+                'created_at'         => $record->created_at->format('d M Y, H:i'),
             ],
         ];
     }

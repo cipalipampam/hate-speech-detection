@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Prediction;
 
 use Illuminate\Foundation\Http\FormRequest;
 
 class SinglePredictRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Pastikan user memiliki izin untuk melakukan live text prediction.
      */
     public function authorize(): bool
     {
@@ -15,7 +15,7 @@ class SinglePredictRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Aturan validasi teks opini.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
@@ -28,14 +28,14 @@ class SinglePredictRequest extends FormRequest
     }
 
     /**
-     * Custom validation messages.
+     * Pesan validasi.
      */
     public function messages(): array
     {
         return [
-            'text.required' => 'Teks kalimat opini wajib diisi untuk diuji.',
-            'text.min'      => 'Teks minimal terdiri dari 3 karakter.',
-            'text.max'      => 'Teks maksimal 2.000 karakter.',
+            'text.required' => 'Kalimat teks opini wajib diisi untuk diuji.',
+            'text.min'      => 'Panjang teks minimal 3 karakter.',
+            'text.max'      => 'Panjang teks maksimal 2.000 karakter.',
         ];
     }
 }

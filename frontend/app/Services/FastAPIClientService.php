@@ -14,18 +14,46 @@ class FastAPIClientService
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(config('services.fastapi.url', env('FASTAPI_BASE_URL', 'http://127.0.0.1:8000/api/v1')), '/');
-        $this->timeout = (int) config('services.fastapi.timeout', env('FASTAPI_TIMEOUT', 300));
+        $this->baseUrl = rtrim(config('services.fastapi.url', env('FASTAPI_BASE_URL', 'http://127.0.0.1:8080/api/v1')), '/');
+        $this->timeout = (int) config('services.fastapi.timeout', env('FASTAPI_TIMEOUT', 10));
     }
 
     /**
-     * Helper untuk membuat request HTTP client.
+     * Helper untuk membuat request HTTP client dengan connect timeout singkat.
      */
-    protected function client()
+    protected function client(int $customTimeout = null)
     {
         return Http::baseUrl($this->baseUrl)
-            ->timeout($this->timeout)
+            ->connectTimeout(3)
+            ->timeout($customTimeout ?? $this->timeout)
             ->acceptJson();
+    }
+
+    /**
+     * Mengekstrak pesan error ramah dari response FastAPI.
+     */
+    protected function extractErrorMessage(Response $response, string $fallback = 'Terjadi kesalahan pada server AI.'): string
+    {
+        $detail = $response->json('detail');
+        if (is_string($detail)) {
+            return $detail;
+        }
+        if (is_array($detail)) {
+            $messages = [];
+            foreach ($detail as $err) {
+                if (isset($err['loc'], $err['msg'])) {
+                    $field = end($err['loc']);
+                    $messages[] = "Field '{$field}': {$err['msg']}";
+                } elseif (isset($err['msg'])) {
+                    $messages[] = $err['msg'];
+                }
+            }
+            if (!empty($messages)) {
+                return implode(', ', $messages);
+            }
+            return json_encode($detail);
+        }
+        return $response->json('message') ?? $fallback;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -242,7 +270,7 @@ class FastAPIClientService
             }
             return [
                 'success' => false,
-                'message' => $response->json('detail') ?? 'Gagal membuat job analisis pipeline.',
+                'message' => $this->extractErrorMessage($response, 'Gagal membuat job analisis pipeline.'),
             ];
         } catch (Exception $e) {
             Log::error("FastAPI runPipeline error: " . $e->getMessage());
@@ -252,6 +280,8 @@ class FastAPIClientService
 
     /**
      * Mengambil status progress dan statistik dari pipeline job.
+     * Return includes 'http_status' sehingga caller bisa bedakan
+     * 404 (job hilang karena server restart) vs error jaringan.
      */
     public function getPipelineStatus(string $jobId): array
     {
@@ -259,17 +289,23 @@ class FastAPIClientService
             $response = $this->client()->get("/pipeline/status/{$jobId}");
             if ($response->successful()) {
                 return [
-                    'success' => true,
-                    'data'    => $response->json(),
+                    'success'     => true,
+                    'data'        => $response->json(),
+                    'http_status' => $response->status(),
                 ];
             }
             return [
-                'success' => false,
-                'message' => $response->json('detail') ?? 'Job pipeline tidak ditemukan.',
+                'success'     => false,
+                'http_status' => $response->status(),
+                'message'     => $this->extractErrorMessage($response, 'Job pipeline tidak ditemukan.'),
             ];
         } catch (Exception $e) {
             Log::error("FastAPI getPipelineStatus error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            return [
+                'success'     => false,
+                'http_status' => 0,
+                'message'     => $e->getMessage(),
+            ];
         }
     }
 

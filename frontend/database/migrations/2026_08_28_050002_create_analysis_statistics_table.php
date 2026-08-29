@@ -27,8 +27,8 @@ return new class extends Migration
             $table->unsignedInteger('hate_speech_count')->default(0);
             $table->unsignedInteger('non_hate_speech_count')->default(0);
             $table->decimal('hate_speech_pct', 5, 2)->default(0.00);
-            $table->decimal('avg_confidence_lvl1', 5, 4)->default(0.0000);
-            $table->decimal('avg_confidence_lvl2', 5, 4)->default(0.0000);
+            $table->decimal('avg_confidence_lvl1', 6, 2)->default(0.00);
+            $table->decimal('avg_confidence_lvl2', 6, 2)->default(0.00);
             $table->json('level2_breakdown')->nullable();
             $table->json('platform_breakdown')->nullable();
             $table->timestamps();
