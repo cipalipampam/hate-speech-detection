@@ -16,6 +16,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from configs.config import X_PROFILE_DIR, EXPORTS_DIR, SCRAPER_CONFIG
+from src.utils.async_compat import ensure_proactor_loop
 from src.scraping.base_scraper import (
     create_browser, random_delay, scroll_page,
     results_to_dataframe, save_dataframe, append_checkpoint, check_profile_exists,
@@ -638,6 +639,7 @@ async def deep_crawl_post(
 # Fungsi Publik Utama: run_x_scraper
 # ---------------------------------------------------------------------------
 
+@ensure_proactor_loop
 async def run_x_scraper(
     keywords       : list[str] = None,
     direct_urls    : list[str] = None,

@@ -10,8 +10,8 @@ Deskripsi:
 Fitur:
     - Lifespan Event: Model IndoBERT (~490 MB) dimuat 1x saat startup ke app.state
     - CORS Middleware: Mengizinkan semua origin (cocok untuk dev + Laravel frontend)
-    - Swagger UI Otomatis: http://localhost:8000/docs
-    - ReDoc Otomatis   : http://localhost:8000/redoc
+    - Swagger UI Otomatis: http://localhost:8080/docs
+    - ReDoc Otomatis   : http://localhost:8080/redoc
 
 Struktur Endpoint:
     /api/v1/auth/         → Autentikasi & sesi browser (X & Threads)
@@ -22,13 +22,20 @@ Struktur Endpoint:
 
 Cara Menjalankan:
     cd d:/skripsi/Project/hate-speech-detection/backend
-    uvicorn main_api:app --reload --host 0.0.0.0 --port 8000
+    uvicorn main_api:app --reload --host 0.0.0.0 --port 8080
 """
 
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+# ── Windows Fix: Playwright membutuhkan ProactorEventLoop untuk menjalankan
+# subprocess browser (Chromium). WindowsSelectorEventLoop (default) tidak
+# mendukung asyncio.create_subprocess_exec() di Windows.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -97,7 +104,7 @@ async def lifespan(app: FastAPI):
         app.state.predictor = None
 
     logger.info("Server siap menerima request.")
-    logger.info("Dokumentasi API: http://localhost:8000/docs")
+    logger.info("Dokumentasi API: http://localhost:8080/docs")
     logger.info("=" * 60)
 
     yield  # ← Server aktif melayani request
@@ -197,3 +204,9 @@ def root():
             "pipeline":     f"{API_PREFIX}/pipeline",
         },
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main_api:app", host="0.0.0.0", port=8080, reload=True)
+

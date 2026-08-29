@@ -40,6 +40,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from configs.config import THREADS_PROFILE_DIR, SCRAPER_CONFIG
+from src.utils.async_compat import ensure_proactor_loop
 
 logger = logging.getLogger("login_threads")
 if not logger.handlers:
@@ -133,6 +134,7 @@ async def _create_browser(playwright, profile_dir: str, headless: bool = False):
 # Fungsi Utama: Setup Login Threads
 # ---------------------------------------------------------------------------
 
+@ensure_proactor_loop
 async def setup_threads_login(profile_dir: str = None) -> bool:
     """
     Menjalankan alur setup login Threads / Instagram secara interaktif.
