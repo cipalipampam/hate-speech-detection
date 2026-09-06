@@ -111,7 +111,7 @@ class ClassifyItemResponse(BaseModel):
         description=(
             "Prediksi Level 2 sub-kategori: "
             "tidak_relevan / delegitimasi_institusi / dehumanisasi / "
-            "ajakan_kekerasan / hoax_pemicu_kebencian / kutukan_agama_personal."
+            "ajakan_kekerasan / hoaks_pemicu_kebencian / kutukan_agama_personal."
         )
     )
     is_hate_speech: bool = Field(

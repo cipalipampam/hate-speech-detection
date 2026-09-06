@@ -207,21 +207,6 @@
         </div>
     </header>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-    <div x-data="{ show: true }" x-show="show" x-cloak
-         x-init="setTimeout(() => show = false, 4000)"
-         style="position:fixed;top:1rem;right:1rem;z-index:200;max-width:360px;"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 -translate-y-2">
-        <div class="alert alert-success" style="box-shadow:0 4px 16px rgba(42,157,143,0.2);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><polyline points="20 6 9 17 4 12"/></svg>
-            <p style="font-size:0.875rem;font-weight:500;">{{ session('success') }}</p>
-        </div>
-    </div>
-    @endif
-
     @if(session('error'))
     <div x-data="{ show: true }" x-show="show" x-cloak
          x-init="setTimeout(() => show = false, 5000)"

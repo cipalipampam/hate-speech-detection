@@ -58,7 +58,7 @@ _DEFAULT_CLASSES_LVL2 = [
     "delegitimasi_institusi",
     "dehumanisasi",
     "ajakan_kekerasan",
-    "hoax_pemicu_kebencian",
+    "hoaks_pemicu_kebencian",
     "kutukan_agama_personal",
 ]
 

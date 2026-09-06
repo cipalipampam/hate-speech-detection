@@ -77,42 +77,55 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
 
-                {{-- Level 1 --}}
-                <div style="border:2px solid transparent;border-radius:1rem;padding:1.125rem;"
-                     :style="result && result.label_lvl1 === 'hate_speech'
-                        ? 'background:var(--color-danger-bg);border-color:rgba(239,68,68,0.25);'
-                        : 'background:var(--color-teal-bg);border-color:rgba(42,157,143,0.25);'">
-                    <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:0.375rem;">LEVEL 1 — SENTIMEN</p>
-                    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.625rem;">
-                        <div style="width:10px;height:10px;border-radius:50%;"
-                             :style="result && result.label_lvl1 === 'hate_speech' ? 'background:var(--color-danger);' : 'background:var(--color-teal);'"></div>
-                        <p style="font-size:1.125rem;font-weight:800;"
-                           :style="result && result.label_lvl1 === 'hate_speech' ? 'color:var(--color-danger);' : 'color:var(--color-teal);'"
-                           x-text="result && result.label_lvl1 === 'hate_speech' ? 'Ujaran Kebencian' : 'Bukan Kebencian'"></p>
+                {{-- Level 1: Ujaran Kebencian --}}
+                <template x-if="result && result.label_lvl1 === 'hate_speech'">
+                    <div style="background:var(--color-danger-bg);border:2px solid rgba(239,68,68,0.25);border-radius:1rem;padding:1.125rem;">
+                        <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin:0 0 0.375rem 0;">LEVEL 1 — SENTIMEN</p>
+                        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.625rem;">
+                            <div style="width:10px;height:10px;border-radius:50%;background:var(--color-danger);flex-shrink:0;"></div>
+                            <p style="font-size:1.125rem;font-weight:800;color:var(--color-danger);margin:0;">Ujaran Kebencian</p>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
+                            <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
+                            <span style="font-size:0.875rem;font-weight:800;color:var(--color-danger);" x-text="(result.confidence_lvl1 * 100).toFixed(1) + '%'"></span>
+                        </div>
+                        <div class="progress-bar-track" style="height:6px;background:#FDE8E8;border-radius:999px;overflow:hidden;">
+                            <div class="progress-bar-fill" :style="'width:' + (result.confidence_lvl1 * 100) + '%;background:var(--color-danger);height:6px;'"></div>
+                        </div>
                     </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
-                        <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
-                        <span style="font-size:0.875rem;font-weight:800;" x-text="result ? (result.confidence_lvl1 * 100).toFixed(1) + '%' : '—'"></span>
+                </template>
+
+                {{-- Level 1: Bukan Kebencian --}}
+                <template x-if="result && result.label_lvl1 !== 'hate_speech'">
+                    <div style="background:var(--color-teal-bg);border:2px solid rgba(42,157,143,0.25);border-radius:1rem;padding:1.125rem;">
+                        <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin:0 0 0.375rem 0;">LEVEL 1 — SENTIMEN</p>
+                        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.625rem;">
+                            <div style="width:10px;height:10px;border-radius:50%;background:var(--color-teal);flex-shrink:0;"></div>
+                            <p style="font-size:1.125rem;font-weight:800;color:var(--color-teal);margin:0;">Bukan Kebencian</p>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
+                            <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
+                            <span style="font-size:0.875rem;font-weight:800;color:var(--color-teal);" x-text="(result.confidence_lvl1 * 100).toFixed(1) + '%'"></span>
+                        </div>
+                        <div class="progress-bar-track" style="height:6px;background:#D0F0EC;border-radius:999px;overflow:hidden;">
+                            <div class="progress-bar-fill" :style="'width:' + (result.confidence_lvl1 * 100) + '%;background:var(--color-teal);height:6px;'"></div>
+                        </div>
                     </div>
-                    <div class="progress-bar-track">
-                        <div class="progress-bar-fill"
-                             :style="result ? 'width:' + (result.confidence_lvl1 * 100) + '%;background:' + (result.label_lvl1 === 'hate_speech' ? 'var(--color-danger)' : 'var(--color-teal)') : 'width:0%'"></div>
-                    </div>
-                </div>
+                </template>
 
                 {{-- Level 2 --}}
-                <div style="background:var(--color-primary-bg);border:2px solid rgba(231,111,81,0.2);border-radius:1rem;padding:1.125rem;">
-                    <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:0.375rem;">LEVEL 2 — KATEGORI</p>
-                    <p style="font-size:1.125rem;font-weight:800;color:var(--color-primary-dark);margin-bottom:0.625rem;"
+                <div style="background:var(--color-primary-bg);border:2px solid rgba(231,111,81,0.25);border-radius:1rem;padding:1.125rem;">
+                    <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin:0 0 0.375rem 0;">LEVEL 2 — KATEGORI</p>
+                    <p style="font-size:1.125rem;font-weight:800;color:var(--color-primary-dark);margin:0 0 0.625rem 0;"
                        x-text="result ? formatLabel(result.label_lvl2) : '—'"></p>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
                         <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
                         <span style="font-size:0.875rem;font-weight:800;color:var(--color-primary-dark);"
                               x-text="result && result.confidence_lvl2 ? (result.confidence_lvl2 * 100).toFixed(1) + '%' : '—'"></span>
                     </div>
-                    <div class="progress-bar-track">
+                    <div class="progress-bar-track" style="height:6px;background:#FDEFE9;border-radius:999px;overflow:hidden;">
                         <div class="progress-bar-fill"
-                             :style="result && result.confidence_lvl2 ? 'width:' + (result.confidence_lvl2 * 100) + '%;' : 'width:0%'"></div>
+                             :style="result && result.confidence_lvl2 ? 'width:' + (result.confidence_lvl2 * 100) + '%;background:var(--color-primary);height:6px;' : 'width:0%'"></div>
                     </div>
                 </div>
             </div>

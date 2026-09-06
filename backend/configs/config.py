@@ -73,7 +73,7 @@ MODEL_CONFIG = {
         "delegitimasi_institusi",  # 1
         "dehumanisasi",            # 2
         "ajakan_kekerasan",        # 3
-        "hoax_pemicu_kebencian",   # 4
+        "hoaks_pemicu_kebencian",  # 4
         "kutukan_agama_personal",  # 5
     ],
 }

@@ -8,7 +8,7 @@
     "delegitimasi_institusi",
     "dehumanisasi",
     "ajakan_kekerasan",
-    "hoax_pemicu_kebencian",
+    "hoaks_pemicu_kebencian",
     "kutukan_agama_personal"
   ],
   "label2idx_lvl1": {
@@ -24,7 +24,7 @@
     "delegitimasi_institusi": 1,
     "dehumanisasi": 2,
     "ajakan_kekerasan": 3,
-    "hoax_pemicu_kebencian": 4,
+    "hoaks_pemicu_kebencian": 4,
     "kutukan_agama_personal": 5
   },
   "idx2label_lvl2": {
@@ -32,7 +32,7 @@
     "1": "delegitimasi_institusi",
     "2": "dehumanisasi",
     "3": "ajakan_kekerasan",
-    "4": "hoax_pemicu_kebencian",
+    "4": "hoaks_pemicu_kebencian",
     "5": "kutukan_agama_personal"
   }
 }
