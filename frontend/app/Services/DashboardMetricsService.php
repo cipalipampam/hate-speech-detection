@@ -64,7 +64,7 @@ class DashboardMetricsService
             'delegitimasi_institusi'  => 'Delegitimasi Institusi',
             'dehumanisasi'            => 'Dehumanisasi',
             'ajakan_kekerasan'        => 'Ajakan Kekerasan',
-            'hoax_pemicu_kebencian'   => 'Hoax Pemicu Kebencian',
+            'hoaks_pemicu_kebencian'  => 'Hoaks Pemicu Kebencian',
             'kutukan_agama_personal'  => 'Kutukan Agama & Personal',
             'tidak_relevan'           => 'Tidak Relevan / Netral',
         ];
@@ -79,7 +79,11 @@ class DashboardMetricsService
 
         foreach ($categories as $key => $humanLabel) {
             $labels[] = $humanLabel;
-            $data[] = $counts[$key] ?? 0;
+            $val = $counts[$key] ?? 0;
+            if ($key === 'hoaks_pemicu_kebencian' && isset($counts['hoax_pemicu_kebencian'])) {
+                $val += $counts['hoax_pemicu_kebencian'];
+            }
+            $data[] = $val;
         }
 
         return [

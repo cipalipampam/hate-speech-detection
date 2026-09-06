@@ -331,7 +331,7 @@
             ['label'=>'Delegitimasi Institusi', 'desc'=>'Ujaran yang melemahkan legitimasi lembaga negara, pemerintah, atau otoritas publik.', 'color'=>'#E76F51', 'bg'=>'#FDEAE4'],
             ['label'=>'Dehumanisasi', 'desc'=>'Ujaran yang merendahkan martabat manusia dengan menyamakannya dengan hewan atau objek.', 'color'=>'#C52B2B', 'bg'=>'#FEE2E2'],
             ['label'=>'Ajakan Kekerasan', 'desc'=>'Konten yang secara eksplisit maupun implisit mendorong tindakan kekerasan terhadap individu/kelompok.', 'color'=>'#B45309', 'bg'=>'#FEF3C7'],
-            ['label'=>'Hoax Pemicu Kebencian', 'desc'=>'Penyebaran informasi palsu yang bertujuan untuk memicu kebencian atau diskriminasi.', 'color'=>'#2D5268', 'bg'=>'#EEF3F8'],
+            ['label'=>'Hoaks Pemicu Kebencian', 'desc'=>'Penyebaran informasi palsu yang bertujuan untuk memicu kebencian atau diskriminasi.', 'color'=>'#2D5268', 'bg'=>'#EEF3F8'],
             ['label'=>'Kutukan Agama & Personal', 'desc'=>'Serangan verbal berbasis agama, suku, atau karakteristik personal seseorang.', 'color'=>'#7C3AED', 'bg'=>'#EDE9FE'],
             ['label'=>'Tidak Relevan / Netral', 'desc'=>'Teks yang tidak mengandung unsur hate speech namun tetap perlu diidentifikasi.', 'color'=>'#2A9D8F', 'bg'=>'#E6F7F5'],
         ];

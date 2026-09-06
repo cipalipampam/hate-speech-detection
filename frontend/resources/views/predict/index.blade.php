@@ -198,7 +198,8 @@ function liveClassifier() {
                 'delegitimasi_institusi': 'Delegitimasi Institusi',
                 'dehumanisasi':           'Dehumanisasi',
                 'ajakan_kekerasan':       'Ajakan Kekerasan',
-                'hoax_pemicu_kebencian':  'Hoax Pemicu Kebencian',
+                'hoaks_pemicu_kebencian': 'Hoaks Pemicu Kebencian',
+                'hoax_pemicu_kebencian':  'Hoaks Pemicu Kebencian',
                 'kutukan_agama_personal': 'Kutukan Agama & Personal',
                 'tidak_relevan':          'Tidak Relevan / Netral',
             };
