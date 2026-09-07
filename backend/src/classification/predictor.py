@@ -167,17 +167,50 @@ class HateSpeechPredictor:
                 label1 = self.classes_lvl1[pred_idx1]
                 label2 = self.classes_lvl2[pred_idx2]
 
-                confidence1 = float(p1[pred_idx1])
-                confidence2 = float(p2[pred_idx2])
+                _TIDAK_RELEVAN = "tidak_relevan"
 
-                # Detail probabilitas per kelas
+                # ── Hierarchical Constraint (Two-Way Gating) ───────────────
+                if label1 != "hate_speech":
+                    # KASUS 1: Jika Level 1 adalah NON-HATE SPEECH, maka secara
+                    # taksonomi hierarki Level 2 otomatis "tidak_relevan".
+                    label2 = _TIDAK_RELEVAN
+                    if _TIDAK_RELEVAN in self.classes_lvl2:
+                        pred_idx2 = self.classes_lvl2.index(_TIDAK_RELEVAN)
+                    confidence1 = float(p1[pred_idx1])
+                    confidence2 = confidence1  # Keyakinan tidak relevan identik dengan keyakinan non-hate
+                    prob_dist_lvl2 = {
+                        cls: (1.0 if cls == _TIDAK_RELEVAN else 0.0)
+                        for cls in self.classes_lvl2
+                    }
+                else:
+                    # KASUS 2: Jika Level 1 adalah HATE SPEECH, maka Level 2
+                    # tidak boleh "tidak_relevan". Jika argmax menghasilkan
+                    # "tidak_relevan", pilih sub-kategori kebencian dengan probabilitas tertinggi.
+                    if label2 == _TIDAK_RELEVAN:
+                        candidate_indices = [
+                            idx for idx, cls in enumerate(self.classes_lvl2)
+                            if cls != _TIDAK_RELEVAN
+                        ]
+                        if candidate_indices:
+                            best_idx = max(candidate_indices, key=lambda idx: p2[idx])
+                            pred_idx2 = best_idx
+                            label2 = self.classes_lvl2[pred_idx2]
+                            logger.debug(
+                                f"Hierarchical constraint applied: L1=hate_speech, "
+                                f"L2 forced from 'tidak_relevan' → '{label2}' "
+                                f"(p={p2[pred_idx2]:.4f})"
+                            )
+                    confidence1 = float(p1[pred_idx1])
+                    confidence2 = float(p2[pred_idx2])
+                    prob_dist_lvl2 = {
+                        cls: round(float(p2[idx]), 4)
+                        for idx, cls in enumerate(self.classes_lvl2)
+                    }
+
+                confidence1 = float(p1[pred_idx1])
                 prob_dist_lvl1 = {
                     cls: round(float(p1[idx]), 4)
                     for idx, cls in enumerate(self.classes_lvl1)
-                }
-                prob_dist_lvl2 = {
-                    cls: round(float(p2[idx]), 4)
-                    for idx, cls in enumerate(self.classes_lvl2)
                 }
 
                 all_results.append({

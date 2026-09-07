@@ -198,10 +198,7 @@ async def run_pipeline(req: PipelineRunRequest, request: Request) -> PipelineJob
     return PipelineJobResponse(
         job_id=job_id,
         status="queued",
-        message=(
-            f"Pipeline job berhasil dibuat (ID: {job_id}). "
-            f"Polling progress di: GET /api/v1/pipeline/status/{job_id}"
-        ),
+        message=f"Pipeline job berhasil diinisialisasi (ID: {job_id}). Menunggu antrean pemrosesan...",
         platform=req.platform,
         keywords=req.keywords,
     )
