@@ -1,188 +1,309 @@
 @extends('layouts.app')
 
-@section('title', 'Riwayat Analisis')
+@section('title', '§ 02.0 Riwayat Analisis')
 
 @section('breadcrumb')
-<div style="display:flex;align-items:center;gap:0.5rem;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    <span style="font-size:0.875rem;font-weight:600;color:var(--color-text-muted);">Riwayat Analisis</span>
-</div>
+<span style="color:#0A0A0A;">§ 02.0 RIWAYAT</span>
 @endsection
 
 @section('content')
+<script>
+window.__INITIAL_ANALYSES__ = {!! json_encode([
+    'items'      => $analyses->items(),
+    'pagination' => [
+        'current_page'  => $analyses->currentPage(),
+        'last_page'     => $analyses->lastPage(),
+        'total'         => $analyses->total(),
+        'from'          => $analyses->firstItem() ?? 0,
+        'to'            => $analyses->lastItem() ?? 0,
+        'prev_page_url' => $analyses->previousPageUrl(),
+        'next_page_url' => $analyses->nextPageUrl(),
+    ],
+    'filters'    => [
+        'search'   => request('search', ''),
+        'platform' => request('platform', 'all'),
+        'status'   => request('status', 'all'),
+    ]
+], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
 
-<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
-    <div>
-        <h1 class="page-title">Riwayat Analisis</h1>
-        <p class="page-subtitle">Semua sesi analisis ujaran kebencian yang pernah dijalankan.</p>
-    </div>
-    @can('run-analysis')
-    <a href="{{ route('analyses.create') }}" class="btn btn-primary">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        Analisis Baru
-    </a>
-    @endcan
-</div>
+function analysesIndex() {
+    const initial = window.__INITIAL_ANALYSES__ || {
+        items: [],
+        pagination: {},
+        filters: { search: '', platform: 'all', status: 'all' }
+    };
 
-{{-- Filter Bar --}}
-<div class="card" style="padding:1rem 1.25rem;margin-bottom:1.25rem;">
-    <form method="GET" action="{{ route('analyses.index') }}" style="display:flex;align-items:center;gap:0.875rem;flex-wrap:wrap;">
-        <div style="flex:1;min-width:220px;position:relative;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="2" style="position:absolute;left:0.875rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari judul analisis atau kata kunci..." class="input" style="padding-left:2.35rem;font-size:0.875rem;height:38px;">
+    return {
+        analyses:   initial.items || [],
+        pagination: initial.pagination || {},
+        filters:    initial.filters || { search: '', platform: 'all', status: 'all' },
+        loading:    false,
+
+        init() {
+            if (!this.analyses || this.analyses.length === 0) {
+                if (window.__INITIAL_ANALYSES__ && window.__INITIAL_ANALYSES__.items && window.__INITIAL_ANALYSES__.items.length > 0) {
+                    this.analyses = window.__INITIAL_ANALYSES__.items;
+                    this.pagination = window.__INITIAL_ANALYSES__.pagination;
+                    this.filters = window.__INITIAL_ANALYSES__.filters;
+                }
+            }
+        },
+
+        async fetchData(page = 1) {
+            this.loading = true;
+            try {
+                const query = new URLSearchParams({
+                    page:     page,
+                    search:   this.filters.search || '',
+                    platform: this.filters.platform || 'all',
+                    status:   this.filters.status || 'all',
+                });
+
+                const res = await fetch(`{{ route('analyses.index') }}?${query.toString()}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                });
+                const data = await res.json();
+                if (data && data.analyses) {
+                    this.analyses = data.analyses.data || [];
+                    this.pagination = {
+                        current_page:  data.analyses.current_page,
+                        last_page:     data.analyses.last_page,
+                        total:         data.analyses.total,
+                        from:          data.analyses.from,
+                        to:            data.analyses.to,
+                        prev_page_url: data.analyses.prev_page_url,
+                        next_page_url: data.analyses.next_page_url,
+                    };
+                }
+            } catch (e) {
+                console.error('Failed to fetch analyses:', e);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        resetFilters() {
+            this.filters.search = '';
+            this.filters.platform = 'all';
+            this.filters.status = 'all';
+            this.fetchData(1);
+        },
+
+        numberFormat(num) {
+            return new Intl.NumberFormat('id-ID').format(num || 0);
+        },
+
+        getKeywordList(item) {
+            if (!item || !item.keywords) return [];
+            if (Array.isArray(item.keywords)) return item.keywords;
+            if (typeof item.keywords === 'string') {
+                try {
+                    const p = JSON.parse(item.keywords);
+                    if (Array.isArray(p)) return p;
+                } catch(e) {}
+                return [item.keywords];
+            }
+            return [];
+        },
+
+        getUserName(item) {
+            return (item && item.user && item.user.name) ? item.user.name : 'SYSTEM';
+        },
+
+        formatDate(item) {
+            return (item && item.created_at) ? item.created_at.substring(0, 10) : '';
+        }
+    };
+}
+</script>
+
+<div x-data="analysesIndex()">
+
+    {{-- Monograph Header --}}
+    <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1.25rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                <span class="badge badge-black">SEKSI § 02.0</span>
+                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">ARSIP DOSIR HISTORIS</span>
+            </div>
+            <h1 style="font-size:2.25rem;font-weight:900;letter-spacing:-0.035em;color:#0A0A0A;margin:0;line-height:1.1;">
+                RIWAYAT INVESTIGASI KORPUS
+            </h1>
+            <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0.35rem 0 0;">
+                Katalog berkas investigasi ujaran kebencian multi-platform yang tersimpan dalam repositori riset.
+            </p>
         </div>
-        
-        <select name="platform" class="input" style="width:auto;font-size:0.875rem;height:38px;cursor:pointer;" onchange="this.form.submit()">
-            <option value="all" {{ request('platform') === 'all' || !request('platform') ? 'selected' : '' }}>Semua Platform</option>
-            <option value="x" {{ request('platform') === 'x' ? 'selected' : '' }}>Twitter (𝕏)</option>
-            <option value="threads" {{ request('platform') === 'threads' ? 'selected' : '' }}>Threads</option>
-            <option value="both" {{ request('platform') === 'both' ? 'selected' : '' }}>Keduanya (Both)</option>
-        </select>
 
-        <select name="status" class="input" style="width:auto;font-size:0.875rem;height:38px;cursor:pointer;" onchange="this.form.submit()">
-            <option value="all" {{ request('status') === 'all' || !request('status') ? 'selected' : '' }}>Semua Status</option>
-            <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Selesai</option>
-            <option value="running" {{ request('status') === 'running' ? 'selected' : '' }}>Sedang Berjalan</option>
-            <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Gagal</option>
-            <option value="queued" {{ request('status') === 'queued' ? 'selected' : '' }}>Antrian</option>
-        </select>
-
-        <button type="submit" class="btn btn-navy btn-sm" style="height:38px;padding:0 1rem;">
-            Filter
-        </button>
-
-        @if(request('search') || (request('platform') && request('platform') !== 'all') || (request('status') && request('status') !== 'all'))
-        <a href="{{ route('analyses.index') }}" class="btn btn-ghost btn-sm" style="height:38px;padding:0 0.75rem;" title="Reset Filter">
-            ✕ Reset
+        @can('run-analysis')
+        <a href="{{ route('analyses.create') }}" class="btn btn-primary btn-lg">
+            <span>+ INVESTIGASI BARU</span>
         </a>
-        @endif
-    </form>
-</div>
-
-{{-- Table --}}
-<div class="table-wrapper">
-    <table>
-        <thead>
-            <tr>
-                <th style="width:36px;">#</th>
-                <th>Judul Analisis</th>
-                <th>Platform</th>
-                <th>Kata Kunci</th>
-                <th style="text-align:center;">Total Data</th>
-                <th style="text-align:center;">Hate %</th>
-                <th style="text-align:center;">Status</th>
-                <th style="text-align:center;">Waktu</th>
-                <th style="text-align:right;">Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($analyses ?? [] as $analysis)
-            <tr>
-                <td style="color:var(--color-text-subtle);font-size:0.8125rem;">
-                    {{ ($analyses->currentPage() - 1) * $analyses->perPage() + $loop->iteration }}
-                </td>
-                <td>
-                    <a href="{{ route('analyses.show', $analysis->id) }}"
-                       style="font-weight:700;color:var(--color-navy);text-decoration:none;display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                       onmouseover="this.style.color='var(--color-primary)'"
-                       onmouseout="this.style.color='var(--color-navy)'">
-                        {{ $analysis->title }}
-                    </a>
-                    <p style="font-size:0.75rem;color:var(--color-text-muted);margin-top:1px;">{{ $analysis->user->name ?? '—' }} · {{ $analysis->created_at->format('d M Y, H:i') }}</p>
-                </td>
-                <td>
-                    @if(strtolower($analysis->platform) === 'x')
-                        <span class="badge" style="background:#E7F3FA;color:#1DA1F2;font-size:0.75rem;">𝕏 Twitter</span>
-                    @elseif(strtolower($analysis->platform) === 'threads')
-                        <span class="badge" style="background:#F0F0F0;color:#333;font-size:0.75rem;">⊙ Threads</span>
-                    @else
-                        <span class="badge" style="background:var(--color-primary-bg);color:var(--color-primary-dark);font-size:0.75rem;">⚡ Dual</span>
-                    @endif
-                </td>
-                <td>
-                    <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:160px;">
-                        @foreach(array_slice($analysis->keywords ?? [], 0, 2) as $kw)
-                        <span style="background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:999px;padding:2px 8px;font-size:0.7rem;font-weight:600;color:var(--color-text-body);">{{ $kw }}</span>
-                        @endforeach
-                        @if(count($analysis->keywords ?? []) > 2)
-                        <span style="font-size:0.7rem;color:var(--color-text-muted);">+{{ count($analysis->keywords) - 2 }}</span>
-                        @endif
-                    </div>
-                </td>
-                <td style="text-align:center;font-weight:800;color:var(--color-navy);">
-                    {{ $analysis->statistic ? number_format($analysis->statistic->total_data) : '—' }}
-                </td>
-                <td style="text-align:center;">
-                    @if($analysis->statistic)
-                    <span style="font-weight:800;color:{{ $analysis->statistic->hate_speech_pct > 50 ? 'var(--color-danger)' : 'var(--color-teal)' }};">
-                        {{ $analysis->statistic->hate_speech_pct }}%
-                    </span>
-                    @else
-                    <span style="color:var(--color-text-subtle);">—</span>
-                    @endif
-                </td>
-                <td style="text-align:center;">
-                    @if($analysis->status === 'completed')
-                        <span class="badge badge-safe">Selesai</span>
-                    @elseif($analysis->status === 'running')
-                        <span class="badge badge-warning">Berjalan</span>
-                    @elseif($analysis->status === 'failed')
-                        <span class="badge badge-hate">Gagal</span>
-                    @else
-                        <span class="badge" style="background:var(--color-surface-2);color:var(--color-text-muted);">Antrian</span>
-                    @endif
-                </td>
-                <td style="text-align:center;font-size:0.8125rem;color:var(--color-text-muted);">
-                    {{ $analysis->execution_time_seconds ? round($analysis->execution_time_seconds) . 's' : '—' }}
-                </td>
-                <td style="text-align:right;">
-                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:0.375rem;">
-                        <a href="{{ route('analyses.show', $analysis->id) }}" class="btn btn-ghost btn-sm" style="padding:0.35rem 0.625rem;" title="Lihat Detail">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </a>
-                        @if($analysis->status === 'completed')
-                        <a href="{{ route('analyses.export', $analysis->id) }}" class="btn btn-ghost btn-sm" style="padding:0.35rem 0.625rem;color:var(--color-teal);" title="Unduh Dataset (CSV)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        </a>
-                        @endif
-                    </div>
-                </td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="9" style="padding:3.5rem 1rem;text-align:center;">
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:0.875rem;">
-                        <div style="width:56px;height:56px;border-radius:50%;background:var(--color-surface-2);display:flex;align-items:center;justify-content:center;">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                        </div>
-                        <div>
-                            <p style="font-weight:700;color:var(--color-navy);margin-bottom:0.25rem;">Tidak ada analisis yang ditemukan</p>
-                            <p style="font-size:0.875rem;color:var(--color-text-muted);">Coba ubah kata kunci filter atau mulai analisis baru.</p>
-                        </div>
-                        @can('run-analysis')
-                        <a href="{{ route('analyses.create') }}" class="btn btn-primary btn-sm">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                            Mulai Analisis Baru
-                        </a>
-                        @endcan
-                    </div>
-                </td>
-            </tr>
-            @endforelse
-        </tbody>
-    </table>
-</div>
-
-{{-- Pagination Footer --}}
-@if(isset($analyses) && $analyses->hasPages())
-<div style="margin-top:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
-    <p style="font-size:0.8125rem;color:var(--color-text-muted);">
-        Menampilkan {{ $analyses->firstItem() }}–{{ $analyses->lastItem() }} dari total {{ $analyses->total() }} sesi
-    </p>
-    <div>
-        {{ $analyses->withQueryString()->links() }}
+        @endcan
     </div>
+
+    {{-- Filter Toolbar --}}
+    <div class="card" style="padding:0.75rem 1rem;margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            
+            {{-- Debounced Search Input --}}
+            <div style="flex:1;min-width:240px;position:relative;">
+                <input type="text"
+                       x-model.debounce.350ms="filters.search"
+                       @input="fetchData(1)"
+                       placeholder="Cari judul riset atau kata kunci topik... (/)"
+                       class="input"
+                       style="height:38px;padding-left:0.75rem;font-size:0.8125rem;">
+            </div>
+            
+            {{-- Platform Filter --}}
+            <select x-model="filters.platform" @change="fetchData(1)" class="input" style="width:auto;height:38px;font-size:0.8125rem;cursor:pointer;">
+                <option value="all">SEMUA PLATFORM</option>
+                <option value="x">𝕏 TWITTER</option>
+                <option value="threads">⊙ THREADS</option>
+                <option value="both">DUAL PLATFORM</option>
+            </select>
+
+            {{-- Status Filter --}}
+            <select x-model="filters.status" @change="fetchData(1)" class="input" style="width:auto;height:38px;font-size:0.8125rem;cursor:pointer;">
+                <option value="all">SEMUA STATUS</option>
+                <option value="completed">SELESAI</option>
+                <option value="running">PROSES</option>
+                <option value="failed">GAGAL</option>
+                <option value="queued">ANTREAN</option>
+            </select>
+
+        </div>
+    </div>
+
+    {{-- Monograph Table Wrapper --}}
+    <div class="table-wrapper" style="position:relative;">
+        
+        {{-- Loading Skeleton Overlay --}}
+        <div x-show="loading" x-cloak style="position:absolute;inset:0;background:rgba(246,245,240,0.8);display:flex;align-items:center;justify-content:center;z-index:10;">
+            <span class="badge badge-black">MEMPERBARUI ARSIP...</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:70px;">ID</th>
+                    <th>JUDUL PENELITIAN & PENELITI</th>
+                    <th style="width:120px;text-align:center;">PLATFORM</th>
+                    <th>KATA KUNCI TOPIK</th>
+                    <th style="width:90px;text-align:center;">TOTAL DATA</th>
+                    <th style="width:90px;text-align:center;">HATE %</th>
+                    <th style="width:110px;text-align:center;">STATUS</th>
+                    <th style="width:130px;text-align:right;">AKSI</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-if="analyses.length === 0 && !loading">
+                    <tr>
+                        <td colspan="8" style="padding:4rem 1rem;text-align:center;font-family:var(--font-mono);color:var(--color-text-muted);">
+                            [TIDAK DITEMUKAN BERKAS INVESTIGASI SESUAI FILTER]
+                        </td>
+                    </tr>
+                </template>
+
+                <template x-for="(item, index) in analyses" :key="item.id">
+                    <tr>
+                        <td style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">
+                            #<span x-text="String(item.id).padStart(4, '0')"></span>
+                        </td>
+                        <td>
+                            <a :href="'/analyses/' + item.id"
+                               style="font-weight:800;color:#0A0A0A;text-decoration:none;display:block;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.875rem;"
+                               onmouseover="this.style.color='var(--color-primary)'"
+                               onmouseout="this.style.color='#0A0A0A'"
+                               x-text="item.title">
+                            </a>
+                            <span style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);"
+                                  x-text="getUserName(item) + ' · ' + formatDate(item)"></span>
+                        </td>
+                        <td style="text-align:center;">
+                            <template x-if="item.platform?.toLowerCase() === 'x'">
+                                <span class="badge badge-black" style="font-size:0.65rem;">𝕏 TWITTER</span>
+                            </template>
+                            <template x-if="item.platform?.toLowerCase() === 'threads'">
+                                <span class="badge badge-mono" style="font-size:0.65rem;">⊙ THREADS</span>
+                            </template>
+                            <template x-if="item.platform?.toLowerCase() === 'both'">
+                                <span class="badge badge-safe" style="font-size:0.65rem;">DUAL 𝕏+⊙</span>
+                            </template>
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:3px;flex-wrap:wrap;max-width:200px;">
+                                <template x-for="kw in getKeywordList(item).slice(0, 3)" :key="kw">
+                                    <span class="badge badge-mono" style="font-size:0.625rem;" x-text="'#' + kw"></span>
+                                </template>
+                                <template x-if="getKeywordList(item).length > 3">
+                                    <span style="font-family:var(--font-mono);font-size:0.625rem;color:var(--color-text-muted);align-self:center;" x-text="'+' + (getKeywordList(item).length - 3)"></span>
+                                </template>
+                            </div>
+                        </td>
+                        <td style="text-align:center;font-family:var(--font-mono);font-weight:700;" x-text="item.statistic ? numberFormat(item.statistic.total_data) : '—'"></td>
+                        <td style="text-align:center;font-family:var(--font-mono);font-weight:700;">
+                            <template x-if="item.statistic">
+                                <span :style="item.statistic.hate_speech_pct > 20 ? 'color:#0A0A0A;background:var(--color-danger);padding:1px 4px;border:1px solid #0A0A0A;' : ''"
+                                      x-text="(item.statistic.hate_speech_pct || 0) + '%'"></span>
+                            </template>
+                            <template x-if="!item.statistic"><span>—</span></template>
+                        </td>
+                        <td style="text-align:center;">
+                            <template x-if="item.status === 'completed'">
+                                <span class="badge badge-safe">SELESAI</span>
+                            </template>
+                            <template x-if="item.status === 'running'">
+                                <span class="badge badge-hate" style="animation:telemetry-pulse 1.2s infinite;">PROSES</span>
+                            </template>
+                            <template x-if="item.status === 'failed'">
+                                <span class="badge" style="background:#FEE2E2;color:#991B1B;border-color:#991B1B;">GAGAL</span>
+                            </template>
+                            <template x-if="item.status === 'queued'">
+                                <span class="badge badge-mono">ANTREAN</span>
+                            </template>
+                        </td>
+                        <td style="text-align:right;">
+                            <a :href="'/analyses/' + item.id" class="btn btn-outline btn-sm" style="font-size:0.6875rem;padding:0.25rem 0.5rem;">
+                                DOSIR [→]
+                            </a>
+                        </td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+
+        {{-- Dynamic Pagination Footer --}}
+        <div style="padding:0.75rem 1rem;background:#FFFFFF;border-top:1px solid #0A0A0A;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;font-family:var(--font-mono);font-size:0.75rem;">
+            <span>
+                MENAMPILKAN <strong x-text="pagination.from || 0"></strong>–<strong x-text="pagination.to || 0"></strong> DARI <strong x-text="pagination.total || 0"></strong> TOTAL BERKAS
+            </span>
+
+            <div style="display:flex;align-items:center;gap:0.375rem;">
+                <button type="button"
+                        :disabled="!pagination.prev_page_url || loading"
+                        @click="fetchData(pagination.current_page - 1)"
+                        class="btn btn-outline btn-sm"
+                        :style="(!pagination.prev_page_url || loading) ? 'opacity:0.4;cursor:not-allowed;' : ''">
+                    ← PREV
+                </button>
+                
+                <span style="padding:0 0.5rem;" x-text="'HAL ' + (pagination.current_page || 1) + ' / ' + (pagination.last_page || 1)"></span>
+
+                <button type="button"
+                        :disabled="!pagination.next_page_url || loading"
+                        @click="fetchData(pagination.current_page + 1)"
+                        class="btn btn-outline btn-sm"
+                        :style="(!pagination.next_page_url || loading) ? 'opacity:0.4;cursor:not-allowed;' : ''">
+                    NEXT →
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
-@endif
 
 @endsection

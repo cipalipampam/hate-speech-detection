@@ -20,7 +20,7 @@ class AnalysisController extends Controller
     /**
      * Daftar semua sesi analisis (Admin: semua, Analyst: milik sendiri) dengan filter & pagination.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\JsonResponse
     {
         $userId = auth()->user()->hasRole('admin') ? null : auth()->id();
         
@@ -31,6 +31,13 @@ class AnalysisController extends Controller
             platform: $request->query('platform'),
             status:   $request->query('status')
         );
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success'  => true,
+                'analyses' => $analyses,
+            ]);
+        }
 
         return view('analyses.index', compact('analyses'));
     }
@@ -67,10 +74,10 @@ class AnalysisController extends Controller
     /**
      * Detail dan progress satu sesi analisis.
      */
-    public function show(Request $request, Analysis $analysis): View
+    public function show(Request $request, Analysis $analysis): View|\Illuminate\Http\JsonResponse
     {
-        // Sinkronisasi status jika masih running
-        if ($analysis->status === 'running') {
+        // Sinkronisasi status jika masih running atau queued
+        if ($analysis->status === 'running' || $analysis->status === 'queued') {
             $analysis = $this->analysisService->syncAnalysisStatus($analysis);
         }
 
@@ -85,6 +92,33 @@ class AnalysisController extends Controller
         ];
 
         $posts = $this->analysisService->getFilteredPosts($analysis, $filters, 20);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $pipelineMsg = $analysis->pipeline_message;
+            if ($pipelineMsg && (stripos($pipelineMsg, 'polling') !== false || stripos($pipelineMsg, 'asinkron') !== false)) {
+                $pipelineMsg = 'Pipeline analisis sedang diproses oleh sistem...';
+            }
+
+            return response()->json([
+                'success'   => true,
+                'analysis'  => [
+                    'id'                     => $analysis->id,
+                    'title'                  => $analysis->title,
+                    'platform'               => $analysis->platform,
+                    'status'                 => $analysis->status,
+                    'search_mode'            => $analysis->search_mode,
+                    'max_links'              => $analysis->max_links,
+                    'execution_time_seconds' => $analysis->execution_time_seconds,
+                    'error_message'          => $analysis->error_message,
+                    'created_at'             => $analysis->created_at ? $analysis->created_at->format('d M Y, H:i') : null,
+                    'user_name'              => $analysis->user->name ?? '—',
+                    'pipeline_message'       => $pipelineMsg ?? ($analysis->status === 'completed' ? 'Seluruh sekuensial pipeline AI telah selesai dieksekusi.' : 'Menghubungkan ke antrean background worker...'),
+                    'pipeline_step'          => $analysis->pipeline_step ?? ($analysis->status === 'completed' ? 4 : 1),
+                ],
+                'statistic' => $analysis->statistic,
+                'posts'     => $posts,
+            ]);
+        }
 
         return view('analyses.show', compact('analysis', 'posts', 'filters'));
     }

@@ -51,7 +51,7 @@ class DashboardMetricsService
         return [
             'labels' => ['Ujaran Kebencian (Hate Speech)', 'Bukan Ujaran Kebencian (Non-Hate)'],
             'series' => [$metrics['total_hate'], $metrics['total_non_hate']],
-            'colors' => ['#EF4444', '#10B981'], // Merah & Hijau
+            'colors' => ['#E11D48', '#059669'], // Rose 600 & Emerald 600
         ];
     }
 

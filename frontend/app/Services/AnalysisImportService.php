@@ -149,16 +149,21 @@ class AnalysisImportService
                     'updated_at'      => $now,
                 ]);
 
+                $labelLvl1 = $d['label_lvl1'] ?? 'non_hate_speech';
+                $labelLvl2 = ($labelLvl1 !== 'hate_speech') ? 'tidak_relevan' : ($d['label_lvl2'] ?? 'tidak_relevan');
+                $confLvl1  = (float) ($d['confidence_lvl1'] ?? 0.0);
+                $confLvl2  = ($labelLvl1 !== 'hate_speech') ? $confLvl1 : (float) ($d['confidence_lvl2'] ?? 0.0);
+
                 // 2. Insert ke analysis_classifications (Konten teks & label hasil IndoBERT)
                 DB::table('analysis_classifications')->insert([
                     'post_id'            => $postId,
                     'raw_content'        => $d['content'] ?? ($d['raw_text'] ?? ''),
                     'clean_content'      => $d['clean_text'] ?? ($d['content'] ?? ''),
-                    'label_lvl1'         => $d['label_lvl1'] ?? 'non_hate_speech',
-                    'confidence_lvl1'    => (float) ($d['confidence_lvl1'] ?? 0.0),
+                    'label_lvl1'         => $labelLvl1,
+                    'confidence_lvl1'    => $confLvl1,
                     'probabilities_lvl1' => null,
-                    'label_lvl2'         => $d['label_lvl2'] ?? 'tidak_relevan',
-                    'confidence_lvl2'    => (float) ($d['confidence_lvl2'] ?? 0.0),
+                    'label_lvl2'         => $labelLvl2,
+                    'confidence_lvl2'    => $confLvl2,
                     'probabilities_lvl2' => null,
                     'created_at'         => $now,
                     'updated_at'         => $now,

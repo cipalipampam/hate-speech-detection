@@ -121,7 +121,37 @@ class AnalysisService
         }
         // Jika status 'running' atau 'queued' → biarkan tetap berjalan
 
-        return $analysis->fresh(['statistic', 'exports']);
+        $fresh = $analysis->fresh(['statistic', 'exports']);
+        if ($fresh) {
+            $msg = $jobData['message'] ?? null;
+            if ($msg) {
+                // Filter pesan teknis polling agar tidak membingungkan pengguna
+                if (stripos($msg, 'polling') !== false || stripos($msg, 'asinkron') !== false) {
+                    $msg = 'Pipeline analisis sedang diproses oleh sistem...';
+                }
+            }
+            $fresh->setAttribute('pipeline_message', $msg);
+
+            $step = 1;
+            if ($fresh->status === 'completed') {
+                $step = 4;
+            } elseif ($msg) {
+                $m = strtolower($msg);
+                if (str_contains($m, 'klasifikasi') || str_contains($m, 'indobert') || str_contains($m, 'inferensi') || str_contains($m, 'langkah 4') || str_contains($m, 'langkah 5')) {
+                    $step = 4;
+                } elseif (str_contains($m, 'preprocess') || str_contains($m, 'kamusalay') || str_contains($m, 'pembersihan') || str_contains($m, 'normalisasi') || str_contains($m, 'langkah 3')) {
+                    $step = 3;
+                } elseif (str_contains($m, 'scraping') || str_contains($m, 'crawling') || str_contains($m, 'meluncurkan') || str_contains($m, 'tweet') || str_contains($m, 'thread') || str_contains($m, 'unduh') || str_contains($m, 'langkah 2')) {
+                    $step = 2;
+                } elseif (str_contains($m, 'browser') || str_contains($m, 'playwright') || str_contains($m, 'validasi') || str_contains($m, 'inisialisasi') || str_contains($m, 'antrean') || str_contains($m, 'langkah 1')) {
+                    $step = 1;
+                }
+            }
+            $fresh->setAttribute('pipeline_step', $step);
+            return $fresh;
+        }
+
+        return $analysis;
     }
 
 

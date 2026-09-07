@@ -18,10 +18,35 @@ class UserManagementController extends Controller
 
     public function index(Request $request): View
     {
-        $users = User::withCount('analyses')
-            ->with('roles')
-            ->latest()
-            ->paginate(15);
+        $query = User::withCount('analyses')->with('roles');
+
+        if ($request->filled('search')) {
+            $search = trim($request->query('search'));
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+        }
+
+        if ($request->filled('role') && strtolower($request->query('role')) !== 'all') {
+            $role = strtolower(trim($request->query('role')));
+            $query->whereHas('roles', function ($q) use ($role) {
+                $q->where('name', $role);
+            });
+        }
+
+        if ($request->filled('status') && strtolower($request->query('status')) !== 'all') {
+            $statusVal = strtolower(trim($request->query('status')));
+            if (in_array($statusVal, ['active', 'aktif', '1'], true)) {
+                $query->where('is_active', 1);
+            } elseif (in_array($statusVal, ['inactive', 'nonaktif', '0'], true)) {
+                $query->where('is_active', 0);
+            }
+        }
+
+        $users = $query->latest()->paginate(15)->withQueryString();
 
         $roleCounts = [
             'admin'   => User::role('admin')->count(),

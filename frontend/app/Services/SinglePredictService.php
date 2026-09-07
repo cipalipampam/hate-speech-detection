@@ -43,16 +43,21 @@ class SinglePredictService
         $lvl1 = $res['level1'] ?? [];
         $lvl2 = $res['level2'] ?? [];
 
+        $label1 = $lvl1['label'] ?? 'non_hate_speech';
+        $label2 = ($label1 !== 'hate_speech') ? 'tidak_relevan' : ($lvl2['label'] ?? 'tidak_relevan');
+        $conf1  = (float) ($lvl1['confidence'] ?? 0.0);
+        $conf2  = ($label1 !== 'hate_speech') ? $conf1 : (float) ($lvl2['confidence'] ?? 0.0);
+
         $record = SinglePrediction::create([
             'user_id'            => $userId,
             'input_text'         => $text,
             'clean_text'         => $res['text'] ?? $text,
-            'label_lvl1'         => $lvl1['label'] ?? 'non_hate_speech',
-            'label_lvl2'         => $lvl2['label'] ?? 'tidak_relevan',
-            'confidence_lvl1'    => (float) ($lvl1['confidence'] ?? 0.0),
-            'confidence_lvl2'    => (float) ($lvl2['confidence'] ?? 0.0),
+            'label_lvl1'         => $label1,
+            'label_lvl2'         => $label2,
+            'confidence_lvl1'    => $conf1,
+            'confidence_lvl2'    => $conf2,
             'probabilities_lvl1' => $lvl1['probabilities'] ?? null,
-            'probabilities_lvl2' => $lvl2['probabilities'] ?? null,
+            'probabilities_lvl2' => ($label1 !== 'hate_speech') ? ['tidak_relevan' => 1.0] : ($lvl2['probabilities'] ?? null),
         ]);
 
         return [

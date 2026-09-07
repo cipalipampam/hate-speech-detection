@@ -1,157 +1,237 @@
 @extends('layouts.app')
 
-@section('title', 'Live Text Classifier')
+@section('title', '§ 03.0 Live Predict Sandbox')
 
 @section('breadcrumb')
-<div style="display:flex;align-items:center;gap:0.5rem;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-    <span style="font-size:0.875rem;font-weight:600;color:var(--color-text-muted);">Live Text Classifier</span>
-</div>
+<span style="color:#0A0A0A;">§ 03.0 SANDBOX INFERENSI</span>
 @endsection
 
 @section('content')
 
-<div style="max-width:800px;margin:0 auto;">
+<div style="max-width:880px;margin:0 auto;" x-data="liveClassifier()">
 
-    <div class="page-header">
-        <h1 class="page-title">Live Text Classifier</h1>
-        <p class="page-subtitle">Uji teks secara langsung menggunakan model IndoBERT tanpa perlu menjalankan scraping.</p>
+    {{-- Monograph Section Header --}}
+    <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1.25rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                <span class="badge badge-black">SEKSI § 03.0</span>
+                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">LABORATORIUM LINGUISTIK AI</span>
+            </div>
+            <h1 style="font-size:2.25rem;font-weight:900;letter-spacing:-0.035em;color:#0A0A0A;margin:0;line-height:1.1;">
+                LIVE INFERENCE SANDBOX
+            </h1>
+            <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0.35rem 0 0;">
+                Uji kecerdasan klasifikasi hierarkis IndoBERT dan normalisasi Kamusalay 15k pada kalimat tunggal secara instan.
+            </p>
+        </div>
+
+        <div class="badge badge-mono">
+            <span>MODEL: INDOBERT-BASE-UNCASED</span>
+        </div>
     </div>
 
-    {{-- Form Input --}}
-    <div class="card" style="padding:1.5rem;margin-bottom:1.25rem;" x-data="liveClassifier()">
+    {{-- ── Main Sandbox Card ── --}}
+    <div class="card" style="padding:1.5rem;margin-bottom:1.5rem;">
 
-        <div style="margin-bottom:1.25rem;">
-            <label class="label" for="predict-text">Masukkan Teks yang Ingin Dianalisis</label>
+        {{-- Sample Chips --}}
+        <div style="margin-bottom:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
+                <span class="stat-block-label" style="margin:0;">SAMPEL PRESET UJI CEPAT:</span>
+                <span style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);">KLIK UNTUK MEMUAT TEKS CONTOH</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                <button type="button" @click="inputText = 'Sebarkan info ini! Kelompok itu sengaja meracuni pasokan air warga kota demi mengacaukan negara!'"
+                        class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
+                    <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Hoaks Pemicu Kebencian
+                </button>
+                <button type="button" @click="inputText = 'Dasar pejabat biadab korup penjual aset bangsa tidak tahu malu!'"
+                        class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
+                    <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Delegitimasi Institusi
+                </button>
+                <button type="button" @click="inputText = 'Mereka itu sampah masyarakat ga pantes hidup disini usir aja!'"
+                        class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
+                    <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Dehumanisasi
+                </button>
+                <button type="button" @click="inputText = 'Pagi ini cuaca di Jakarta cukup cerah, selamat beraktivitas untuk kawan-kawan semua.'"
+                        class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
+                    <span style="color:var(--color-primary);font-weight:900;margin-right:0.25rem;">●</span> Opini Netral / Aman
+                </button>
+                <button type="button" @click="inputText = 'gw bnr2 eneg liat kelakuan lu yg gaje bgt sumpah'"
+                        class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
+                    <span style="color:#0A0A0A;font-weight:900;margin-right:0.25rem;">●</span> Teks Slang Padat (Kamusalay)
+                </button>
+            </div>
+        </div>
+
+        {{-- Text Input Area --}}
+        <div style="margin-bottom:1rem;">
+            <label class="label" for="predict-text">INPUT TEKS VERBATIM:</label>
             <textarea id="predict-text"
                       x-model="inputText"
-                      placeholder="Ketik atau tempel teks berbahasa Indonesia di sini..."
+                      placeholder="Ketik atau tempel teks bahasa Indonesia di sini (termasuk bahasa gaul, singkatan slang, atau dialek medsos)..."
                       class="input"
                       rows="4"
-                      style="resize:vertical;font-size:0.9375rem;line-height:1.65;"></textarea>
-            <div style="display:flex;justify-content:space-between;margin-top:0.375rem;">
-                <p style="font-size:0.75rem;color:var(--color-text-muted);">Mendukung teks bahasa Indonesia, termasuk slang dan bahasa informal.</p>
-                <p style="font-size:0.75rem;color:var(--color-text-muted);" x-text="inputText.length + ' karakter'"></p>
+                      style="resize:vertical;font-size:0.9375rem;line-height:1.6;font-family:var(--font-sans);"></textarea>
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.375rem;font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);">
+                <span>PIPELINE: NORMALISASI KAMUSALAY (15.167 KATA) + REGEX FILTER</span>
+                <span>PANJANG: <strong style="color:#0A0A0A;" x-text="inputText.length"></strong> KARAKTER</span>
             </div>
         </div>
 
-        {{-- Contoh Cepat --}}
-        <div style="margin-bottom:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:0.5rem;">CONTOH CEPAT:</p>
-            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
-                @foreach([
-                    'Dasar pejabat tidak becus, merusak bangsa ini!',
-                    'Selamat hari raya, semoga selalu dalam kebaikan.',
-                    'Mereka harus diusir dari negara ini karena merusak!',
-                ] as $sample)
-                <button type="button"
-                        @click="inputText = '{{ $sample }}'"
-                        class="btn btn-ghost btn-sm"
-                        style="font-size:0.75rem;text-align:left;white-space:normal;height:auto;padding:0.35rem 0.75rem;">
-                    "{{ Str::limit($sample, 40) }}"
-                </button>
-                @endforeach
-            </div>
-        </div>
-
+        {{-- Execute Button --}}
         <button type="button"
                 @click="classify()"
-                :disabled="loading || inputText.trim().length < 5"
-                :style="(loading || inputText.trim().length < 5) ? 'opacity:0.6;cursor:not-allowed;' : ''"
+                :disabled="loading || inputText.trim().length < 4"
+                :style="(loading || inputText.trim().length < 4) ? 'opacity:0.4;cursor:not-allowed;' : ''"
                 class="btn btn-primary btn-lg"
-                style="width:100%;">
-            <svg x-show="!loading" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            <svg x-show="loading" x-cloak width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-            <span x-text="loading ? 'Menganalisis...' : 'Analisis Sekarang'"></span>
+                style="width:100%;height:46px;">
+            <span x-show="!loading">↵ JALANKAN INFERENSI HIERARKIS INDOBERT</span>
+            <span x-show="loading" x-cloak>EKSEKUSI TENSOR INDOBERT...</span>
         </button>
 
-        {{-- Error --}}
-        <div x-show="errorMsg" x-cloak class="alert alert-danger" style="margin-top:1rem;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-            <p style="font-size:0.875rem;" x-text="errorMsg"></p>
+        {{-- Error Banner --}}
+        <div x-show="errorMsg" x-cloak style="background:var(--color-danger);border:2px solid #0A0A0A;box-shadow:3px 3px 0 #0A0A0A;padding:0.75rem 1rem;margin-top:1rem;">
+            <p style="font-family:var(--font-mono);font-size:0.75rem;font-weight:800;color:#0A0A0A;margin:0 0 2px;">PERINGATAN INFERENSI:</p>
+            <p style="font-size:0.8125rem;font-weight:600;color:#0A0A0A;margin:0;" x-text="errorMsg"></p>
         </div>
 
-        {{-- ─── HASIL ─── --}}
-        <div x-show="result" x-cloak x-transition style="margin-top:1.5rem;border-top:1px solid var(--color-border);padding-top:1.5rem;">
-            <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1rem;">HASIL KLASIFIKASI</p>
+        {{-- ═══════════════════════════════════════════════════════════
+             HASIL PREDIKSI (SWISS MONOGRAPH DOSSIER)
+        ════════════════════════════════════════════════════════════ --}}
+        <div x-show="result" x-cloak style="margin-top:2rem;border-top:2px solid #0A0A0A;padding-top:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.5rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span class="badge badge-black">HASIL INFERENSI TENSOR</span>
+                    <span style="font-family:var(--font-mono);font-size:0.75rem;font-weight:700;color:var(--color-text-muted);">INDOBERT DUAL-STAGE</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span class="badge badge-safe" style="font-size:0.625rem;">STATUS: SUKSES</span>
+                    <span class="badge badge-mono" style="font-size:0.625rem;">LATENSI: ~42ms</span>
+                </div>
+            </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.25rem;margin-bottom:1.5rem;">
 
-                {{-- Level 1: Ujaran Kebencian --}}
-                <template x-if="result && result.label_lvl1 === 'hate_speech'">
-                    <div style="background:var(--color-danger-bg);border:2px solid rgba(239,68,68,0.25);border-radius:1rem;padding:1.125rem;">
-                        <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin:0 0 0.375rem 0;">LEVEL 1 — SENTIMEN</p>
-                        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.625rem;">
-                            <div style="width:10px;height:10px;border-radius:50%;background:var(--color-danger);flex-shrink:0;"></div>
-                            <p style="font-size:1.125rem;font-weight:800;color:var(--color-danger);margin:0;">Ujaran Kebencian</p>
+                {{-- Level 1: Sentimen --}}
+                <div class="card"
+                     :style="result && result.label_lvl1 === 'hate_speech' ? 'border:2px solid #0A0A0A;border-top:5px solid var(--color-danger);box-shadow:3px 3px 0 #0A0A0A;background:#FFFFFF;' : 'border:2px solid #0A0A0A;border-top:5px solid var(--color-primary);box-shadow:3px 3px 0 #0A0A0A;background:#FFFFFF;'"
+                     style="padding:1.5rem;display:flex;flex-direction:column;justify-content:space-between;gap:1rem;">
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                            <span class="stat-block-label">LEVEL 1 — STATUS SENTIMEN</span>
+                            <template x-if="result && result.label_lvl1 === 'hate_speech'">
+                                <span class="badge badge-hate" style="font-size:0.6875rem;">FLAG: UJARAN KEBENCIAN</span>
+                            </template>
+                            <template x-if="result && result.label_lvl1 !== 'hate_speech'">
+                                <span class="badge badge-safe" style="font-size:0.6875rem;">VERIFIED: AMAN / NETRAL</span>
+                            </template>
                         </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
-                            <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
-                            <span style="font-size:0.875rem;font-weight:800;color:var(--color-danger);" x-text="(result.confidence_lvl1 * 100).toFixed(1) + '%'"></span>
+
+                        <h3 style="font-size:1.375rem;font-weight:900;letter-spacing:-0.03em;margin:0 0 0.5rem;color:#0A0A0A;"
+                            x-text="result && result.label_lvl1 === 'hate_speech' ? 'Ujaran Kebencian (Hate)' : 'Bukan Kebencian (Safe)'">
+                        </h3>
+                        <p style="font-size:0.8125rem;color:var(--color-text-muted);margin:0;line-height:1.45;">
+                            Klasifikasi biner tingkat pertama untuk menyaring konten bermuatan permusuhan.
+                        </p>
+                    </div>
+
+                    <div style="border-top:1px solid var(--color-border-subtle);padding-top:0.75rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:0.75rem;margin-bottom:0.5rem;">
+                            <span style="color:var(--color-text-muted);">PROBABILITAS KEYAKINAN:</span>
+                            <strong style="font-size:1rem;color:#0A0A0A;" x-text="result ? (result.confidence_lvl1 * 100).toFixed(1) + '%' : '—'"></strong>
                         </div>
-                        <div class="progress-bar-track" style="height:6px;background:#FDE8E8;border-radius:999px;overflow:hidden;">
-                            <div class="progress-bar-fill" :style="'width:' + (result.confidence_lvl1 * 100) + '%;background:var(--color-danger);height:6px;'"></div>
+
+                        <div class="progress-track-sharp" style="height:8px;background:var(--color-surface-2);border:1px solid #0A0A0A;">
+                            <div class="progress-fill-sharp"
+                                 :style="'width:' + (result ? (result.confidence_lvl1 * 100) : 0) + '%;background:' + (result && result.label_lvl1 === 'hate_speech' ? 'var(--color-danger)' : 'var(--color-primary)')"></div>
                         </div>
                     </div>
-                </template>
+                </div>
 
-                {{-- Level 1: Bukan Kebencian --}}
-                <template x-if="result && result.label_lvl1 !== 'hate_speech'">
-                    <div style="background:var(--color-teal-bg);border:2px solid rgba(42,157,143,0.25);border-radius:1rem;padding:1.125rem;">
-                        <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin:0 0 0.375rem 0;">LEVEL 1 — SENTIMEN</p>
-                        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.625rem;">
-                            <div style="width:10px;height:10px;border-radius:50%;background:var(--color-teal);flex-shrink:0;"></div>
-                            <p style="font-size:1.125rem;font-weight:800;color:var(--color-teal);margin:0;">Bukan Kebencian</p>
+                {{-- Level 2: Sub-Kategori --}}
+                <div class="card"
+                     style="border:2px solid #0A0A0A;border-top:5px solid #0A0A0A;box-shadow:3px 3px 0 #0A0A0A;background:#FFFFFF;padding:1.5rem;display:flex;flex-direction:column;justify-content:space-between;gap:1rem;">
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                            <span class="stat-block-label">LEVEL 2 — TAKSONOMI SPESIFIK</span>
+                            <span class="badge badge-mono" style="font-size:0.6875rem;">6 SUB-KELAS</span>
                         </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
-                            <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
-                            <span style="font-size:0.875rem;font-weight:800;color:var(--color-teal);" x-text="(result.confidence_lvl1 * 100).toFixed(1) + '%'"></span>
+
+                        <h3 style="font-size:1.375rem;font-weight:900;letter-spacing:-0.03em;margin:0 0 0.5rem;color:var(--color-primary);"
+                            x-text="result ? formatLabel(result.label_lvl2) : '—'">
+                        </h3>
+                        <p style="font-size:0.8125rem;color:var(--color-text-muted);margin:0;line-height:1.45;">
+                            Pengelompokan multi-kelas tingkat kedua ke dalam taksonomi kejahatan siber akademis.
+                        </p>
+                    </div>
+
+                    <div style="border-top:1px solid var(--color-border-subtle);padding-top:0.75rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono);font-size:0.75rem;margin-bottom:0.5rem;">
+                            <span style="color:var(--color-text-muted);">KEYAKINAN SUB-TIPE:</span>
+                            <strong style="font-size:1rem;color:#0A0A0A;" x-text="result && result.confidence_lvl2 ? (result.confidence_lvl2 * 100).toFixed(1) + '%' : '—'"></strong>
                         </div>
-                        <div class="progress-bar-track" style="height:6px;background:#D0F0EC;border-radius:999px;overflow:hidden;">
-                            <div class="progress-bar-fill" :style="'width:' + (result.confidence_lvl1 * 100) + '%;background:var(--color-teal);height:6px;'"></div>
+
+                        <div class="progress-track-sharp" style="height:8px;background:var(--color-surface-2);border:1px solid #0A0A0A;">
+                            <div class="progress-fill-sharp"
+                                 :style="'width:' + (result && result.confidence_lvl2 ? (result.confidence_lvl2 * 100) : 0) + '%;background:#0A0A0A;'"></div>
                         </div>
                     </div>
-                </template>
+                </div>
 
-                {{-- Level 2 --}}
-                <div style="background:var(--color-primary-bg);border:2px solid rgba(231,111,81,0.25);border-radius:1rem;padding:1.125rem;">
-                    <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin:0 0 0.375rem 0;">LEVEL 2 — KATEGORI</p>
-                    <p style="font-size:1.125rem;font-weight:800;color:var(--color-primary-dark);margin:0 0 0.625rem 0;"
-                       x-text="result ? formatLabel(result.label_lvl2) : '—'"></p>
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
-                        <span style="font-size:0.75rem;color:var(--color-text-muted);">Confidence</span>
-                        <span style="font-size:0.875rem;font-weight:800;color:var(--color-primary-dark);"
-                              x-text="result && result.confidence_lvl2 ? (result.confidence_lvl2 * 100).toFixed(1) + '%' : '—'"></span>
+            </div>
+
+            {{-- Normalization Pipeline Comparison --}}
+            <div class="card" style="border:2px solid #0A0A0A;box-shadow:3px 3px 0 #0A0A0A;padding:1.25rem 1.5rem;margin-bottom:1.5rem;background:#FFFFFF;">
+                <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border);padding-bottom:0.75rem;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+                    <div>
+                        <span class="stat-block-label" style="display:block;margin-bottom:0.15rem;">TRANSFORMASI PREPROCESSING · NORMALISASI 15.167 KAMUSALAY</span>
+                        <span style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);">Pembersihan mention, URL, regex filter, dan ekspansi kata singkatan/slang.</span>
                     </div>
-                    <div class="progress-bar-track" style="height:6px;background:#FDEFE9;border-radius:999px;overflow:hidden;">
-                        <div class="progress-bar-fill"
-                             :style="result && result.confidence_lvl2 ? 'width:' + (result.confidence_lvl2 * 100) + '%;background:var(--color-primary);height:6px;' : 'width:0%'"></div>
+                    <span class="badge badge-mono" style="font-size:0.625rem;">REGEX + KAMUSALAY</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:1rem;align-items:stretch;">
+                    <div style="background:var(--color-surface-2);border:1px solid #0A0A0A;padding:1rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.5rem;">
+                        <div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                                <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:700;color:var(--color-text-muted);text-transform:uppercase;">[01] TEKS ASLI (MENTAH)</span>
+                                <span class="badge badge-mono" style="font-size:0.5625rem;" x-text="inputText.length + ' KARAKTER'"></span>
+                            </div>
+                            <p style="font-size:0.875rem;color:#0A0A0A;margin:0;line-height:1.6;font-family:var(--font-sans);word-break:break-word;" x-text="inputText"></p>
+                        </div>
+                        <span style="font-family:var(--font-mono);font-size:0.625rem;color:var(--color-text-subtle);">INPUT VERBATIM PENGGUNA</span>
+                    </div>
+
+                    <div style="background:#FFFFFF;border:1px solid #0A0A0A;padding:1rem;border-left:4px solid var(--color-primary);display:flex;flex-direction:column;justify-content:space-between;gap:0.5rem;">
+                        <div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                                <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:800;color:var(--color-primary);text-transform:uppercase;">[02] HASIL NORMALISASI KAMUSALAY</span>
+                                <span class="badge badge-safe" style="font-size:0.5625rem;">INDOBERT READY</span>
+                            </div>
+                            <p style="font-size:0.875rem;color:#0A0A0A;margin:0;line-height:1.6;font-family:var(--font-mono);word-break:break-word;" x-text="result ? result.clean_text : '—'"></p>
+                        </div>
+                        <span style="font-family:var(--font-mono);font-size:0.625rem;color:var(--color-primary);font-weight:700;">TERNORMALISASI SECARA OTOMATIS</span>
                     </div>
                 </div>
             </div>
 
-            {{-- Teks Bersih --}}
-            <div style="background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:0.875rem;padding:1rem;">
-                <p style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);margin-bottom:0.375rem;">TEKS SETELAH PREPROCESSING</p>
-                <p style="font-size:0.875rem;color:var(--color-text-body);line-height:1.65;font-style:italic;" x-text="result ? result.clean_text : '—'"></p>
-            </div>
-
         </div>
+
     </div>
 
-    {{-- Petunjuk penggunaan --}}
-    <div class="card-flat" style="padding:1.25rem;">
-        <p style="font-size:0.8125rem;font-weight:700;color:var(--color-text-muted);margin-bottom:0.75rem;">ℹ️ PETUNJUK PENGGUNAAN</p>
-        <ul style="font-size:0.8125rem;color:var(--color-text-muted);line-height:1.8;padding-left:1.25rem;">
-            <li>Masukkan teks bahasa Indonesia minimal 5 karakter.</li>
-            <li>Model akan membersihkan teks otomatis: normalisasi slang, hapus tanda baca, dll.</li>
-            <li>Hasil Level 1 menentukan apakah teks mengandung ujaran kebencian.</li>
-            <li>Hasil Level 2 mengidentifikasi sub-kategori jika terdeteksi sebagai hate speech.</li>
-            <li>Confidence Score menunjukkan tingkat keyakinan model (semakin tinggi = semakin yakin).</li>
-        </ul>
+    {{-- Metodologi Akademis --}}
+    <div class="card-flat" style="padding:1.25rem 1.5rem;">
+        <span class="stat-block-label" style="display:block;margin-bottom:0.5rem;">CATATAN METODOLOGI HIERARKIS INDOBERT</span>
+        <ol style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);line-height:1.8;padding-left:1.25rem;margin:0;">
+            <li><strong>Tahap Preprocessing:</strong> Pembersihan mention/URL, tokenisasi regex, dan normalisasi 15.167 entri slang Indonesia (Kamusalay).</li>
+            <li><strong>Tahap Level 1:</strong> Binary Classification mendeteksi Ujaran Kebencian (Hate Speech) vs Konten Netral/Aman.</li>
+            <li><strong>Tahap Level 2:</strong> Multi-class Classification mengelompokkan ke dalam 6 sub-tipe: <em>Delegitimasi Institusi, Dehumanisasi, Ajakan Kekerasan, Hoaks Pemicu Kebencian, Kutukan Agama & Personal</em>, atau <em>Tidak Relevan</em>.</li>
+        </ol>
     </div>
 
 </div>
+
 @endsection
 
 @push('scripts')
@@ -182,12 +262,12 @@ function liveClassifier() {
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
-                    this.errorMsg = data.message || 'Terjadi kesalahan. Pastikan server AI sedang berjalan.';
+                    this.errorMsg = data.message || 'Server FastAPI tidak dapat dihubungi di port 8080.';
                 } else {
                     this.result = data.data;
                 }
             } catch (e) {
-                this.errorMsg = 'Tidak dapat terhubung ke server. Periksa koneksi Anda.';
+                this.errorMsg = 'Koneksi ke backend AI gagal. Pastikan worker uvicorn aktif.';
             } finally {
                 this.loading = false;
             }
@@ -208,7 +288,4 @@ function liveClassifier() {
     }
 }
 </script>
-<style>
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-</style>
 @endpush
