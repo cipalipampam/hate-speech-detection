@@ -123,13 +123,16 @@ def classify_single(body: ClassifySingleRequest, request: Request) -> ClassifyIt
     """Klasifikasi ujaran kebencian pada satu teks."""
     predictor = _get_predictor(request)
     try:
-        text = body.text
-        if body.preprocess:
-            text = _preprocess_pipeline.transform_text(text)
+        raw_text = body.text
+        clean_text = raw_text
 
-        result = predictor.predict_text(text)
-        # Pastikan teks yang ditampilkan ke user adalah teks asli (bukan clean)
-        result["text"] = body.text
+        if body.preprocess:
+            clean_text = _preprocess_pipeline.transform_text(raw_text)
+
+        result = predictor.predict_text(clean_text)
+        # Kirim teks bersih (preprocessed) agar frontend bisa menampilkan
+        # perbandingan teks asli vs teks ternormalisasi
+        result["text"] = clean_text
         return _build_classify_item(result)
     except Exception as e:
         logger.error(f"Classify single error: {e}", exc_info=True)
