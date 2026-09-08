@@ -105,7 +105,7 @@
                         <span style="color:var(--color-text-muted);display:block;">AKUN PENELITI:</span>
                         <span style="font-weight:700;color:#0A0A0A;">{{ auth()->user()->email ?? '' }}</span>
                         <span class="badge badge-mono" style="margin-top:0.25rem;font-size:0.625rem;">
-                            ROLE: {{ strtoupper(auth()->user()->getRoleNames()->first() ?? 'VIEWER') }}
+                            ROLE: {{ strtoupper(auth()->user()?->getRoleNames()?->first() ?? 'VIEWER') }}
                         </span>
                     </div>
 

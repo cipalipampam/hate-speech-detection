@@ -37,7 +37,7 @@
     {{-- Total Analisis --}}
     <div class="stat-block">
         <span class="stat-block-label">§ 01.1 SESI RISET</span>
-        <span class="stat-block-val">{{ number_format($metrics['total_analyses']) }}</span>
+        <span class="stat-block-val" id="stat-total-analyses">{{ number_format($metrics['total_analyses']) }}</span>
         <div class="stat-block-meta">
             <span>[STATUS: SELESAI & ARSIP]</span>
         </div>
@@ -46,7 +46,7 @@
     {{-- Total Opini --}}
     <div class="stat-block">
         <span class="stat-block-label">§ 01.2 TOTAL POSTINGAN</span>
-        <span class="stat-block-val">{{ number_format($metrics['total_opinions']) }}</span>
+        <span class="stat-block-val" id="stat-total-opinions">{{ number_format($metrics['total_opinions']) }}</span>
         <div class="stat-block-meta">
             <span>[KORPUS TERFILTER 𝕏 + ⊙]</span>
         </div>
@@ -58,7 +58,7 @@
             <span class="stat-block-label" style="color:#0A0A0A;">§ 01.3 UJARAN KEBENCIAN</span>
             <span class="badge badge-hate" style="font-size:0.625rem;">FLAGGED</span>
         </div>
-        <span class="stat-block-val" style="color:#0A0A0A;">{{ number_format($metrics['total_hate']) }}</span>
+        <span class="stat-block-val" id="stat-total-hate" style="color:#0A0A0A;">{{ number_format($metrics['total_hate']) }}</span>
         <div class="stat-block-meta" style="border-color:#0A0A0A;color:#0A0A0A;">
             <span>[TINGKAT RISIKO TINGGI]</span>
         </div>
@@ -70,7 +70,7 @@
             <span class="stat-block-label" style="color:var(--color-primary);">§ 01.4 KONTEN AMAN</span>
             <span class="badge badge-safe" style="font-size:0.625rem;">VERIFIED</span>
         </div>
-        <span class="stat-block-val" style="color:var(--color-primary);">{{ number_format($metrics['total_non_hate']) }}</span>
+        <span class="stat-block-val" id="stat-total-non-hate" style="color:var(--color-primary);">{{ number_format($metrics['total_non_hate']) }}</span>
         <div class="stat-block-meta" style="border-color:var(--color-primary);color:var(--color-primary);">
             <span>[NETRAL & NON-TOKSIK]</span>
         </div>
@@ -79,7 +79,7 @@
     {{-- Avg Toxicity % --}}
     <div class="stat-block">
         <span class="stat-block-label">§ 01.5 RATA-RATA TOKSISITAS</span>
-        <span class="stat-block-val">{{ $metrics['avg_hate_pct'] }}<span style="font-size:1.25rem;">%</span></span>
+        <span class="stat-block-val" id="stat-avg-hate-pct">{{ $metrics['avg_hate_pct'] }}<span style="font-size:1.25rem;">%</span></span>
         <div class="stat-block-meta">
             <span>[CORPUS TOXICITY MEAN]</span>
         </div>
@@ -97,7 +97,7 @@
                 <span class="badge badge-mono" style="font-size:0.65rem;">LEVEL 1 INFERENCE</span>
                 <h2 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:4px 0 0;letter-spacing:-0.02em;">Rasio Sentimen Global</h2>
             </div>
-            <span style="font-family:var(--font-mono);font-size:0.75rem;font-weight:700;">N={{ number_format($metrics['total_opinions']) }}</span>
+            <span id="sentiment-n-count" style="font-family:var(--font-mono);font-size:0.75rem;font-weight:700;">N={{ number_format($metrics['total_opinions']) }}</span>
         </div>
 
         <div id="chart-sentiment-donut"></div>
@@ -106,11 +106,11 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--color-border-subtle);">
             <div style="background:var(--color-danger);padding:0.625rem;border:1px solid #0A0A0A;">
                 <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:800;display:block;color:#0A0A0A;">■ HATE SPEECH</span>
-                <span style="font-size:1.125rem;font-weight:900;color:#0A0A0A;">{{ number_format($metrics['total_hate']) }}</span>
+                <span id="legend-hate-count" style="font-size:1.125rem;font-weight:900;color:#0A0A0A;">{{ number_format($metrics['total_hate']) }}</span>
             </div>
             <div style="background:var(--color-primary);padding:0.625rem;border:1px solid #0A0A0A;color:#FFFFFF;">
                 <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:800;display:block;">■ NON-HATE</span>
-                <span style="font-size:1.125rem;font-weight:900;">{{ number_format($metrics['total_non_hate']) }}</span>
+                <span id="legend-non-hate-count" style="font-size:1.125rem;font-weight:900;">{{ number_format($metrics['total_non_hate']) }}</span>
             </div>
         </div>
     </div>
@@ -150,14 +150,14 @@
                     <span style="width:8px;height:8px;background:#0A0A0A;display:inline-block;border:1px solid #0A0A0A;"></span>
                     <span>𝕏 TWITTER CORPUS</span>
                 </span>
-                <span style="font-weight:700;">{{ $platformChart['series'][0] ?? 0 }} DATA</span>
+                <span id="platform-twitter-count" style="font-weight:700;">{{ $platformChart['series'][0] ?? 0 }} DATA</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--font-mono);font-size:0.75rem;">
                 <span style="display:flex;align-items:center;gap:0.375rem;">
                     <span style="width:8px;height:8px;background:var(--color-primary);display:inline-block;border:1px solid #0A0A0A;"></span>
                     <span>⊙ THREADS CORPUS</span>
                 </span>
-                <span style="font-weight:700;">{{ $platformChart['series'][1] ?? 0 }} DATA</span>
+                <span id="platform-threads-count" style="font-weight:700;">{{ $platformChart['series'][1] ?? 0 }} DATA</span>
             </div>
         </div>
     </div>
@@ -184,7 +184,8 @@
                         <th style="width:110px;text-align:center;">STATUS</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="recent-analyses-tbody">
+                    @fragment('recent-table')
                     @forelse($recentAnalyses as $analysis)
                     <tr>
                         <td style="font-family:var(--font-mono);font-weight:700;color:var(--color-primary);">
@@ -232,6 +233,7 @@
                         </td>
                     </tr>
                     @endforelse
+                    @endfragment
                 </tbody>
             </table>
         </div>
@@ -248,9 +250,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const level2Data    = @json($level2Chart);
     const platformData  = @json($platformChart);
     const hasData       = {{ $metrics['total_opinions'] > 0 ? 'true' : 'false' }};
+    const platHasData   = platformData.series && platformData.series.some(v => v > 0);
 
     // ── Sentiment Donut (Hazard Yellow & Klein Blue) ───────────────────
-    new ApexCharts(document.getElementById('chart-sentiment-donut'), {
+    const chartSentiment = new ApexCharts(document.getElementById('chart-sentiment-donut'), {
         series: hasData ? sentimentData.series : [1, 1],
         chart: { type: 'donut', height: 210, sparkline: { enabled: true } },
         labels: sentimentData.labels,
@@ -270,18 +273,22 @@ document.addEventListener('DOMContentLoaded', function () {
                             fontWeight: 700,
                             color: '#525252',
                             fontFamily: 'JetBrains Mono, monospace',
-                            formatter: (w) => hasData ? w.globals.seriesTotals.reduce((a, b) => a + b, 0).toLocaleString('id') : '—'
+                            formatter: (w) => {
+                                const sum = w.globals.seriesTotals ? w.globals.seriesTotals.reduce((a, b) => a + b, 0) : 0;
+                                return sum > 0 ? sum.toLocaleString('id') : (hasData ? '0' : '—');
+                            }
                         }
                     }
                 }
             }
         },
         dataLabels: { enabled: false },
-        tooltip: { theme: 'light', style: { fontFamily: 'JetBrains Mono, monospace' } }
-    }).render();
+        tooltip: { enabled: hasData, theme: 'light', style: { fontFamily: 'JetBrains Mono, monospace' } }
+    });
+    chartSentiment.render();
 
     // ── Level 2 Bar Chart (Stark Solid Black / Klein Blue Bars) ────────
-    new ApexCharts(document.getElementById('chart-level2-bar'), {
+    const chartLevel2 = new ApexCharts(document.getElementById('chart-level2-bar'), {
         series: level2Data.series,
         chart: { type: 'bar', height: 230, toolbar: { show: false } },
         plotOptions: { bar: { horizontal: true, borderRadius: 0, barHeight: '55%' } },
@@ -299,24 +306,181 @@ document.addEventListener('DOMContentLoaded', function () {
         dataLabels: { enabled: false },
         grid: { strokeDashArray: 0, borderColor: '#E3E2DC' },
         tooltip: { theme: 'light', style: { fontFamily: 'JetBrains Mono, monospace' } }
-    }).render();
+    });
+    chartLevel2.render();
 
     // ── Platform Donut (Monochrome & Klein Blue) ───────────────────────
-    new ApexCharts(document.getElementById('chart-platform'), {
-        series: platformData.series.some(v => v > 0) ? platformData.series : [1, 1],
+    const chartPlatform = new ApexCharts(document.getElementById('chart-platform'), {
+        series: platHasData ? platformData.series : [1, 1],
         chart: { type: 'donut', height: 175, sparkline: { enabled: true } },
         labels: platformData.labels,
-        colors: ['#0A0A0A', '#002FA7'],
+        colors: platHasData ? ['#0A0A0A', '#002FA7'] : ['#E3E2DC', '#E3E2DC'],
         stroke: { width: 2, colors: ['#0A0A0A'] },
         plotOptions: {
             pie: { donut: { size: '65%', labels: { show: false } } }
         },
         dataLabels: { enabled: false },
-        tooltip: { theme: 'light', style: { fontFamily: 'JetBrains Mono, monospace' } }
-    }).render();
+        tooltip: { enabled: platHasData, theme: 'light', style: { fontFamily: 'JetBrains Mono, monospace' } }
+    });
+    chartPlatform.render();
+
+    // ── Helper Pembaruan Teks dengan Micro-Animation ───────────────────
+    function updateTextIfChanged(el, newText) {
+        if (!el) return;
+        const current = el.textContent.trim();
+        const incoming = String(newText).trim();
+        if (current !== incoming) {
+            el.textContent = incoming;
+            el.classList.remove('stat-updated');
+            void el.offsetWidth; // Trigger reflow
+            el.classList.add('stat-updated');
+        }
+    }
+
+    function updateHtmlIfChanged(el, newHtml) {
+        if (!el) return;
+        if (el.innerHTML.trim() !== newHtml.trim()) {
+            el.innerHTML = newHtml;
+            el.classList.remove('stat-updated');
+            void el.offsetWidth; // Trigger reflow
+            el.classList.add('stat-updated');
+        }
+    }
+
+    // ── Fungsi Pembaruan Seluruh Komponen Overview Secara Dinamis ───────
+    function updateDashboardUI(data) {
+        if (!data) return;
+
+        // 1. Update 5 Card Metrik Utama
+        if (data.metrics) {
+            const m = data.metrics;
+            updateTextIfChanged(document.getElementById('stat-total-analyses'), Number(m.total_analyses || 0).toLocaleString('id'));
+            updateTextIfChanged(document.getElementById('stat-total-opinions'), Number(m.total_opinions || 0).toLocaleString('id'));
+            updateTextIfChanged(document.getElementById('stat-total-hate'), Number(m.total_hate || 0).toLocaleString('id'));
+            updateTextIfChanged(document.getElementById('stat-total-non-hate'), Number(m.total_non_hate || 0).toLocaleString('id'));
+            updateHtmlIfChanged(document.getElementById('stat-avg-hate-pct'), `${m.avg_hate_pct ?? 0}<span style="font-size:1.25rem;">%</span>`);
+
+            // 2. Update Card Rasio Sentimen (Legend & N Count)
+            updateTextIfChanged(document.getElementById('sentiment-n-count'), `N=${Number(m.total_opinions || 0).toLocaleString('id')}`);
+            updateTextIfChanged(document.getElementById('legend-hate-count'), Number(m.total_hate || 0).toLocaleString('id'));
+            updateTextIfChanged(document.getElementById('legend-non-hate-count'), Number(m.total_non_hate || 0).toLocaleString('id'));
+        }
+
+        // 3. Update Grafik Rasio Sentimen Donut
+        if (chartSentiment && data.sentimentChart && data.metrics) {
+            const totalOpinions = Number(data.metrics.total_opinions) || 0;
+            const hasDataNow = totalOpinions > 0;
+            const newSeries = hasDataNow ? data.sentimentChart.series : [1, 1];
+            const newColors = hasDataNow ? ['#FACC15', '#002FA7'] : ['#E3E2DC', '#E3E2DC'];
+
+            chartSentiment.updateOptions({
+                colors: newColors,
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            labels: {
+                                show: hasDataNow,
+                                total: {
+                                    show: true,
+                                    label: hasDataNow ? 'TOTAL' : 'KOSONG',
+                                    formatter: (w) => {
+                                        const sum = w.globals.seriesTotals ? w.globals.seriesTotals.reduce((a, b) => a + b, 0) : 0;
+                                        return sum > 0 ? sum.toLocaleString('id') : (hasDataNow ? '0' : '—');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                tooltip: { enabled: hasDataNow }
+            }, false, false);
+            chartSentiment.updateSeries(newSeries);
+        }
+
+        // 4. Update Grafik Distribusi Sub-Kategori Level 2
+        if (chartLevel2 && data.level2Chart) {
+            chartLevel2.updateOptions({
+                xaxis: {
+                    categories: data.level2Chart.categories
+                }
+            }, false, false);
+            chartLevel2.updateSeries(data.level2Chart.series);
+        }
+
+        // 5. Update Komparasi Platform (Donut & Counts)
+        if (data.platformChart) {
+            const pSeries = data.platformChart.series || [0, 0];
+            const pHasData = pSeries.some(v => v > 0);
+            if (chartPlatform) {
+                chartPlatform.updateOptions({
+                    colors: pHasData ? ['#0A0A0A', '#002FA7'] : ['#E3E2DC', '#E3E2DC'],
+                    tooltip: { enabled: pHasData }
+                }, false, false);
+                chartPlatform.updateSeries(pHasData ? pSeries : [1, 1]);
+            }
+            updateTextIfChanged(document.getElementById('platform-twitter-count'), `${Number(pSeries[0] || 0).toLocaleString('id')} DATA`);
+            updateTextIfChanged(document.getElementById('platform-threads-count'), `${Number(pSeries[1] || 0).toLocaleString('id')} DATA`);
+        }
+
+        // 6. Update Tabel § 01.6 Dosir Investigasi Terakhir
+        if (data.table_html) {
+            const tbody = document.getElementById('recent-analyses-tbody');
+            if (tbody && tbody.innerHTML !== data.table_html) {
+                tbody.innerHTML = data.table_html;
+            }
+        }
+    }
+
+    // ── Polling Reaktif Adaptif (Fast saat running, Heartbeat saat idle) ──
+    let pollTimer = null;
+    let isCurrentlyRunning = {{ !empty($stillHasRunning) ? 'true' : 'false' }};
+
+    async function fetchDashboardUpdates() {
+        try {
+            const res = await fetch('{{ route('dashboard') }}', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            if (data && data.success) {
+                updateDashboardUI(data);
+                isCurrentlyRunning = Boolean(data.has_running);
+            }
+        } catch (err) {
+            console.error('[Telemetry] Gagal polling data dashboard:', err);
+        } finally {
+            // Jika ada analisis yang sedang running: cek setiap 3 detik
+            // Jika sudah selesai/idle: tetap cek detak jantung (heartbeat) setiap 15 detik
+            scheduleNextPoll(isCurrentlyRunning ? 3000 : 15000);
+        }
+    }
+
+    function scheduleNextPoll(ms) {
+        if (pollTimer) clearTimeout(pollTimer);
+        pollTimer = setTimeout(fetchDashboardUpdates, ms);
+    }
+
+    // Jalankan polling adaptif
+    scheduleNextPoll(isCurrentlyRunning ? 3000 : 15000);
+
+    window.addEventListener('beforeunload', () => {
+        if (pollTimer) clearTimeout(pollTimer);
+    });
 });
 </script>
 <style>
+@keyframes telemetry-flash {
+    0% { color: var(--color-primary); transform: scale(1.04); }
+    50% { color: var(--color-primary); }
+    100% { transform: scale(1); }
+}
+.stat-updated {
+    display: inline-block;
+    animation: telemetry-flash 0.8s ease-out;
+}
 @media (max-width: 1024px) {
     .charts-row, .bottom-row { grid-template-columns: 1fr !important; }
 }

@@ -137,10 +137,34 @@ class AnalysisImportService
             $now = now()->toDateTimeString();
 
             foreach ($rows as $d) {
+                $parentPlatform = DB::table('analyses')->where('id', $analysisId)->value('platform') ?? 'threads';
+
+                // Untuk analisis "both", platform per-post dideteksi dari source_url
+                // agar filter platform pada halaman detail bisa bekerja dengan benar
+                $csvPlatform = $d['platform'] ?? '';
+                $sourceUrl   = $d['source'] ?? ($d['source_thread'] ?? '');
+
+                if (!empty($csvPlatform) && strtolower($csvPlatform) !== 'unknown' && strtolower($csvPlatform) !== 'both') {
+                    // CSV sudah punya nilai spesifik (X / Threads) — gunakan langsung
+                    $platform = $csvPlatform;
+                } elseif (!empty($sourceUrl)) {
+                    // Deteksi dari source URL
+                    $lowerUrl = strtolower($sourceUrl);
+                    if (str_contains($lowerUrl, 'x.com') || str_contains($lowerUrl, 'twitter.com')) {
+                        $platform = 'X';
+                    } elseif (str_contains($lowerUrl, 'threads.net') || str_contains($lowerUrl, 'threads.com')) {
+                        $platform = 'Threads';
+                    } else {
+                        $platform = ucfirst(strtolower($parentPlatform !== 'both' ? $parentPlatform : 'threads'));
+                    }
+                } else {
+                    $platform = ucfirst(strtolower($parentPlatform !== 'both' ? $parentPlatform : 'threads'));
+                }
+
                 // 1. Insert ke analysis_posts (Metadata ringan)
                 $postId = DB::table('analysis_posts')->insertGetId([
                     'analysis_id'     => $analysisId,
-                    'platform'        => $d['platform'] ?? 'Unknown',
+                    'platform'        => $platform,
                     'source_url'      => $d['source'] ?? ($d['source_thread'] ?? null),
                     'author_username' => $d['user_id'] ?? ($d['username'] ?? 'anonymous'),
                     'post_type'       => $d['type'] ?? 'Original Post',

@@ -40,25 +40,29 @@
                 <span style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);">KLIK UNTUK MEMUAT TEKS CONTOH</span>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
-                <button type="button" @click="inputText = 'Sebarkan info ini! Kelompok itu sengaja meracuni pasokan air warga kota demi mengacaukan negara!'"
+                <button type="button" @click="inputText = 'wajarlah dia awal nya kan juga anggota freemason (yahudi).'"
                         class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
                     <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Hoaks Pemicu Kebencian
                 </button>
-                <button type="button" @click="inputText = 'Dasar pejabat biadab korup penjual aset bangsa tidak tahu malu!'"
+                <button type="button" @click="inputText = 'kerjaan dewan pengkhianat rakyat: ruu yg menguntungkan penguasa dikebut, ruu yg pro rakyat gak pernah beres.'"
                         class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
                     <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Delegitimasi Institusi
                 </button>
-                <button type="button" @click="inputText = 'Mereka itu sampah masyarakat ga pantes hidup disini usir aja!'"
+                <button type="button" @click="inputText = 'kapan sih anjing2 kena azab'"
                         class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
                     <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Dehumanisasi
                 </button>
-                <button type="button" @click="inputText = 'Pagi ini cuaca di Jakarta cukup cerah, selamat beraktivitas untuk kawan-kawan semua.'"
+                <button type="button" @click="inputText = 'tembak mati dnk biar seru'"
                         class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
-                    <span style="color:var(--color-primary);font-weight:900;margin-right:0.25rem;">●</span> Opini Netral / Aman
+                    <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Ajakan Kekerasan
                 </button>
-                <button type="button" @click="inputText = 'gw bnr2 eneg liat kelakuan lu yg gaje bgt sumpah'"
+                <button type="button" @click="inputText = 'semoga semua pejabat yang dzalim dapet azab gara-gara menyengsarakan rakyat'"
                         class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
-                    <span style="color:#0A0A0A;font-weight:900;margin-right:0.25rem;">●</span> Teks Slang Padat (Kamusalay)
+                    <span style="color:var(--color-danger);font-weight:900;margin-right:0.25rem;">●</span> Kutukan Agama & Personal
+                </button>
+                <button type="button" @click="inputText = 'langkah transparansi ini penting banget, dpr lanjutkan biar publik ikut terlibat'"
+                        class="btn btn-outline btn-sm" style="font-size:0.75rem;padding:0.35rem 0.75rem;text-transform:none;border-radius:0;">
+                    <span style="color:var(--color-primary);font-weight:900;margin-right:0.25rem;">●</span> Tidak Relevan / Netral
                 </button>
             </div>
         </div>
@@ -107,7 +111,7 @@
                 </div>
                 <div style="display:flex;align-items:center;gap:0.5rem;">
                     <span class="badge badge-safe" style="font-size:0.625rem;">STATUS: SUKSES</span>
-                    <span class="badge badge-mono" style="font-size:0.625rem;">LATENSI: ~42ms</span>
+                    <span class="badge badge-mono" style="font-size:0.625rem;" x-text="'LATENSI: ' + latency + 'ms'"></span>
                 </div>
             </div>
 
@@ -129,7 +133,7 @@
                         </div>
 
                         <h3 style="font-size:1.375rem;font-weight:900;letter-spacing:-0.03em;margin:0 0 0.5rem;color:#0A0A0A;"
-                            x-text="result && result.label_lvl1 === 'hate_speech' ? 'Ujaran Kebencian (Hate)' : 'Bukan Kebencian (Safe)'">
+                            x-text="result && result.label_lvl1 === 'hate_speech' ? 'Ujaran Kebencian (Hate)' : 'Non Ujaran Kebencian (Safe)'">
                         </h3>
                         <p style="font-size:0.8125rem;color:var(--color-text-muted);margin:0;line-height:1.45;">
                             Klasifikasi biner tingkat pertama untuk menyaring konten bermuatan permusuhan.
@@ -242,11 +246,14 @@ function liveClassifier() {
         loading:   false,
         result:    null,
         errorMsg:  '',
+        latency:   0,
 
         async classify() {
             this.loading  = true;
             this.result   = null;
             this.errorMsg = '';
+            this.latency  = 0;
+            const t0 = performance.now();
 
             try {
                 const response = await fetch('{{ route("predict.classify") }}', {
@@ -260,6 +267,7 @@ function liveClassifier() {
                 });
 
                 const data = await response.json();
+                this.latency = Math.round(performance.now() - t0);
 
                 if (!response.ok || !data.success) {
                     this.errorMsg = data.message || 'Server FastAPI tidak dapat dihubungi di port 8080.';
@@ -267,7 +275,8 @@ function liveClassifier() {
                     this.result = data.data;
                 }
             } catch (e) {
-                this.errorMsg = 'Koneksi ke backend AI gagal. Pastikan worker uvicorn aktif.';
+                this.latency  = Math.round(performance.now() - t0);
+                this.errorMsg = 'Koneksi ke backend AI gagal. Pastikan server FastAPI (uvicorn) sudah berjalan di port 8080.';
             } finally {
                 this.loading = false;
             }

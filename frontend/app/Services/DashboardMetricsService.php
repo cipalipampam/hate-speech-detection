@@ -103,18 +103,42 @@ class DashboardMetricsService
      */
     public function getPlatformComparisonChartData(): array
     {
-        $platformCounts = AnalysisPost::select('platform', DB::raw('count(*) as total'))
-            ->groupBy('platform')
-            ->pluck('total', 'platform')
+        // 1. Agregasi dari analysis_posts (dengan fallback ke platform analisis jika unknown)
+        $platformCounts = DB::table('analysis_posts')
+            ->leftJoin('analyses', 'analyses.id', '=', 'analysis_posts.analysis_id')
+            ->selectRaw("LOWER(COALESCE(NULLIF(analysis_posts.platform, 'Unknown'), analyses.platform, 'unknown')) as plat, COUNT(analysis_posts.id) as total")
+            ->groupBy('plat')
+            ->pluck('total', 'plat')
             ->toArray();
 
-        $xCount = $platformCounts['X'] ?? ($platformCounts['x'] ?? 0);
-        $threadsCount = $platformCounts['Threads'] ?? ($platformCounts['threads'] ?? 0);
+        $xCount = (int) (($platformCounts['x'] ?? 0) + ($platformCounts['twitter'] ?? 0));
+        $threadsCount = (int) ($platformCounts['threads'] ?? 0);
+
+        // 2. Fallback ke analysis_statistics jika tabel analysis_posts kosong
+        if ($xCount === 0 && $threadsCount === 0) {
+            $analysisStats = DB::table('analyses')
+                ->leftJoin('analysis_statistics', 'analyses.id', '=', 'analysis_statistics.analysis_id')
+                ->where('analyses.status', 'completed')
+                ->selectRaw("LOWER(analyses.platform) as plat, COALESCE(SUM(analysis_statistics.total_data), 0) as total")
+                ->groupBy('plat')
+                ->pluck('total', 'plat')
+                ->toArray();
+
+            $xCount = (int) (($analysisStats['x'] ?? 0) + ($analysisStats['twitter'] ?? 0));
+            $threadsCount = (int) ($analysisStats['threads'] ?? 0);
+        }
+
+        $total = $xCount + $threadsCount;
 
         return [
-            'labels' => ['X (Twitter)', 'Threads (Meta)'],
-            'series' => [$xCount, $threadsCount],
-            'colors' => ['#1DA1F2', '#000000'],
+            'labels'             => ['X (Twitter)', 'Threads (Meta)'],
+            'series'             => [$xCount, $threadsCount],
+            'colors'             => ['#0A0A0A', '#002FA7'],
+            'total'              => $total,
+            'x_count'            => $xCount,
+            'threads_count'      => $threadsCount,
+            'x_pct'              => $total > 0 ? round(($xCount / $total) * 100, 1) : 0,
+            'threads_pct'        => $total > 0 ? round(($threadsCount / $total) * 100, 1) : 0,
         ];
     }
 

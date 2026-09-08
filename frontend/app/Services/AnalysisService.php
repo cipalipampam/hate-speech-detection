@@ -154,6 +154,30 @@ class AnalysisService
         return $analysis;
     }
 
+    /**
+     * Memeriksa dan menyinkronkan seluruh analisis yang masih berstatus running atau queued dengan server AI.
+     * Mengembalikan jumlah analisis yang statusnya berhasil diperbarui.
+     */
+    public function syncRunningAnalyses(?int $userId = null): int
+    {
+        $query = Analysis::whereIn('status', ['running', 'queued']);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+        $runningAnalyses = $query->get();
+
+        $updatedCount = 0;
+        foreach ($runningAnalyses as $analysis) {
+            $prevStatus = $analysis->status;
+            $synced = $this->syncAnalysisStatus($analysis);
+            if ($synced->status !== $prevStatus) {
+                $updatedCount++;
+            }
+        }
+
+        return $updatedCount;
+    }
+
 
     // ──────────────────────────────────────────────────────────────────────────
     // 2. Query Data & Filtering
@@ -201,9 +225,16 @@ class AnalysisService
         $query = AnalysisPost::with('classification')
             ->where('analysis_id', $analysis->id);
 
-        // Filter Platform (X vs Threads)
+        // Filter Platform (X vs Threads) — case-insensitive agar "X" = "x", "Threads" = "threads"
         if (!empty($filters['platform']) && strtolower($filters['platform']) !== 'all') {
-            $query->where('platform', $filters['platform']);
+            $platformFilter = strtolower($filters['platform']);
+            if ($platformFilter === 'x' || $platformFilter === 'twitter') {
+                $query->whereRaw('LOWER(platform) IN (?, ?)', ['x', 'twitter']);
+            } elseif ($platformFilter === 'threads') {
+                $query->whereRaw('LOWER(platform) = ?', ['threads']);
+            } else {
+                $query->whereRaw('LOWER(platform) = ?', [$platformFilter]);
+            }
         }
 
         // Filter Level 1 & Level 2 & Text Search pada Classification

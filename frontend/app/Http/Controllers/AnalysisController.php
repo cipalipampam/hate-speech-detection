@@ -24,6 +24,11 @@ class AnalysisController extends Controller
     {
         $userId = auth()->user()->hasRole('admin') ? null : auth()->id();
         
+        // 1. Sinkronisasi status analisis yang masih running / queued ke FastAPI
+        if (Analysis::whereIn('status', ['running', 'queued'])->exists()) {
+            $this->analysisService->syncRunningAnalyses($userId);
+        }
+
         $analyses = $this->analysisService->getPaginatedAnalyses(
             userId:   $userId,
             perPage:  12,
@@ -32,14 +37,17 @@ class AnalysisController extends Controller
             status:   $request->query('status')
         );
 
+        $hasRunning = Analysis::whereIn('status', ['running', 'queued'])->exists();
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
-                'success'  => true,
-                'analyses' => $analyses,
+                'success'     => true,
+                'has_running' => $hasRunning,
+                'analyses'    => $analyses,
             ]);
         }
 
-        return view('analyses.index', compact('analyses'));
+        return view('analyses.index', compact('analyses', 'hasRunning'));
     }
 
     /**

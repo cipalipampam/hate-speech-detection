@@ -191,11 +191,13 @@ class FastAPIClientService
 
     /**
      * Melakukan klasifikasi satu teks kalimat.
+     * Timeout lebih besar (60s) untuk menangani cold-start model IndoBERT.
      */
     public function classifySingle(string $text, bool $preprocess = true): array
     {
         try {
-            $response = $this->client()->post('/classify/single', [
+            // Gunakan timeout 60 detik khusus untuk inferensi model (cold-start bisa lambat)
+            $response = $this->client(60)->post('/classify/single', [
                 'text'       => $text,
                 'preprocess' => $preprocess,
             ]);
@@ -207,11 +209,19 @@ class FastAPIClientService
             }
             return [
                 'success' => false,
-                'message' => $response->json('detail') ?? 'Gagal melakukan klasifikasi teks.',
+                'message' => $this->extractErrorMessage($response, 'Gagal melakukan klasifikasi teks.'),
             ];
         } catch (Exception $e) {
             Log::error("FastAPI classifySingle error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            // Pesan error yang lebih ramah pengguna
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'timed out') || str_contains($msg, 'Operation timed out')) {
+                return ['success' => false, 'message' => 'Server AI membutuhkan waktu terlalu lama untuk merespons. Pastikan FastAPI sudah sepenuhnya siap (model telah ter-load) dan coba lagi.'];
+            }
+            if (str_contains($msg, 'Connection refused') || str_contains($msg, 'Failed to connect')) {
+                return ['success' => false, 'message' => 'Server AI tidak dapat dihubungi di port 8080. Pastikan uvicorn/FastAPI sedang berjalan.'];
+            }
+            return ['success' => false, 'message' => 'Kesalahan komunikasi dengan server AI: ' . $msg];
         }
     }
 

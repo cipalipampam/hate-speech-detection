@@ -38,6 +38,7 @@ function analysesIndex() {
         pagination: initial.pagination || {},
         filters:    initial.filters || { search: '', platform: 'all', status: 'all' },
         loading:    false,
+        pollTimer:  null,
 
         init() {
             if (!this.analyses || this.analyses.length === 0) {
@@ -47,10 +48,25 @@ function analysesIndex() {
                     this.filters = window.__INITIAL_ANALYSES__.filters;
                 }
             }
+            this.checkAndStartPolling();
         },
 
-        async fetchData(page = 1) {
-            this.loading = true;
+        checkAndStartPolling() {
+            const anyRunning = this.analyses && this.analyses.some(item => item.status === 'running' || item.status === 'queued');
+            if (anyRunning && !this.pollTimer) {
+                this.pollTimer = setInterval(() => {
+                    this.fetchData(this.pagination.current_page || 1, false);
+                }, 3000);
+            } else if (!anyRunning && this.pollTimer) {
+                clearInterval(this.pollTimer);
+                this.pollTimer = null;
+            }
+        },
+
+        async fetchData(page = 1, showLoading = true) {
+            if (showLoading) {
+                this.loading = true;
+            }
             try {
                 const query = new URLSearchParams({
                     page:     page,
@@ -77,11 +93,14 @@ function analysesIndex() {
                         prev_page_url: data.analyses.prev_page_url,
                         next_page_url: data.analyses.next_page_url,
                     };
+                    this.checkAndStartPolling();
                 }
             } catch (e) {
                 console.error('Failed to fetch analyses:', e);
             } finally {
-                this.loading = false;
+                if (showLoading) {
+                    this.loading = false;
+                }
             }
         },
 

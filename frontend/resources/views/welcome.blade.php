@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="HateSense ID Lab — Platform Riset Deteksi Ujaran Kebencian Multi-Platform berbasis Hierarchical IndoBERT.">
-    <title>HateSense ID Lab — Monograf Riset Deteksi Ujaran Kebencian</title>
+    <meta name="description" content="HateSense ID Lab — Platform Riset & Deteksi Ujaran Kebencian Multi-Platform berbasis Hierarchical IndoBERT.">
+    <title>HateSense ID Lab — Platform Deteksi Ujaran Kebencian Multi-Platform</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,14 +12,14 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body style="background-color:var(--color-canvas);color:#0A0A0A;font-family:var(--font-sans);">
+<body id="top" style="background-color:var(--color-canvas);color:#0A0A0A;font-family:var(--font-sans);">
 
 {{-- ═══════════════════════════════════════════════════════════
      MONOGRAPH TOP MASTHEAD
 ════════════════════════════════════════════════════════════ --}}
 <header class="masthead">
     <div style="display:flex;align-items:center;height:100%;">
-        <a href="/" style="display:flex;align-items:center;gap:0.75rem;text-decoration:none;padding-right:1.25rem;border-right:1px solid var(--color-border);height:100%;">
+        <a href="#top" class="brand-logo-link" style="display:flex;align-items:center;gap:0.75rem;text-decoration:none;padding-right:1.25rem;border-right:1px solid var(--color-border);height:100%;">
             <div style="background:#0A0A0A;color:#FFFFFF;font-family:var(--font-mono);font-weight:900;font-size:0.875rem;padding:0.25rem 0.5rem;line-height:1;border:1px solid #0A0A0A;">
                 HS
             </div>
@@ -28,15 +28,14 @@
                     HATESENSE <span style="color:var(--color-primary);">ID LAB</span>
                 </span>
                 <span style="font-family:var(--font-mono);font-size:0.625rem;color:var(--color-text-muted);letter-spacing:0.04em;">
-                    AKADEMIK & RISET TUGAS AKHIR
+                    LAB RISET & DETEKSI NLP
                 </span>
             </div>
         </a>
 
         <nav class="masthead-nav hidden md:flex">
             <a href="#fitur" class="masthead-link">§ 01.0 FITUR SISTEM</a>
-            <a href="#metodologi" class="masthead-link">§ 02.0 METODOLOGI</a>
-            <a href="#taksonomi" class="masthead-link">§ 03.0 TAKSONOMI 6 KELAS</a>
+            <a href="#taksonomi" class="masthead-link">§ 02.0 TAKSONOMI 6 KELAS</a>
         </nav>
     </div>
 
@@ -62,8 +61,8 @@
         {{-- Left: Typographic Statement --}}
         <div>
             <div style="display:inline-flex;align-items:center;gap:0.5rem;margin-bottom:1.25rem;">
-                <span class="badge badge-black">MONOGRAF RISET</span>
-                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">TUGAS AKHIR · NLP BAHASA INDONESIA</span>
+                <span class="badge badge-black">RESEARCH PLATFORM</span>
+                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">BENCHMARK KORPUS BAHASA INDONESIA</span>
             </div>
 
             <h1 style="font-size:clamp(2.5rem,5vw,3.75rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;color:#0A0A0A;margin:0 0 1.25rem;">
@@ -88,8 +87,8 @@
                     <a href="{{ route('login') }}" class="btn btn-primary btn-lg">
                         <span>MASUK KE PORTAL LAB</span>
                     </a>
-                    <a href="#metodologi" class="btn btn-outline btn-lg">
-                        <span>PELAJARI ALUR PIPELINE</span>
+                    <a href="#taksonomi" class="btn btn-outline btn-lg">
+                        <span>TAKSONOMI 6 KELAS [↓]</span>
                     </a>
                 @endauth
             </div>
@@ -163,16 +162,16 @@
 {{-- ═══════════════════════════════════════════════════════════
      FITUR SISTEM SECTION
 ════════════════════════════════════════════════════════════ --}}
-<section id="fitur" style="padding:4rem 1.5rem;border-top:2px solid #0A0A0A;background:#FFFFFF;">
+<section id="fitur" style="scroll-margin-top:56px;padding:4rem 1.5rem;border-top:2px solid #0A0A0A;background:#FFFFFF;">
     <div style="max-width:1440px;margin:0 auto;">
         <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1rem;margin-bottom:2.5rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
             <div>
                 <span class="badge badge-black">SEKSI § 01.0</span>
                 <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0.25rem 0 0;">
-                    MODUL INTI ARSITEKTUR LAB
+                    MODUL DETEKSI & FITUR SISTEM
                 </h2>
             </div>
-            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">ENAM SUBSISTEM UTAMA</span>
+            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">6 KOMPONEN INTEGRASI SISTEM</span>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.5rem;">
@@ -220,17 +219,19 @@
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-mono">APEXCHARTS</span>
+                    <span class="badge badge-safe">DISPARITAS 𝕏 & ⊙</span>
                 </div>
             </div>
 
             <div class="card" style="padding:1.5rem;">
                 <span class="stat-block-label">MODUL 05</span>
-                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Manajemen Peran Peneliti</h3>
+                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Sandbox Pengujian Real-Time</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Sistem hak akses Spatie RBAC berjenjang (Admin, Analyst, Viewer) untuk menjaga integritas data dan sesi scraping.
+                    Uji coba prediksi teks tunggal secara instan tanpa proses crawling, lengkap dengan probabilitas sentimen L1 dan taksonomi L2 langsung.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
-                    <span class="badge badge-mono">SPATIE RBAC</span>
+                    <span class="badge badge-black">INSTANT INFERENCE</span>
+                    <span class="badge badge-safe">INTERAKTIF</span>
                 </div>
             </div>
 
@@ -242,6 +243,7 @@
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-mono">EXPORT CSV</span>
+                    <span class="badge badge-safe">AUDIT METADATA</span>
                 </div>
             </div>
         </div>
@@ -251,33 +253,40 @@
 {{-- ═══════════════════════════════════════════════════════════
      TAKSONOMI 6 SUB-KATEGORI SECTION
 ════════════════════════════════════════════════════════════ --}}
-<section id="taksonomi" style="padding:4rem 1.5rem;border-top:2px solid #0A0A0A;background:var(--color-canvas);">
+<section id="taksonomi" style="scroll-margin-top:56px;padding:4rem 1.5rem;border-top:2px solid #0A0A0A;background:var(--color-canvas);">
     <div style="max-width:1440px;margin:0 auto;">
-        <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1rem;margin-bottom:2.5rem;">
-            <span class="badge badge-black">SEKSI § 03.0</span>
-            <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0.25rem 0 0;">
-                TAKSONOMI 6 SUB-KATEGORI LEVEL 2
-            </h2>
+        <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1rem;margin-bottom:2.5rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <span class="badge badge-black">SEKSI § 02.0</span>
+                <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0.25rem 0 0;">
+                    TAKSONOMI 6 SUB-KATEGORI LEVEL 2
+                </h2>
+            </div>
+            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">KLASIFIKASI SPESIFIK INDOBERT</span>
         </div>
 
         @php
         $cats = [
-            ['num'=>'01', 'name'=>'Delegitimasi Institusi', 'desc'=>'Ujaran yang melemahkan legitimasi lembaga negara, penegak hukum, atau otoritas publik sah.'],
-            ['num'=>'02', 'name'=>'Dehumanisasi', 'desc'=>'Pelecehan martabat dengan menyamakan manusia dengan hewan, penyakit, atau objek nista.'],
-            ['num'=>'03', 'name'=>'Ajakan Kekerasan', 'desc'=>'Seruan eksplisit maupun implisit untuk melakukan agresi fisik terhadap individu atau kelompok.'],
-            ['num'=>'04', 'name'=>'Hoaks Pemicu Kebencian', 'desc'=>'Fabrikasi informasi palsu yang sengaja disebarkan guna memicu permusuhan massa atau SARA.'],
-            ['num'=>'05', 'name'=>'Kutukan Agama & Personal', 'desc'=>'Serangan verbal, cercaan terhadap simbol keagamaan, atau stigmatisasi ras/etnis.'],
-            ['num'=>'06', 'name'=>'Tidak Relevan / Netral', 'desc'=>'Konten opini wajar atau diskusi publik yang tidak memenuhi kriteria ujaran kebencian.'],
+            ['num'=>'01', 'name'=>'Delegitimasi Institusi', 'desc'=>'Ujaran yang melemahkan legitimasi lembaga negara, penegak hukum, atau otoritas publik sah.', 'is_hate'=>true],
+            ['num'=>'02', 'name'=>'Dehumanisasi', 'desc'=>'Pelecehan martabat dengan menyamakan manusia dengan hewan, penyakit, atau objek nista.', 'is_hate'=>true],
+            ['num'=>'03', 'name'=>'Ajakan Kekerasan', 'desc'=>'Seruan eksplisit maupun implisit untuk melakukan agresi fisik terhadap individu atau kelompok.', 'is_hate'=>true],
+            ['num'=>'04', 'name'=>'Hoaks Pemicu Kebencian', 'desc'=>'Fabrikasi informasi palsu yang sengaja disebarkan guna memicu permusuhan massa atau SARA.', 'is_hate'=>true],
+            ['num'=>'05', 'name'=>'Kutukan Agama & Personal', 'desc'=>'Serangan verbal, cercaan terhadap simbol keagamaan, atau stigmatisasi ras/etnis.', 'is_hate'=>true],
+            ['num'=>'06', 'name'=>'Tidak Relevan / Netral', 'desc'=>'Konten opini wajar atau diskusi publik yang tidak memenuhi kriteria ujaran kebencian.', 'is_hate'=>false],
         ];
         @endphp
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.25rem;">
             @foreach($cats as $c)
-            <div class="card" style="padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.75rem;">
+            <div class="card" style="padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.75rem;{{ !$c['is_hate'] ? 'background:var(--color-primary-bg);border-color:var(--color-primary);' : '' }}">
                 <div>
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                        <span class="stat-block-label">KELAS § 03.{{ $c['num'] }}</span>
-                        <span class="badge badge-mono">L2</span>
+                        <span class="stat-block-label">KELAS § 02.{{ $c['num'] }}</span>
+                        @if($c['is_hate'])
+                            <span class="badge badge-hate" style="font-size:0.625rem;">TOKSIK L2</span>
+                        @else
+                            <span class="badge badge-safe" style="font-size:0.625rem;">NON-TOKSIK</span>
+                        @endif
                     </div>
                     <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0 0 0.35rem;">{{ $c['name'] }}</h3>
                     <p style="font-size:0.8125rem;line-height:1.6;color:var(--color-text-muted);margin:0;">{{ $c['desc'] }}</p>
@@ -295,13 +304,44 @@
     <div style="max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-family:var(--font-mono);font-size:0.75rem;">
         <div style="display:flex;align-items:center;gap:0.5rem;">
             <div style="background:#0A0A0A;color:#FFFFFF;padding:2px 6px;font-weight:900;">HS</div>
-            <span style="font-weight:800;color:#0A0A0A;">HATESENSE ID LAB · MONOGRAF RISET</span>
+            <span style="font-weight:800;color:#0A0A0A;">HATESENSE ID LAB · NLP RESEARCH PLATFORM</span>
         </div>
         <span style="color:var(--color-text-muted);">
             LARAVEL 11 · FASTAPI · HIERARCHICAL INDOBERT · PLAYWRIGHT · {{ date('Y') }}
         </span>
     </div>
 </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Smooth scroll for all internal anchor links (including logo #top)
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href');
+            if (!targetId || targetId === '#') return;
+
+            e.preventDefault();
+
+            if (targetId === '#top') {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+                history.pushState(null, '', window.location.pathname);
+                return;
+            }
+
+            const targetElement = document.querySelector(targetId);
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth'
+                });
+                history.pushState(null, '', targetId);
+            }
+        });
+    });
+});
+</script>
 
 </body>
 </html>
