@@ -1,0 +1,166 @@
+# ==============================================================================
+# Docker Compose — Sistem Analisis Ujaran Kebencian (HateSense ID Lab)
+# ==============================================================================
+#
+# Cara Pakai (setelah fresh clone):
+#   1. (Opsional) Salin template jika ingin ganti port: cp .env.example .env
+#   2. Jalankan           : docker compose up -d --build (atau klik docker-up.bat)
+#   3. Buka browser       : http://localhost:8000
+#
+# Akun default setelah seeding:
+#   Admin   : admin@hatespeech.test   / password
+#   Analyst : analyst@hatespeech.test / password
+#   Viewer  : viewer@hatespeech.test  / password
+#
+# CATATAN: File backend/saved_models/best_model.pt (~499MB) harus tersedia.
+# ==============================================================================
+
+services:
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 1. DATABASE — MySQL 8.0
+  # ────────────────────────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: hatespeech-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+      MYSQL_DATABASE: ${DB_DATABASE:-HateSpeech}
+      MYSQL_USER: ${DB_USERNAME:-hatespeech_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-hatespeech_pass}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    command: >
+      --default-authentication-plugin=caching_sha2_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --sql-mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootsecret"]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - hatespeech-net
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. BACKEND — FastAPI + IndoBERT PyTorch + Playwright headless
+  # ────────────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+    container_name: hatespeech-backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+    ports:
+      - "${FASTAPI_PORT:-8080}:8080"
+    volumes:
+      # Source code backend (hot-reload via uvicorn --reload)
+      - ./backend:/app
+      # Model IndoBERT (~499MB) — read-only mount dari host
+      - ./backend/saved_models:/app/saved_models:ro
+      # Sesi login browser Playwright (persistent antar container restart)
+      - backend_sessions:/app/storage/sessions
+      # Export CSV bisa diakses dari Windows host
+      - ./backend/storage/exports:/app/storage/exports
+      # Cache pip (mempercepat rebuild image)
+      - pip_cache:/root/.cache/pip
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      start_period: 90s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - hatespeech-net
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 3. FRONTEND — Laravel 13 (PHP 8.3) + Vite Build
+  #    Entrypoint: composer install, key:generate, migrate, seed, npm build
+  # ────────────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/frontend/Dockerfile
+    container_name: hatespeech-frontend
+    restart: unless-stopped
+    environment:
+      APP_NAME: "HateSense ID Lab"
+      APP_ENV: ${APP_ENV:-local}
+      APP_KEY: ${APP_KEY:-}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_URL: "http://localhost:${FRONTEND_PORT:-8000}"
+      # ── Database (via Docker internal network, hostname = nama service) ──
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-HateSpeech}
+      DB_USERNAME: ${DB_USERNAME:-hatespeech_user}
+      DB_PASSWORD: ${DB_PASSWORD:-hatespeech_pass}
+      # ── FastAPI (via Docker internal network) ────────────────────────
+      FASTAPI_BASE_URL: "http://backend:8080/api/v1"
+      FASTAPI_TIMEOUT: 120
+      # ── Session, Cache, Queue ────────────────────────────────────────
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      # ── Logging ─────────────────────────────────────────────────────
+      LOG_CHANNEL: stack
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DEPRECATIONS_CHANNEL: "null"
+    ports:
+      - "${FRONTEND_PORT:-8000}:8000"
+    volumes:
+      # Source code Laravel (live reload development)
+      - ./frontend:/var/www/html
+      # Vendor & node_modules: disimpan di named volume (Docker Linux filesystem)
+      # Ini penting di Windows karena symlink & permission bermasalah di NTFS
+      - frontend_vendor:/var/www/html/vendor
+      - frontend_node_modules:/var/www/html/node_modules
+      # Storage Laravel (logs, framework sessions/views/cache)
+      - frontend_storage:/var/www/html/storage
+      # Cache composer
+      - composer_cache:/root/.composer/cache
+    depends_on:
+      db:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - hatespeech-net
+
+
+# ==============================================================================
+# Named Volumes (Data persists even after container removal/rebuild)
+# ==============================================================================
+volumes:
+  db_data:
+    driver: local
+  backend_sessions:
+    driver: local
+  frontend_vendor:
+    driver: local
+  frontend_node_modules:
+    driver: local
+  frontend_storage:
+    driver: local
+  pip_cache:
+    driver: local
+  composer_cache:
+    driver: local
+
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  hatespeech-net:
+    driver: bridge
+    name: hatespeech-net

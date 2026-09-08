@@ -1,0 +1,43 @@
+# ==============================================================================
+# .dockerignore — File & Folder yang Diabaikan saat Docker Build
+# ==============================================================================
+
+# Version Control
+.git
+.gitignore
+.gitattributes
+
+# IDE & Tooling
+.idea
+.vscode
+.agents
+.gemini
+*.swp
+*~
+Thumbs.db
+Desktop.ini
+
+# Backend: Python cache & large model files
+# (saved_models/best_model.pt di-mount via volume di docker-compose, tidak perlu di-upload ke daemon)
+backend/saved_models/*.pt
+backend/storage/sessions
+backend/storage/exports
+backend/__pycache__
+backend/*/__pycache__
+backend/*/*/__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+
+# Frontend: PHP & Node dependencies (di-mount via volume)
+frontend/vendor
+frontend/node_modules
+frontend/storage/logs/*
+frontend/storage/framework/cache/*
+frontend/storage/framework/sessions/*
+frontend/storage/framework/views/*
+frontend/.phpunit.cache
+
+# Local files & logs
+.env
+*.log
