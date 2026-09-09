@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Scraper\TriggerLoginRequest;
 use App\Services\FastAPIClientService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -15,32 +17,42 @@ class ScraperMonitorController extends Controller
 
     /**
      * Tampilkan halaman status dan monitor sesi scraper (X & Threads).
+     * Mendukung respons JSON untuk pembaruan telemetri dinamis (real-time).
      */
-    public function status(): View
+    public function status(Request $request): View|JsonResponse
     {
-        $statusResult = $this->fastApiClient->getAuthStatus();
-        $isServerOnline = $statusResult['success'];
-        $sessionData = $statusResult['data'] ?? null;
+        $telemetry = $this->fastApiClient->getTelemetryData();
 
-        return view('scraper.status', compact('isServerOnline', 'sessionData', 'statusResult'));
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(array_merge(['success' => true], $telemetry));
+        }
+
+        return view('scraper.status', $telemetry);
+    }
+
+    /**
+     * Endpoint kesehatan singkat untuk pill telemetri masthead di header seluruh halaman.
+     */
+    public function health(): JsonResponse
+    {
+        return response()->json([
+            'online' => $this->fastApiClient->checkHealth(),
+        ]);
     }
 
     /**
      * Memicu proses login interaktif Playwright di server Python.
      */
-    public function triggerLogin(string $platform): RedirectResponse
+    public function triggerLogin(TriggerLoginRequest $request): RedirectResponse
     {
-        if (!in_array(strtolower($platform), ['x', 'threads'])) {
-            return back()->with('error', 'Platform tidak valid. Pilih X atau Threads.');
-        }
+        $platform     = $request->getPlatform();
+        $platformName = $request->getPlatformDisplayName();
 
-        $result = $this->fastApiClient->triggerLogin(strtolower($platform));
+        $result = $this->fastApiClient->triggerLogin($platform);
 
         if (!$result['success']) {
             return back()->with('error', $result['message'] ?? 'Gagal memicu proses login.');
         }
-
-        $platformName = strtolower($platform) === 'x' ? 'Twitter (X)' : 'Threads';
 
         return back()->with('success', "Proses login {$platformName} berhasil diinisiasi. Silakan selesaikan login pada jendela browser yang terbuka.");
     }

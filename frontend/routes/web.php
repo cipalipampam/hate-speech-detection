@@ -6,6 +6,7 @@ use App\Http\Controllers\AnalysisController;
 use App\Http\Controllers\PredictController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\ScraperMonitorController;
 use Illuminate\Support\Facades\Route;
 
 // ─── Public / Guest Routes ────────────────────────────────────────────────────
@@ -46,9 +47,12 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Monitor Scraper ───────────────────────────────────────────────────────
     Route::prefix('scraper')->name('scraper.')->group(function () {
-        Route::get('/status',                   [\App\Http\Controllers\ScraperMonitorController::class, 'status'])->name('status');
-        Route::post('/login-trigger/{platform}', [\App\Http\Controllers\ScraperMonitorController::class, 'triggerLogin'])->name('login-trigger')->middleware('can:manage-auth-sessions');
+        Route::get('/status',                   [ScraperMonitorController::class, 'status'])->name('status');
+        Route::post('/login-trigger/{platform}', [ScraperMonitorController::class, 'triggerLogin'])->name('login-trigger')->middleware('can:manage-auth-sessions');
     });
+
+    // ── Telemetry Health API (Masthead Header) ──────────────────────────────────
+    Route::get('/api/fastapi/health', [ScraperMonitorController::class, 'health'])->name('fastapi.health');
 
     // ── Profil ────────────────────────────────────────────────────────────────
     Route::prefix('profile')->name('profile.')->group(function () {

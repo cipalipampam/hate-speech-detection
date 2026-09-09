@@ -21,7 +21,7 @@ class FastAPIClientService
     /**
      * Helper untuk membuat request HTTP client dengan connect timeout singkat.
      */
-    protected function client(int $customTimeout = null)
+    protected function client(?int $customTimeout = null)
     {
         return Http::baseUrl($this->baseUrl)
             ->connectTimeout(3)
@@ -66,7 +66,7 @@ class FastAPIClientService
     public function getAuthStatus(): array
     {
         try {
-            $response = $this->client()->get('/auth/status');
+            $response = $this->client(2)->get('/auth/status');
             if ($response->successful()) {
                 return [
                     'success' => true,
@@ -78,12 +78,39 @@ class FastAPIClientService
                 'message' => $response->json('detail') ?? 'Gagal mengambil status sesi dari server AI.',
             ];
         } catch (Exception $e) {
-            Log::error("FastAPI getAuthStatus error: " . $e->getMessage());
+            Log::debug("FastAPI getAuthStatus error: " . $e->getMessage());
             return [
                 'success' => false,
                 'message' => 'Server AI Python tidak dapat dihubungi: ' . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Memeriksa apakah server FastAPI AI sedang aktif dan merespons.
+     */
+    public function checkHealth(): bool
+    {
+        $status = $this->getAuthStatus();
+        return (bool) ($status['success'] ?? false);
+    }
+
+    /**
+     * Mengambil payload telemetri lengkap untuk antarmuka monitor scraper.
+     */
+    public function getTelemetryData(): array
+    {
+        $statusResult   = $this->getAuthStatus();
+        $isServerOnline = (bool) ($statusResult['success'] ?? false);
+        $sessionData    = $statusResult['data'] ?? null;
+        $gatewayUrl     = $this->baseUrl;
+
+        return [
+            'isServerOnline' => $isServerOnline,
+            'sessionData'    => $sessionData,
+            'statusResult'   => $statusResult,
+            'gatewayUrl'     => $gatewayUrl,
+        ];
     }
 
     /**

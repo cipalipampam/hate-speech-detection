@@ -20,6 +20,63 @@
       @keydown.window.meta.k.prevent="cmdOpen = !cmdOpen"
       @keydown.window.escape="cmdOpen = false">
 
+    <script>
+    function fastApiHeaderTelemetry(endpoint) {
+        return {
+            isOnline: sessionStorage.getItem('fastapi_online') !== 'false',
+            isChecking: false,
+            pollTimer: null,
+
+            async check() {
+                if (this.isChecking) return;
+                this.isChecking = true;
+                try {
+                    const res = await fetch(endpoint, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.isOnline = !!data.online;
+                    } else {
+                        this.isOnline = false;
+                    }
+                } catch (e) {
+                    this.isOnline = false;
+                } finally {
+                    sessionStorage.setItem('fastapi_online', this.isOnline ? 'true' : 'false');
+                    this.isChecking = false;
+                }
+            },
+
+            init() {
+                this.check();
+
+                window.addEventListener('fastapi-status-changed', (e) => {
+                    if (e.detail && typeof e.detail.isOnline === 'boolean') {
+                        this.isOnline = e.detail.isOnline;
+                        sessionStorage.setItem('fastapi_online', this.isOnline ? 'true' : 'false');
+                    }
+                });
+
+                this.pollTimer = setInterval(() => {
+                    if (window.__SCRAPER_POLLING_ACTIVE__) return;
+                    this.check();
+                }, 5000);
+
+                window.addEventListener('beforeunload', () => {
+                    if (this.pollTimer) {
+                        clearInterval(this.pollTimer);
+                        this.pollTimer = null;
+                    }
+                });
+            }
+        };
+    }
+    </script>
+
     {{-- ═══════════════════════════════════════════════════════════
          SWISS MONOGRAPH TOP MASTHEAD
     ════════════════════════════════════════════════════════════ --}}
@@ -84,10 +141,17 @@
                 <kbd style="background:var(--color-surface-2);border:1px solid #0A0A0A;padding:1px 4px;font-size:0.625rem;">⌘K</kbd>
             </button>
 
-            {{-- Telemetry Server Pill --}}
-            <div class="badge badge-mono" style="padding:0.25rem 0.5rem;font-size:0.6875rem;white-space:nowrap;" title="FastAPI Engine Status: 200 OK">
-                <span class="telemetry-dot pulse"></span>
-                <span class="telemetry-pill-text">FASTAPI · 200 OK</span>
+            {{-- Telemetry Server Pill (Dinamis Real-time) --}}
+            <div x-data="fastApiHeaderTelemetry('{{ route('fastapi.health') }}')"
+                 class="badge badge-mono"
+                 style="padding:0.25rem 0.5rem;font-size:0.6875rem;white-space:nowrap;display:inline-flex;align-items:center;gap:0.35rem;"
+                 :title="isOnline ? 'FastAPI Engine Status: ONLINE (200 OK)' : 'FastAPI Engine Status: OFFLINE / TIDAK AKTIF'">
+                <span class="telemetry-dot pulse"
+                      :style="isOnline ? 'background-color:var(--color-teal);' : 'background-color:var(--color-danger);'"
+                      style="background-color:var(--color-teal);"></span>
+                <span class="telemetry-pill-text" x-text="isOnline ? 'FASTAPI · 200 OK' : 'FASTAPI · OFFLINE'">
+                    FASTAPI · 200 OK
+                </span>
             </div>
 
             {{-- User Account Dropdown --}}
