@@ -74,7 +74,7 @@ RUN mkdir -p \
     && chmod -R 775 storage bootstrap/cache
 
 # ── Copy Entrypoint ───────────────────────────────────────────────────────────
-COPY ../docker/frontend/entrypoint.sh /entrypoint.sh
+COPY docker/frontend/entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # ── Source code di-mount via volume (development mode) ───────────────────────

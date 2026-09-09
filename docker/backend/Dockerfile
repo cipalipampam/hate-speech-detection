@@ -66,7 +66,7 @@ WORKDIR /app
 
 # ── Install Python Dependencies ───────────────────────────────────────────────
 # Copy requirements dulu (layer cache: hanya rebuild saat requirements berubah)
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
@@ -84,7 +84,7 @@ RUN mkdir -p \
     /app/saved_models
 
 # ── Copy Entrypoint Script ────────────────────────────────────────────────────
-COPY ../docker/backend/entrypoint.sh /entrypoint.sh
+COPY docker/backend/entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # ── Source code di-mount via volume, bukan di-copy ke image ──────────────────

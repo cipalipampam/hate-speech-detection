@@ -53,8 +53,8 @@ services:
   # ────────────────────────────────────────────────────────────────────────────
   backend:
     build:
-      context: ./backend
-      dockerfile: ../docker/backend/Dockerfile
+      context: .
+      dockerfile: docker/backend/Dockerfile
     container_name: hatespeech-backend
     restart: unless-stopped
     environment:
@@ -87,8 +87,8 @@ services:
   # ────────────────────────────────────────────────────────────────────────────
   frontend:
     build:
-      context: ./frontend
-      dockerfile: ../docker/frontend/Dockerfile
+      context: .
+      dockerfile: docker/frontend/Dockerfile
     container_name: hatespeech-frontend
     restart: unless-stopped
     environment:
