@@ -102,15 +102,60 @@ class FastAPIClientService
     {
         $statusResult   = $this->getAuthStatus();
         $isServerOnline = (bool) ($statusResult['success'] ?? false);
-        $sessionData    = $statusResult['data'] ?? null;
-        $gatewayUrl     = $this->baseUrl;
+        $sessionData    = $this->sanitizeSessionData($statusResult['data'] ?? null);
 
         return [
             'isServerOnline' => $isServerOnline,
             'sessionData'    => $sessionData,
             'statusResult'   => $statusResult,
-            'gatewayUrl'     => $gatewayUrl,
+            'serviceChannel' => 'Internal Microservice Bridge',
         ];
+    }
+
+    /**
+     * Membersihkan data sesi dari informasi path sistem yang sensitif.
+     *
+     * Bertindak sebagai lapisan pertahanan berlapis (defense-in-depth) di frontend:
+     * menghapus path absolut filesystem agar tidak pernah bocor ke UI
+     * meskipun backend secara tidak sengaja mengirimkannya.
+     *
+     * @param  array<string, mixed>|null $sessionData
+     * @return array<string, mixed>|null
+     */
+    private function sanitizeSessionData(?array $sessionData): ?array
+    {
+        if (empty($sessionData)) {
+            return $sessionData;
+        }
+
+        // Regex untuk mendeteksi path absolut Windows maupun Unix/Linux
+        $pathPattern = '/^([A-Za-z]:\\\\|\/[a-z])/';
+
+        foreach (['x', 'threads'] as $platform) {
+            if (!isset($sessionData[$platform])) {
+                continue;
+            }
+
+            // Hapus path absolut dari field 'profile_path'
+            if (isset($sessionData[$platform]['profile_path'])) {
+                $raw = $sessionData[$platform]['profile_path'];
+                if (preg_match($pathPattern, (string) $raw)) {
+                    $sessionData[$platform]['profile_path'] = basename((string) $raw);
+                }
+            }
+
+            // Hapus path absolut yang mungkin masih tersembunyi dalam field 'message'
+            if (isset($sessionData[$platform]['message'])) {
+                $sessionData[$platform]['message'] = preg_replace(
+                    '/\s*Profil:\s*[^\s]+/i',
+                    '',
+                    (string) $sessionData[$platform]['message']
+                );
+                $sessionData[$platform]['message'] = trim((string) $sessionData[$platform]['message']);
+            }
+        }
+
+        return $sessionData;
     }
 
     /**
@@ -246,7 +291,7 @@ class FastAPIClientService
                 return ['success' => false, 'message' => 'Server AI membutuhkan waktu terlalu lama untuk merespons. Pastikan FastAPI sudah sepenuhnya siap (model telah ter-load) dan coba lagi.'];
             }
             if (str_contains($msg, 'Connection refused') || str_contains($msg, 'Failed to connect')) {
-                return ['success' => false, 'message' => 'Server AI tidak dapat dihubungi di port 8080. Pastikan uvicorn/FastAPI sedang berjalan.'];
+                return ['success' => false, 'message' => 'Server AI tidak dapat dihubungi. Pastikan subsistem pemrosesan AI telah aktif.'];
             }
             return ['success' => false, 'message' => 'Kesalahan komunikasi dengan server AI: ' . $msg];
         }

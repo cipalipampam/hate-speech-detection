@@ -270,13 +270,13 @@ function liveClassifier() {
                 this.latency = Math.round(performance.now() - t0);
 
                 if (!response.ok || !data.success) {
-                    this.errorMsg = data.message || 'Server FastAPI tidak dapat dihubungi di port 8080.';
+                    this.errorMsg = data.message || 'Layanan pemrosesan AI sedang offline atau tidak dapat dihubungi.';
                 } else {
                     this.result = data.data;
                 }
             } catch (e) {
                 this.latency  = Math.round(performance.now() - t0);
-                this.errorMsg = 'Koneksi ke backend AI gagal. Pastikan server FastAPI (uvicorn) sudah berjalan di port 8080.';
+                this.errorMsg = 'Koneksi ke subsistem AI gagal. Pastikan layanan inferensi telah aktif.';
             } finally {
                 this.loading = false;
             }

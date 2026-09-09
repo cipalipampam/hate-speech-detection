@@ -11,7 +11,6 @@
 function scraperTelemetry(config) {
     return {
         isOnline: config.initialOnline,
-        gatewayUrl: config.gatewayUrl || 'http://127.0.0.1:8080/api/v1',
         sessionData: config.initialSessionData || null,
         checkUrl: config.checkUrl,
         isChecking: false,
@@ -23,7 +22,7 @@ function scraperTelemetry(config) {
 
         get xMessage() {
             if (!this.isOnline) {
-                return 'Server AI offline, telemetri tidak dapat diambil.';
+                return 'Subsistem AI offline, telemetri sesi tidak dapat diambil.';
             }
             return (this.sessionData && this.sessionData.x && this.sessionData.x.message)
                 ? this.sessionData.x.message
@@ -36,7 +35,7 @@ function scraperTelemetry(config) {
 
         get threadsMessage() {
             if (!this.isOnline) {
-                return 'Server AI offline, telemetri tidak dapat diambil.';
+                return 'Subsistem AI offline, telemetri sesi tidak dapat diambil.';
             }
             return (this.sessionData && this.sessionData.threads && this.sessionData.threads.message)
                 ? this.sessionData.threads.message
@@ -57,9 +56,6 @@ function scraperTelemetry(config) {
                     const data = await res.json();
                     this.isOnline = !!data.isServerOnline;
                     this.sessionData = data.sessionData || null;
-                    if (data.gatewayUrl) {
-                        this.gatewayUrl = data.gatewayUrl;
-                    }
                 } else {
                     this.isOnline = false;
                     this.sessionData = null;
@@ -100,7 +96,6 @@ function scraperTelemetry(config) {
 <div x-data="scraperTelemetry(@js([
     'initialOnline'      => (bool)$isServerOnline,
     'initialSessionData' => $sessionData,
-    'gatewayUrl'         => $gatewayUrl,
     'checkUrl'           => route('scraper.status'),
 ]))" style="max-width:880px;margin:0 auto;">
 
@@ -135,36 +130,69 @@ function scraperTelemetry(config) {
     <div class="card"
          :style="isOnline ? 'padding:1.5rem;margin-bottom:1.5rem;border-left:6px solid var(--color-teal);transition:border-color 0.4s ease;' : 'padding:1.5rem;margin-bottom:1.5rem;border-left:6px solid var(--color-danger);transition:border-color 0.4s ease;'"
          style="padding:1.5rem;margin-bottom:1.5rem;border-left:6px solid {{ $isServerOnline ? 'var(--color-teal)' : 'var(--color-danger)' }};">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        
+        {{-- Card Header --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;border-bottom:1px solid #0A0A0A;padding-bottom:1rem;margin-bottom:1.25rem;">
             <div>
                 <div style="display:flex;align-items:center;gap:0.625rem;margin-bottom:0.35rem;">
                     <span class="badge badge-black">ENGINE AI</span>
-                    <h2 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0;">FastAPI Python Backend</h2>
-                    <span class="badge"
-                          :class="isOnline ? 'badge-safe' : 'badge-hate'"
-                          x-text="isOnline ? 'ONLINE (200 OK)' : 'OFFLINE / TIDAK AKTIF'">
-                        {{ $isServerOnline ? 'ONLINE (200 OK)' : 'OFFLINE / TIDAK AKTIF' }}
-                    </span>
+                    <span class="badge badge-mono">NLP & CRAWLER SUBSYSTEM</span>
+                    <h2 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0;">FastAPI Python Subsystem</h2>
                 </div>
                 <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0;">
-                    GATEWAY: <code style="background:var(--color-surface-2);border:1px solid #0A0A0A;padding:2px 6px;color:#0A0A0A;font-weight:700;" x-text="gatewayUrl">{{ $gatewayUrl }}</code>
+                    Subsistem inferensi pemodelan bahasa alami (NLP) dan orkestrasi browser automation.
                 </p>
             </div>
 
-            <div>
-                <div x-show="isOnline" @if(!$isServerOnline) style="display:none;" @endif>
-                    <span class="badge badge-safe" style="font-size:0.75rem;">
-                        <span class="telemetry-dot pulse"></span>
-                        <span>MODEL INDOBERT TERMUAT DI MEMORI</span>
-                    </span>
+            <div style="display:flex;align-items:center;gap:0.625rem;">
+                <span class="badge badge-mono" style="font-size:0.6875rem;">SECURE IPC CHANNEL</span>
+                <span class="badge"
+                      :class="isOnline ? 'badge-safe' : 'badge-hate'"
+                      x-text="isOnline ? '● ONLINE (200 OK)' : '○ OFFLINE / STANDBY'">
+                    {{ $isServerOnline ? '● ONLINE (200 OK)' : '○ OFFLINE / STANDBY' }}
+                </span>
+            </div>
+        </div>
+
+        {{-- Dynamic Status & Diagnostic Banner --}}
+        <div>
+            {{-- Online State: Model Loaded & Ready --}}
+            <div x-show="isOnline" @if(!$isServerOnline) style="display:none;" @endif>
+                <div style="background:var(--color-surface-2);border:1px solid #0A0A0A;border-left:4px solid var(--color-teal);padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <span class="telemetry-dot pulse" style="background-color:var(--color-teal);width:10px;height:10px;"></span>
+                        <div>
+                            <span style="font-family:var(--font-mono);font-size:0.8125rem;font-weight:800;color:#0A0A0A;display:block;">
+                                SUBSISTEM OPERASIONAL LENGKAP & MEMORI MODEL TERMUAT
+                            </span>
+                            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">
+                                Engine inferensi siap melayani request klasifikasi teks dan autentikasi scraping otomatis.
+                            </span>
+                        </div>
+                    </div>
+                    <span class="badge badge-safe" style="font-size:0.6875rem;letter-spacing:0.04em;">INFERENCE READY</span>
                 </div>
-                <div x-show="!isOnline" @if($isServerOnline) style="display:none;" @endif>
-                    <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-danger-ink);background:var(--color-danger);padding:4px 8px;border:1px solid #0A0A0A;display:block;">
-                        Jalankan: uvicorn main_api:app --reload --port 8080
-                    </span>
+            </div>
+
+            {{-- Offline State: Graceful Standby & Auto-Reconnect --}}
+            <div x-show="!isOnline" @if($isServerOnline) style="display:none;" @endif>
+                <div style="background:var(--color-surface-2);border:1px solid #0A0A0A;border-left:4px solid var(--color-danger);padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <span class="telemetry-dot pulse" style="background-color:var(--color-danger);width:10px;height:10px;"></span>
+                        <div>
+                            <span style="font-family:var(--font-mono);font-size:0.8125rem;font-weight:800;color:var(--color-danger);display:block;">
+                                SUBSISTEM INFERENSI SEDANG STANDBY / TIDAK TERHUBUNG
+                            </span>
+                            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">
+                                Layanan inferensi sedang proses inisialisasi atau belum diaktifkan. Sistem melakukan sinkronisasi otomatis.
+                            </span>
+                        </div>
+                    </div>
+                    <span class="badge badge-hate" style="font-size:0.6875rem;letter-spacing:0.04em;">AUTO-SYNCING</span>
                 </div>
             </div>
         </div>
+
     </div>
 
     {{-- ── 2. Grid Sesi Media Sosial (X & Threads) ── --}}
