@@ -301,9 +301,9 @@ Backend FastAPI menyediakan dokumentasi interaktif berbasis OpenAPI:
 
 Proyek ini disusun dan dikembangkan sebagai karya penelitian tugas akhir (Skripsi):
 
-* **Peneliti / Pengembang**: Mahasiswa Program Studi Teknik Informatika
-* **Judul Penelitian**: *Analisis Ujaran Kebencian Multi-Label Bahasa Indonesia Menggunakan IndoBERT Berbasis Web*
-* **Institusi**: Fakultas Ilmu Komputer / Sains & Teknologi
+* **Peneliti / Pengembang**: Firman Agung Alamsyah
+* **Judul Penelitian**: *Rancang Bangun Model IndoBERT Untuk Deteksi Ujaran Kebencian Studi Kasus Diskursus RKUHAP Di Media Sosial X dan Threads*
+* **Institusi**: Politeknik Negeri Jember / Teknologi Informasi / Teknik Informatika
 
 ---
 
