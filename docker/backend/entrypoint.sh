@@ -72,6 +72,17 @@ echo "[3/4] Memeriksa environment..."
 echo "  APP_ENV : ${APP_ENV:-development}"
 echo "  Port    : 8080"
 
+# Aktifkan Offline Mode HuggingFace jika cache model sudah ada
+# (mencegah request jaringan ke HF Hub setiap startup = startup lebih cepat)
+HF_CACHE_DIR="${HF_HOME:-/root/.cache/huggingface}/hub"
+INDOBERT_CACHE_PATTERN="${HF_CACHE_DIR}/models--indobenchmark*"
+if ls ${INDOBERT_CACHE_PATTERN} > /dev/null 2>&1; then
+    export HF_HUB_OFFLINE=1
+    echo "  ✓ HuggingFace cache ditemukan. Offline mode aktif (startup lebih cepat)."
+else
+    echo "  ⟳ HuggingFace cache belum ada. Download pertama akan dilakukan (butuh waktu)."
+fi
+
 # ── 4. Jalankan FastAPI Uvicorn Server ───────────────────────────────────────
 echo "[4/4] Menjalankan FastAPI Uvicorn server..."
 echo ""

@@ -98,6 +98,7 @@ if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
         --no-interaction \
         --prefer-dist \
         --optimize-autoloader \
+        --ignore-platform-req=php \
         --no-dev
     echo "  ✓ composer install selesai."
 else

@@ -1,18 +1,18 @@
 # ==============================================================================
-# Dockerfile — Frontend Laravel 13 (PHP 8.3) + Node.js 20 + Composer
+# Dockerfile — Frontend Laravel 13 (PHP 8.4) + Node.js 20 + Composer
 # ==============================================================================
-# Base: php:8.3-cli (Debian Bookworm)
+# Base: php:8.4-cli (Debian Bookworm)
 # Tambahan:
 #   - Node.js 20 LTS (untuk npm & Vite build)
 #   - Composer 2.x (PHP package manager)
 #   - Ekstensi PHP: pdo_mysql, mbstring, exif, pcntl, bcmath, gd, zip, intl
 # ==============================================================================
 
-FROM php:8.3-cli
+FROM php:8.4-cli
 
 # ── Labels ────────────────────────────────────────────────────────────────────
 LABEL maintainer="HateSense ID Lab"
-LABEL description="Laravel 13 + Vite + PHP 8.3 Frontend Container"
+LABEL description="Laravel 13 + Vite + PHP 8.4 Frontend Container"
 
 # ── Environment ───────────────────────────────────────────────────────────────
 ENV DEBIAN_FRONTEND=noninteractive \

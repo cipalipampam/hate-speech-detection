@@ -75,9 +75,13 @@ services:
       - ./backend/storage/exports:/app/storage/exports
       # Cache pip (mempercepat rebuild image)
       - pip_cache:/root/.cache/pip
+      # Cache HuggingFace tokenizer & model config (mencegah re-download setiap restart)
+      - huggingface_cache:/root/.cache/huggingface
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
-      start_period: 90s
+      # start_period: waktu tunggu sebelum healthcheck mulai dihitung.
+      # Dinaikkan ke 180s karena proses load tokenizer + model dari cache HF butuh waktu.
+      start_period: 180s
       interval: 30s
       timeout: 10s
       retries: 5
@@ -85,7 +89,7 @@ services:
       - hatespeech-net
 
   # ────────────────────────────────────────────────────────────────────────────
-  # 3. FRONTEND — Laravel 13 (PHP 8.3) + Vite Build
+  # 3. FRONTEND — Laravel 13 (PHP 8.4) + Vite Build
   #    Entrypoint: composer install, key:generate, migrate, seed, npm build
   # ────────────────────────────────────────────────────────────────────────────
   frontend:
@@ -157,6 +161,8 @@ volumes:
   pip_cache:
     driver: local
   composer_cache:
+    driver: local
+  huggingface_cache:
     driver: local
 
 
