@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # ==============================================================================
 # entrypoint.sh — Frontend Laravel Auto-Setup & Startup Script
