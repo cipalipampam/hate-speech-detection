@@ -20,6 +20,8 @@ Desktop.ini
 # Backend: Python cache & large model files
 # (saved_models/best_model.pt di-mount via volume di docker-compose, tidak perlu di-upload ke daemon)
 backend/saved_models/*.pt
+backend/saved_models/*.bin
+backend/saved_models/*.safetensors
 backend/storage/sessions
 backend/storage/exports
 backend/__pycache__

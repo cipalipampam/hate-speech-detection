@@ -59,13 +59,16 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV:-development}
+      # URL GitHub Releases untuk auto-download best_model.pt jika belum ada
+      # Ganti setelah upload release selesai, atau biarkan otomatis ambil dari /releases/latest
+      MODEL_DOWNLOAD_URL: ${MODEL_DOWNLOAD_URL:-https://github.com/cipalipampam/hate-speech-detection/releases/latest/download/best_model.pt}
     ports:
       - "${FASTAPI_PORT:-8080}:8080"
     volumes:
       # Source code backend (hot-reload via uvicorn --reload)
       - ./backend:/app
-      # Model IndoBERT (~499MB) — read-only mount dari host
-      - ./backend/saved_models:/app/saved_models:ro
+      # Model IndoBERT (~499MB) — mount dari host (persisten jika auto-download)
+      - ./backend/saved_models:/app/saved_models
       # Sesi login browser Playwright (persistent antar container restart)
       - backend_sessions:/app/storage/sessions
       # Export CSV bisa diakses dari Windows host

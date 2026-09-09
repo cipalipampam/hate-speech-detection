@@ -83,7 +83,7 @@ RUN mkdir -p \
     /app/storage/dictionaries \
     /app/saved_models
 
-# ── Copy Entrypoint Script ────────────────────────────────────────────────────
+# ── Copy Entrypoint ─────────────────────────────────────────────────────────
 COPY docker/backend/entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
