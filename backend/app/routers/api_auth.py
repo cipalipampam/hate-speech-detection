@@ -102,13 +102,13 @@ def get_session_status() -> AllSessionsStatusResponse:
     x_item = SessionStatusItem(
         platform="X (Twitter)",
         is_valid=x_info.get("is_valid", False),
-        profile_path=str(X_PROFILE_DIR),
+        profile_path=X_PROFILE_DIR.name,   # Hanya nama folder, bukan path absolut
         message=x_info.get("message", "Status tidak diketahui."),
     )
     t_item = SessionStatusItem(
         platform="Threads (Meta)",
         is_valid=t_info.get("is_valid", False),
-        profile_path=str(THREADS_PROFILE_DIR),
+        profile_path=THREADS_PROFILE_DIR.name,  # Hanya nama folder, bukan path absolut
         message=t_info.get("message", "Status tidak diketahui."),
     )
 

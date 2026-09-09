@@ -42,18 +42,8 @@ PLATFORM_PROFILES = {
 }
 
 LOGIN_INSTRUCTIONS = {
-    "x": (
-        "Sesi X (Twitter) belum ditemukan atau sudah kedaluwarsa.\n"
-        "Jalankan perintah berikut untuk melakukan setup login:\n"
-        "  cd apps/backend\n"
-        "  python -m src.auth.login_x"
-    ),
-    "threads": (
-        "Sesi Threads belum ditemukan atau sudah kedaluwarsa.\n"
-        "Jalankan perintah berikut untuk melakukan setup login:\n"
-        "  cd apps/backend\n"
-        "  python -m src.auth.login_threads"
-    ),
+    "x": "Sesi X (Twitter) belum ditemukan atau sudah kedaluwarsa.",
+    "threads": "Sesi Threads belum ditemukan atau sudah kedaluwarsa.",
 }
 
 
@@ -153,13 +143,13 @@ def is_session_valid(platform: str) -> dict:
     is_valid = exists and has_data
 
     if is_valid:
-        msg = f"Sesi {platform.upper()} ditemukan dan tampaknya masih aktif. Profil: {str(p)}"
+        msg = f"Sesi {platform.upper()} ditemukan dan masih aktif."
     else:
         msg = LOGIN_INSTRUCTIONS.get(key, f"Sesi {platform.upper()} tidak ditemukan.")
 
     return {
         "platform"      : platform.upper(),
-        "profile_dir"   : str(p),
+        "profile_dir"   : p.name,          # Hanya nama folder, bukan path absolut
         "exists"        : exists,
         "is_valid"      : is_valid,
         "last_modified" : last_modified,
