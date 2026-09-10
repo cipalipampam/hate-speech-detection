@@ -237,6 +237,18 @@ function scraperTelemetry(config) {
                     <span>⟳ RE-AUTHENTICATE 𝕏 TWITTER</span>
                 </button>
             </form>
+            {{-- Panduan noVNC: muncul saat server online --}}
+            <div class="card-flat" style="padding:0.75rem 1rem;margin-top:0.5rem;border-left:3px solid #22c55e;" x-show="isOnline">
+                <p style="margin:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--color-text-muted);line-height:1.6;">
+                    <strong style="color:#22c55e;">⊙ BROWSER GUI AKTIF VIA NOVNC</strong><br>
+                    Setelah klik tombol di atas, buka tab baru di browser Anda dan akses:<br>
+                    <a href="http://localhost:6080" target="_blank" rel="noopener"
+                       style="color:#22c55e;font-weight:700;text-decoration:underline;">
+                        http://localhost:6080
+                    </a>
+                    <br>Browser Twitter akan muncul di sana. Login seperti biasa, sesi tersimpan otomatis.
+                </p>
+            </div>
             @endcan
         </div>
 
@@ -279,6 +291,18 @@ function scraperTelemetry(config) {
                     <span>⟳ RE-AUTHENTICATE META THREADS</span>
                 </button>
             </form>
+            {{-- Panduan noVNC: muncul saat server online --}}
+            <div class="card-flat" style="padding:0.75rem 1rem;margin-top:0.5rem;border-left:3px solid #22c55e;" x-show="isOnline">
+                <p style="margin:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--color-text-muted);line-height:1.6;">
+                    <strong style="color:#22c55e;">⊙ BROWSER GUI AKTIF VIA NOVNC</strong><br>
+                    Setelah klik tombol di atas, buka tab baru di browser Anda dan akses:<br>
+                    <a href="http://localhost:6080" target="_blank" rel="noopener"
+                       style="color:#22c55e;font-weight:700;text-decoration:underline;">
+                        http://localhost:6080
+                    </a>
+                    <br>Browser Threads akan muncul di sana. Login seperti biasa, sesi tersimpan otomatis.
+                </p>
+            </div>
             @endcan
         </div>
 
@@ -289,7 +313,9 @@ function scraperTelemetry(config) {
         <span class="stat-block-label" style="display:block;margin-bottom:0.5rem;">PANDUAN OPERASIONAL PERSISTENT SESSION</span>
         <ul style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);line-height:1.75;padding-left:1.25rem;margin:0;">
             <li>Sistem menggunakan <strong>Playwright Persistent Browser Context</strong> sehingga kredensial disimpan lokal dalam direktori aman dan tidak perlu login ulang pada setiap batch crawling.</li>
-            <li>Apabila platform mendeteksi checkpoint berkala, gunakan tombol <strong>Re-Authenticate</strong> untuk membuka browser interaktif dan memperbarui session cookie.</li>
+            <li>Apabila platform mendeteksi checkpoint berkala, gunakan tombol <strong>Re-Authenticate</strong> — browser interaktif akan terbuka di <strong>virtual display</strong> container Docker.</li>
+            <li>Akses <strong><a href="http://localhost:6080" target="_blank" rel="noopener" style="color:inherit;">http://localhost:6080</a></strong> di browser Windows Anda untuk melihat dan menyelesaikan proses login. Tidak perlu install apapun — berbasis browser penuh.</li>
+            <li>Setelah login selesai di noVNC, sesi disimpan otomatis dan badge status akan berubah menjadi <strong>SESI AKTIF</strong> (cek ulang dalam ~15 detik).</li>
             <li>Crawler di latar belakang secara otomatis mengabaikan platform yang sesinya non-aktif untuk mencegah pemblokiran IP.</li>
         </ul>
     </div>

@@ -4,6 +4,12 @@
 # ==============================================================================
 # Dieksekusi setiap kali container backend dimulai.
 # Memastikan semua direktori penting tersedia dan menjalankan Uvicorn server.
+#
+# Fitur baru: Virtual Display (Xvfb) + VNC + noVNC
+#   - Xvfb membuat virtual screen :99 agar Playwright bisa buka browser GUI
+#   - x11vnc mengekspor virtual screen via protokol VNC (port 5900, lokal only)
+#   - websockify + noVNC mengekspor VNC ke WebSocket (port 6080)
+#   - User bisa login scraper via browser: http://localhost:6080
 # ==============================================================================
 
 set -e  # Exit on error
@@ -14,7 +20,7 @@ echo "║  HATESENSE ID LAB — FastAPI Backend Startup                 ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 
 # ── 1. Pastikan direktori storage tersedia ────────────────────────────────────
-echo "[1/4] Memeriksa direktori storage..."
+echo "[1/5] Memeriksa direktori storage..."
 mkdir -p /app/storage/sessions/x_profile
 mkdir -p /app/storage/sessions/threads_profile
 mkdir -p /app/storage/exports
@@ -28,7 +34,7 @@ fi
 echo "  ✓ Direktori storage siap."
 
 # ── 2. Periksa keberadaan model IndoBERT ─────────────────────────────────────
-echo "[2/4] Memeriksa model IndoBERT..."
+echo "[2/5] Memeriksa model IndoBERT..."
 MODEL_PATH="/app/saved_models/best_model.pt"
 TMP_PATH="/app/saved_models/best_model.pt.tmp"
 
@@ -67,10 +73,55 @@ else
     echo "     Atau salin file best_model.pt (~499MB) secara manual ke backend/saved_models/"
 fi
 
-# ── 3. Periksa konfigurasi environment ───────────────────────────────────────
-echo "[3/4] Memeriksa environment..."
+# ── 3. Jalankan Virtual Display (Xvfb) + VNC + noVNC ─────────────────────────
+echo "[3/5] Menginisialisasi Virtual Display untuk Scraper GUI..."
+
+# Bersihkan lock file lama jika ada (bisa terjadi setelah container crash)
+rm -f /tmp/.X99-lock /tmp/.X11-unix/X99 2>/dev/null || true
+
+# Jalankan Xvfb — virtual display :99 dengan resolusi 1280x800
+Xvfb :99 -screen 0 1280x800x24 -ac +extension GLX +render -noreset &
+XVFB_PID=$!
+echo "  ✓ Xvfb virtual display :99 dimulai (PID: $XVFB_PID)"
+
+# Tunggu Xvfb siap
+sleep 1
+
+# Set DISPLAY agar Playwright dan semua proses X11 pakai virtual display ini
+export DISPLAY=:99
+
+# Jalankan x11vnc — ekspor Xvfb ke protokol VNC (port 5900, lokal saja)
+x11vnc -display :99 \
+    -nopw \
+    -listen localhost \
+    -xkb \
+    -forever \
+    -shared \
+    -quiet \
+    -bg \
+    -rfbport 5900
+echo "  ✓ x11vnc VNC server aktif (port 5900, internal)"
+
+# Cari lokasi noVNC (bisa beda tergantung distro/instalasi)
+NOVNC_DIR="/usr/share/novnc"
+if [ ! -d "$NOVNC_DIR" ]; then
+    NOVNC_DIR="/usr/share/novnc/utils"
+fi
+
+# Jalankan websockify + noVNC — bridge VNC ke WebSocket untuk akses via browser
+websockify \
+    --web /usr/share/novnc \
+    --daemon \
+    --log-file /tmp/websockify.log \
+    6080 \
+    localhost:5900
+echo "  ✓ noVNC aktif — akses browser scraper di: http://localhost:6080"
+echo "    (Buka setelah klik Re-Authenticate di dashboard)"
+
+# ── 4. Periksa konfigurasi environment ───────────────────────────────────────
+echo "[4/5] Memeriksa environment..."
 echo "  APP_ENV : ${APP_ENV:-development}"
-echo "  Port    : 8080"
+echo "  Port    : 8080 (API) | 6080 (noVNC)"
 
 # Aktifkan Offline Mode HuggingFace jika cache model sudah ada
 # (mencegah request jaringan ke HF Hub setiap startup = startup lebih cepat)
@@ -83,20 +134,18 @@ else
     echo "  ⟳ HuggingFace cache belum ada. Download pertama akan dilakukan (butuh waktu)."
 fi
 
-# ── 4. Jalankan FastAPI Uvicorn Server ───────────────────────────────────────
-echo "[4/4] Menjalankan FastAPI Uvicorn server..."
+# ── 5. Jalankan FastAPI Uvicorn Server ───────────────────────────────────────
+echo "[5/5] Menjalankan FastAPI Uvicorn server..."
 echo ""
 echo "  ➜  API URL  : http://localhost:8080/"
 echo "  ➜  Docs     : http://localhost:8080/docs"
-echo "  ➜  ReDoc    : http://localhost:8080/redoc"
+echo "  ➜  noVNC    : http://localhost:6080"
 echo ""
 echo "  Memuat model IndoBERT ke memori (bisa 30-60 detik)..."
 echo ""
 
 cd /app
 
-# Linux tidak butuh ProactorEventLoop (itu khusus Windows)
-# Saat di Linux/Docker, event loop default asyncio sudah mendukung subprocess
 exec uvicorn main_api:app \
     --host 0.0.0.0 \
     --port 8080 \

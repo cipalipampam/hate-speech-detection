@@ -64,6 +64,7 @@ services:
       MODEL_DOWNLOAD_URL: ${MODEL_DOWNLOAD_URL:-https://github.com/cipalipampam/hate-speech-detection/releases/latest/download/best_model.pt}
     ports:
       - "${FASTAPI_PORT:-8080}:8080"
+      - "${NOVNC_PORT:-6080}:6080"    # noVNC Web GUI — akses browser scraper di http://localhost:6080
     volumes:
       # Source code backend (hot-reload via uvicorn --reload)
       - ./backend:/app

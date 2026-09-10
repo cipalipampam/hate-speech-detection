@@ -9,6 +9,8 @@ Endpoints:
     POST /api/v1/auth/login-trigger/{platform}
          Memicu proses login interaktif Playwright GUI untuk memperbarui sesi.
          Proses ini berjalan di background (non-blocking).
+         Browser akan terbuka di virtual display Xvfb di container Docker;
+         akses via noVNC di http://localhost:6080 untuk berinteraksi dengan browser.
          platform: 'x' atau 'threads'
 """
 
@@ -80,6 +82,31 @@ async def _run_login_threads():
         logger.error(f"Background Task: Error saat login Threads: {e}")
 
 
+def _check_display_available() -> tuple[bool, str]:
+    """
+    Periksa apakah display server tersedia untuk membuka browser GUI.
+
+    Mengembalikan (is_available, reason_message).
+
+    Sekarang container backend dilengkapi Xvfb sehingga $DISPLAY=:99 selalu
+    ter-set oleh entrypoint.sh. Pengecekan ini sebagai safety net jika
+    entrypoint tidak berjalan normal.
+    """
+    if sys.platform == "win32":
+        return True, "Windows host — GUI tersedia."
+
+    display = os.environ.get("DISPLAY", "").strip()
+    wayland = os.environ.get("WAYLAND_DISPLAY", "").strip()
+
+    if display or wayland:
+        return True, f"Display tersedia: {display or wayland}"
+
+    return False, (
+        "Tidak ada display server yang terdeteksi ($DISPLAY / $WAYLAND_DISPLAY kosong). "
+        "Kemungkinan Xvfb belum berjalan. Coba restart container."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -125,11 +152,13 @@ def get_session_status() -> AllSessionsStatusResponse:
     "/login-trigger/{platform}",
     response_model=LoginTriggerResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    summary="Trigger Login Interaktif",
+    summary="Trigger Login Interaktif via noVNC",
     description=(
         "Memicu proses login interaktif Playwright GUI untuk platform tertentu. "
         "Proses ini berjalan di **background** — response langsung dikembalikan (202 Accepted). "
-        "Browser akan terbuka di server (membutuhkan environment GUI). "
+        "Browser akan terbuka di virtual display Xvfb di dalam container Docker. "
+        "Akses **http://localhost:6080** di browser Windows Anda untuk melihat dan "
+        "berinteraksi dengan browser yang sedang login. "
         "Gunakan endpoint GET /status untuk mengecek apakah sesi sudah aktif setelah login."
     ),
 )
@@ -141,16 +170,17 @@ async def trigger_login(
     background_tasks: BackgroundTasks = None,
 ) -> LoginTriggerResponse:
     """Inisiasi background login task untuk platform yang dipilih."""
-    has_display = (sys.platform == "win32") or bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
-    if not has_display:
+    # Safety check: Xvfb harus berjalan (entrypoint.sh set $DISPLAY=:99)
+    display_ok, display_msg = _check_display_available()
+    if not display_ok:
         platform_name = "X (Twitter)" if platform == "x" else "Threads"
+        logger.warning(f"Login trigger gagal — display tidak tersedia: {display_msg}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=(
-                f"Server backend berjalan di lingkungan Docker / Headless tanpa layar GUI. "
-                f"Setup autentikasi {platform_name} harus dijalankan dari terminal komputer host: "
-                f"python -m src.auth.login_{platform} "
-                f"(sesi yang tersimpan otomatis tersinkron ke container)."
+                f"Layanan virtual display belum siap untuk platform {platform_name}. "
+                f"Detail: {display_msg}. "
+                f"Coba restart container backend dan tunggu beberapa detik sebelum mencoba lagi."
             ),
         )
 
@@ -158,15 +188,17 @@ async def trigger_login(
         background_tasks.add_task(_run_login_x)
         msg = (
             "Proses login X (Twitter) sedang diinisiasi di background. "
-            "Browser GUI akan terbuka. Selesaikan login manual di browser, "
-            "lalu cek status sesi di GET /api/v1/auth/status."
+            "Browser GUI terbuka di virtual display container. "
+            "Buka http://localhost:6080 di browser Windows Anda untuk melihat dan menyelesaikan login. "
+            "Setelah selesai, cek status sesi di GET /api/v1/auth/status."
         )
     else:
         background_tasks.add_task(_run_login_threads)
         msg = (
             "Proses login Threads (Meta) sedang diinisiasi di background. "
-            "Browser GUI akan terbuka. Selesaikan login manual di browser, "
-            "lalu cek status sesi di GET /api/v1/auth/status."
+            "Browser GUI terbuka di virtual display container. "
+            "Buka http://localhost:6080 di browser Windows Anda untuk melihat dan menyelesaikan login. "
+            "Setelah selesai, cek status sesi di GET /api/v1/auth/status."
         )
 
     logger.info(f"Login trigger diterima untuk platform: {platform}")

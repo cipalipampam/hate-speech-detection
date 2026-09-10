@@ -1,9 +1,11 @@
 # ==============================================================================
-# Dockerfile — Backend FastAPI + IndoBERT PyTorch + Playwright Headless
+# Dockerfile — Backend FastAPI + IndoBERT PyTorch + Playwright Headless + noVNC
 # ==============================================================================
 # Base: python:3.10-slim (Debian Bookworm, minimal footprint)
 # Instalasi:
 #   - System libs untuk PyTorch CPU/GPU, OpenCV, Chromium Playwright
+#   - Xvfb + x11vnc + noVNC: virtual display GUI agar login scraper bisa
+#     diakses via browser Windows (http://localhost:6080)
 #   - Python packages dari requirements.txt
 #   - Playwright Chromium browser + dependencies
 # ==============================================================================
@@ -12,25 +14,27 @@ FROM python:3.10-slim
 
 # ── Labels ────────────────────────────────────────────────────────────────────
 LABEL maintainer="HateSense ID Lab"
-LABEL description="FastAPI + IndoBERT Hierarchical Classifier + Playwright"
+LABEL description="FastAPI + IndoBERT Hierarchical Classifier + Playwright + noVNC"
 
 # ── Environment Variables ─────────────────────────────────────────────────────
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     PIP_NO_CACHE_DIR=0 \
-    PIP_CACHE_DIR=/root/.cache/pip
+    PIP_CACHE_DIR=/root/.cache/pip \
+    DISPLAY=:99
 
 # ── System Dependencies ───────────────────────────────────────────────────────
 # Playwright Chromium butuh: libglib2.0, libnss3, libdbus-1, dll.
 # curl dibutuhkan untuk healthcheck di docker-compose.yml
+# xvfb + x11vnc + novnc: virtual display server + web VNC viewer untuk login scraper
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Utilitas dasar
     curl \
     wget \
     ca-certificates \
     git \
-    # Lib untuk Playwright/Chromium
+    procps \
+    net-tools \
     libglib2.0-0 \
     libnss3 \
     libnspr4 \
@@ -58,6 +62,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgtk-3-0 \
     fonts-liberation \
     fonts-noto-cjk \
+    xvfb \
+    x11vnc \
+    novnc \
+    websockify \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -65,13 +73,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # ── Install Python Dependencies ───────────────────────────────────────────────
-# Copy requirements dulu (layer cache: hanya rebuild saat requirements berubah)
 COPY backend/requirements.txt .
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
 # ── Install Playwright Chromium Browser ──────────────────────────────────────
-# Scraping X (Twitter) dan Threads menggunakan Playwright persistent context
 RUN playwright install chromium \
     && playwright install-deps chromium
 
@@ -89,10 +95,11 @@ RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # ── Source code di-mount via volume, bukan di-copy ke image ──────────────────
 # (Development mode: perubahan kode langsung terlihat tanpa rebuild image)
-# COPY . .   ← Uncomment ini jika ingin production image yang self-contained
+# COPY . .   <- Uncomment untuk production image yang self-contained
 
-# ── Expose Port FastAPI ───────────────────────────────────────────────────────
+# ── Expose Ports ──────────────────────────────────────────────────────────────
 EXPOSE 8080
+EXPOSE 6080
 
 # ── Entrypoint ────────────────────────────────────────────────────────────────
 ENTRYPOINT ["/entrypoint.sh"]
