@@ -18,8 +18,13 @@ Prinsip:
 """
 
 import logging
+import os
+import shutil
+import sqlite3
+import tempfile
 from pathlib import Path
 from datetime import datetime
+from time import time
 
 # Import path konfigurasi terpusat
 import sys
@@ -45,6 +50,12 @@ LOGIN_INSTRUCTIONS = {
     "x": "Sesi X (Twitter) belum ditemukan atau sudah kedaluwarsa.",
     "threads": "Sesi Threads belum ditemukan atau sudah kedaluwarsa.",
 }
+
+AUTH_COOKIE_NAMES = {
+    "x": ("auth_token", "twid"),
+    "threads": ("sessionid", "ds_user_id"),
+}
+CHROMIUM_EPOCH_OFFSET = 11644473600
 
 
 # ---------------------------------------------------------------------------
@@ -78,14 +89,57 @@ def check_profile_exists(platform: str) -> bool:
         return False
 
 
+def _has_auth_cookies(profile_path: Path, platform: str) -> bool:
+    """Check authenticated Chromium cookies without launching a browser."""
+    required_names = set(AUTH_COOKIE_NAMES[platform])
+    cookie_databases = list(profile_path.glob("**/Cookies"))
+
+    for cookie_database in cookie_databases:
+        temporary_database = None
+        try:
+            # Chromium may keep this database locked while a scraper is running.
+            file_descriptor, temporary_path = tempfile.mkstemp(suffix=".sqlite")
+            os.close(file_descriptor)
+            temporary_database = Path(temporary_path)
+            shutil.copy2(cookie_database, temporary_database)
+
+            connection = sqlite3.connect(temporary_database)
+            try:
+                rows = connection.execute(
+                    "SELECT name, expires_utc, length(encrypted_value) "
+                    "FROM cookies WHERE name IN (?, ?)",
+                    tuple(required_names),
+                ).fetchall()
+            finally:
+                connection.close()
+
+            valid_names = {
+                name
+                for name, expires_utc, value_length in rows
+                if value_length > 0
+                and (
+                    not expires_utc
+                    or expires_utc / 1_000_000 - CHROMIUM_EPOCH_OFFSET > time()
+                )
+            }
+            if required_names.issubset(valid_names):
+                return True
+        except (OSError, sqlite3.Error) as error:
+            logger.debug("Gagal membaca database cookie %s: %s", cookie_database, error)
+        finally:
+            if temporary_database:
+                temporary_database.unlink(missing_ok=True)
+
+    return False
+
 def is_session_valid(platform: str) -> dict:
     """
     Memeriksa validitas sesi login untuk platform tertentu berdasarkan
     keberadaan dan isi folder persistent profile browser.
 
-    Validasi sederhana ini memeriksa:
-    - Keberadaan folder profil.
-    - Folder tidak kosong (menandakan browser pernah menyimpan data sesi).
+    Validasi ini memeriksa keberadaan cookie autentikasi wajib di database
+    Chromium. Keberadaan folder saja tidak cukup karena Chromium membuat
+    artefak profil sebelum user berhasil login.
 
     Catatan: Validasi mendalam (apakah cookie belum expired di server)
     hanya bisa dilakukan saat browser dibuka oleh scraper via is_logged_in().
@@ -119,28 +173,30 @@ def is_session_valid(platform: str) -> dict:
     p = Path(profile_path)
     exists = p.exists() and p.is_dir()
     has_data = False
+    has_auth_cookies = False
     last_modified = None
 
     if exists:
         try:
-            # Cek isi folder
+            # Cek isi folder untuk informasi diagnostik dan waktu perubahan.
             children = list(p.iterdir())
             has_data = len(children) > 0
             if has_data:
-                # Ambil waktu modifikasi file terbaru di dalam folder
                 mod_times = []
-                for child in children:
+                for child in p.rglob("*"):
                     try:
-                        mod_times.append(child.stat().st_mtime)
+                        if child.is_file():
+                            mod_times.append(child.stat().st_mtime)
                     except Exception:
                         pass
                 if mod_times:
                     ts = max(mod_times)
                     last_modified = datetime.fromtimestamp(ts).strftime("%Y-%m-%dT%H:%M:%S")
+                has_auth_cookies = _has_auth_cookies(p, key)
         except Exception as e:
             logger.debug(f"Gagal membaca direktori profil {platform}: {e}")
 
-    is_valid = exists and has_data
+    is_valid = exists and has_data and has_auth_cookies
 
     if is_valid:
         msg = f"Sesi {platform.upper()} ditemukan dan masih aktif."
