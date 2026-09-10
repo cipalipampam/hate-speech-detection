@@ -108,6 +108,13 @@ if [ ! -d "$NOVNC_DIR" ]; then
     NOVNC_DIR="/usr/share/novnc/utils"
 fi
 
+# Buat index.html → vnc.html agar localhost:6080 langsung buka VNC viewer
+# (tanpa ini, websockify hanya nampilin directory listing)
+if [ ! -f "${NOVNC_DIR}/index.html" ]; then
+    ln -sf "${NOVNC_DIR}/vnc.html" "${NOVNC_DIR}/index.html"
+    echo "  ✓ noVNC index.html → vnc.html symlink dibuat"
+fi
+
 # Jalankan websockify + noVNC — bridge VNC ke WebSocket untuk akses via browser
 websockify \
     --web /usr/share/novnc \
