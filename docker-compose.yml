@@ -69,8 +69,8 @@ services:
       - ./backend:/app
       # Model IndoBERT (~499MB) — mount dari host (persisten jika auto-download)
       - ./backend/saved_models:/app/saved_models
-      # Sesi login browser Playwright (persistent antar container restart)
-      - backend_sessions:/app/storage/sessions
+      # Sesi login browser Playwright (sinkron dengan host & persistent)
+      - ./backend/storage/sessions:/app/storage/sessions
       # Export CSV bisa diakses dari Windows host
       - ./backend/storage/exports:/app/storage/exports
       # Cache pip (mempercepat rebuild image)
@@ -149,8 +149,6 @@ services:
 # ==============================================================================
 volumes:
   db_data:
-    driver: local
-  backend_sessions:
     driver: local
   frontend_vendor:
     driver: local

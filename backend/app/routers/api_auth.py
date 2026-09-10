@@ -14,6 +14,8 @@ Endpoints:
 
 import asyncio
 import logging
+import os
+import sys
 from typing import Any, Dict, Literal
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Path, status
@@ -139,6 +141,19 @@ async def trigger_login(
     background_tasks: BackgroundTasks = None,
 ) -> LoginTriggerResponse:
     """Inisiasi background login task untuk platform yang dipilih."""
+    has_display = (sys.platform == "win32") or bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+    if not has_display:
+        platform_name = "X (Twitter)" if platform == "x" else "Threads"
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Server backend berjalan di lingkungan Docker / Headless tanpa layar GUI. "
+                f"Setup autentikasi {platform_name} harus dijalankan dari terminal komputer host: "
+                f"python -m src.auth.login_{platform} "
+                f"(sesi yang tersimpan otomatis tersinkron ke container)."
+            ),
+        )
+
     if platform == "x":
         background_tasks.add_task(_run_login_x)
         msg = (
