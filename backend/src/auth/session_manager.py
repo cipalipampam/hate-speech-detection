@@ -92,7 +92,16 @@ def check_profile_exists(platform: str) -> bool:
 def _has_auth_cookies(profile_path: Path, platform: str) -> bool:
     """Check authenticated Chromium cookies without launching a browser."""
     required_names = set(AUTH_COOKIE_NAMES[platform])
-    cookie_databases = list(profile_path.glob("**/Cookies"))
+    # Cek lokasi standar database cookie Chromium terlebih dahulu (hindari glob rekursif ribuan file di Docker mount)
+    candidate_dbs = [
+        profile_path / "Default" / "Cookies",
+        profile_path / "Default" / "Network" / "Cookies",
+        profile_path / "Network" / "Cookies",
+        profile_path / "Cookies",
+    ]
+    cookie_databases = [db for db in candidate_dbs if db.is_file()]
+    if not cookie_databases:
+        cookie_databases = list(profile_path.glob("**/Cookies"))
 
     for cookie_database in cookie_databases:
         temporary_database = None
@@ -182,16 +191,19 @@ def is_session_valid(platform: str) -> dict:
             children = list(p.iterdir())
             has_data = len(children) > 0
             if has_data:
-                mod_times = []
-                for child in p.rglob("*"):
-                    try:
-                        if child.is_file():
-                            mod_times.append(child.stat().st_mtime)
-                    except Exception:
-                        pass
-                if mod_times:
-                    ts = max(mod_times)
+                # Cek mtime dari file cookie atau folder profil langsung (hindari rglob ribuan file cache di Docker)
+                cookie_candidates = [
+                    p / "Default" / "Cookies",
+                    p / "Default" / "Network" / "Cookies",
+                    p / "Network" / "Cookies",
+                    p / "Cookies",
+                ]
+                target_stat = next((c for c in cookie_candidates if c.is_file()), p)
+                try:
+                    ts = target_stat.stat().st_mtime
                     last_modified = datetime.fromtimestamp(ts).strftime("%Y-%m-%dT%H:%M:%S")
+                except Exception:
+                    pass
                 has_auth_cookies = _has_auth_cookies(p, key)
         except Exception as e:
             logger.debug(f"Gagal membaca direktori profil {platform}: {e}")

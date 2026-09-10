@@ -176,6 +176,12 @@ app.include_router(pipeline_router,       prefix=API_PREFIX)
 # Root Endpoint (Health Check)
 # ---------------------------------------------------------------------------
 
+@app.get(f"{API_PREFIX}/health", tags=["Health Check"], summary="Lightweight Health Check")
+def health_check():
+    """Endpoint ringan untuk polling berkala telemetri status online."""
+    return {"status": "ok", "online": True}
+
+
 @app.get("/", tags=["Health Check"], summary="Health Check & Info Server")
 def root():
     """

@@ -66,7 +66,7 @@ class FastAPIClientService
     public function getAuthStatus(): array
     {
         try {
-            $response = $this->client(2)->get('/auth/status');
+            $response = $this->client(6)->get('/auth/status');
             if ($response->successful()) {
                 return [
                     'success' => true,
@@ -91,6 +91,15 @@ class FastAPIClientService
      */
     public function checkHealth(): bool
     {
+        try {
+            $response = $this->client(3)->get('/health');
+            if ($response->successful()) {
+                return true;
+            }
+        } catch (Exception $e) {
+            // fallback ke getAuthStatus jika terjadi kendala
+        }
+
         $status = $this->getAuthStatus();
         return (bool) ($status['success'] ?? false);
     }
