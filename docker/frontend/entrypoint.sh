@@ -92,8 +92,14 @@ fi
 echo ""
 echo "[2/8] Memeriksa PHP dependencies (Composer)..."
 
-if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
-    echo "  ⟳ vendor/ tidak ditemukan. Menjalankan composer install..."
+# Pengecekan robust: vendor/ dianggap valid hanya jika:
+#   1. vendor/autoload.php ada (dibutuhkan Laravel untuk bootstrap)
+#   2. Jumlah file di vendor/ lebih dari 100 (menghindari folder vendor kosong/stub)
+# Ini mencegah folder vendor setengah-kosong (misal terpush ke repo) menipu kondisi ini.
+VENDOR_FILE_COUNT=$(find vendor -type f 2>/dev/null | wc -l)
+if [ ! -f "vendor/autoload.php" ] || [ "$VENDOR_FILE_COUNT" -lt 100 ]; then
+    echo "  ⟳ vendor/ tidak lengkap (autoload.php: $([ -f vendor/autoload.php ] && echo ada || echo TIDAK ADA), file count: ${VENDOR_FILE_COUNT})."
+    echo "     Menjalankan composer install..."
     composer install \
         --no-interaction \
         --prefer-dist \
@@ -102,7 +108,7 @@ if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
         --no-dev
     echo "  ✓ composer install selesai."
 else
-    echo "  ✓ vendor/ sudah ada. Skip composer install."
+    echo "  ✓ vendor/ sudah lengkap (${VENDOR_FILE_COUNT} files). Skip composer install."
 fi
 
 # ── STEP 3: Generate APP_KEY (jika kosong) ────────────────────────────────────
