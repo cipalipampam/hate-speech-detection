@@ -256,7 +256,7 @@ function analysesIndex() {
                         <td>
                             <div style="display:flex;gap:3px;flex-wrap:wrap;max-width:200px;">
                                 <template x-for="kw in getKeywordList(item).slice(0, 3)" :key="kw">
-                                    <span class="badge badge-mono" style="font-size:0.625rem;" x-text="'#' + kw"></span>
+                                    <span class="badge badge-mono" style="font-size:0.625rem;" x-text="kw"></span>
                                 </template>
                                 <template x-if="getKeywordList(item).length > 3">
                                     <span style="font-family:var(--font-mono);font-size:0.625rem;color:var(--color-text-muted);align-self:center;" x-text="'+' + (getKeywordList(item).length - 3)"></span>

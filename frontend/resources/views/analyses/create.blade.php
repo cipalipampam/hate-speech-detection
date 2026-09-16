@@ -95,7 +95,7 @@
 
                         <template x-for="(kw, i) in keywords" :key="i">
                             <div style="display:inline-flex;align-items:center;gap:0.35rem;background:#FFFFFF;border:1px solid #0A0A0A;padding:0.25rem 0.5rem 0.25rem 0.625rem;box-shadow:1px 1px 0 #0A0A0A;">
-                                <span style="font-family:var(--font-mono);font-size:0.75rem;font-weight:800;color:#0A0A0A;" x-text="'#' + kw"></span>
+                                <span style="font-family:var(--font-mono);font-size:0.75rem;font-weight:800;color:#0A0A0A;" x-text="kw"></span>
                                 <button type="button"
                                         @click="removeKeyword(i)"
                                         style="background:none;border:none;cursor:pointer;font-family:var(--font-mono);font-weight:900;font-size:0.875rem;color:var(--color-crimson);padding:0 2px;"

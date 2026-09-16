@@ -484,7 +484,7 @@ function analysisDetail() {
                         </p>
                         <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.5rem;">
                             @foreach($analysis->keywords ?? [] as $kw)
-                                <span class="badge badge-mono">#{{ $kw }}</span>
+                                <span class="badge badge-mono">{{ $kw }}</span>
                             @endforeach
                         </div>
                     </div>
