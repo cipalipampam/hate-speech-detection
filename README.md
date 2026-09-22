@@ -309,4 +309,4 @@ Proyek ini disusun dan dikembangkan sebagai karya penelitian tugas akhir (Skrips
 
 ## 📄 Lisensi & Hak Cipta
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE). Bebas digunakan dan dikembangkan untuk keperluan akademik dan penelitian dengan tetap mencantumkan atribusi penulis.
+Proyek ini Bebas digunakan dan dikembangkan untuk keperluan akademik dan penelitian dengan tetap mencantumkan atribusi penulis.

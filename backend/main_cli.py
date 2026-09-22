@@ -987,7 +987,7 @@ def handle_pipeline_menu():
             headless_choice = Prompt.ask("Jalankan browser di latar belakang (Headless)?", choices=["y", "n"], default="n")
         else:
             limit_str = input("Batas link/postingan yang di-scan (default: 30): ").strip() or "30"
-            steps_str = input("Maksimal scroll scan per postingan (default: 200): ").strip() or "200"
+            steps_str = input("Maksimal scroll pencarian URL per keyword (default: 200): ").strip() or "200"
             headless_choice = input("Jalankan browser headless? [y/n] (default: n): ").strip().lower() or "n"
 
         max_links = int(limit_str) if limit_str.isdigit() else 30

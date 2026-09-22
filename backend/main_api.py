@@ -45,12 +45,14 @@ BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-# Import routers
-from app.routers.api_auth import router as auth_router
-from app.routers.api_scraper import router as scraper_router
-from app.routers.api_preprocessing import router as preprocessing_router
-from app.routers.api_classification import router as classification_router
-from app.routers.api_pipeline import router as pipeline_router
+# Import routers — dari barrel package app.routers
+from app.routers import (
+    auth_router,
+    classification_router,
+    pipeline_router,
+    preprocessing_router,
+    scraper_router,
+)
 
 # Setup logging
 logging.basicConfig(
@@ -95,6 +97,13 @@ async def lifespan(app: FastAPI):
             f"Level 1: {len(loader.classes_lvl1)} kelas, "
             f"Level 2: {len(loader.classes_lvl2)} kelas."
         )
+
+        # Injeksi predictor ke ClassificationService agar semua service layer
+        # menggunakan instance yang sama — mencegah double-load model 490 MB.
+        from app.services import classification_service
+        classification_service.set_predictor(predictor)
+        logger.info("ClassificationService: Predictor IndoBERT berhasil di-share dari app.state.")
+
     except Exception as e:
         logger.error(f"GAGAL memuat model IndoBERT: {e}", exc_info=True)
         logger.warning(
@@ -102,6 +111,8 @@ async def lifespan(app: FastAPI):
             "sampai model berhasil dimuat. Periksa file 'saved_models/best_model.pt'."
         )
         app.state.predictor = None
+        from app.services import classification_service
+        classification_service.set_predictor(None)
 
     logger.info("Server siap menerima request.")
     logger.info("Dokumentasi API: http://localhost:8080/docs")
@@ -112,6 +123,8 @@ async def lifespan(app: FastAPI):
     # ── SHUTDOWN ─────────────────────────────────────────────────────────────
     logger.info("Server shutdown. Membersihkan resource...")
     app.state.predictor = None
+    from app.services import classification_service
+    classification_service.set_predictor(None)
     logger.info("Server berhasil dimatikan.")
 
 
@@ -188,11 +201,12 @@ def root():
     Endpoint root untuk health check.
     Mengembalikan status server dan link ke dokumentasi API.
     """
-    from src.classification.model_loader import ModelLoader
+    predictor = getattr(app.state, "predictor", None)
     model_loaded = (
-        app.state.predictor is not None
-        and hasattr(app.state.predictor, "loader")
-        and app.state.predictor.loader.is_loaded()
+        predictor is not None
+        and hasattr(predictor, "loader")
+        and predictor.loader is not None
+        and predictor.loader.is_loaded()
     )
 
     return {
@@ -215,4 +229,3 @@ def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main_api:app", host="0.0.0.0", port=8080, reload=True)
-

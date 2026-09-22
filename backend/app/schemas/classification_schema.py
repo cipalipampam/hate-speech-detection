@@ -21,7 +21,7 @@ Model Pipeline:
 """
 
 from typing import Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ===========================================================================
@@ -63,7 +63,8 @@ class ClassifyBatchRequest(BaseModel):
     texts: List[str] = Field(
         ...,
         min_length=1,
-        description="Daftar teks yang akan diklasifikasikan.",
+        max_length=500,  # Validasi batas 500 dilakukan Pydantic, bukan manual if di router
+        description="Daftar teks yang akan diklasifikasikan. Maksimum 500 item per request.",
     )
     preprocess: bool = Field(
         default=True,
@@ -168,11 +169,11 @@ class PipelineRunRequest(BaseModel):
     )
     max_links: int = Field(
         default=50, ge=1, le=500,
-        description="Maksimum URL postingan yang dikumpulkan.",
+        description="Maksimum URL postingan yang dikumpulkan per keyword di Stage 1.",
     )
     max_scroll_steps: int = Field(
         default=300, ge=50, le=5000,
-        description="Maksimum langkah scroll per postingan.",
+        description="Maksimum langkah scroll discovery per keyword di Stage 1.",
     )
     headless: bool = Field(
         default=False,
@@ -182,6 +183,18 @@ class PipelineRunRequest(BaseModel):
         default=True,
         description="Simpan hasil analisis ke file CSV di storage/exports/.",
     )
+
+    @field_validator("keywords")
+    @classmethod
+    def validate_keywords_not_empty(cls, v: List[str]) -> List[str]:
+        """Tolak keyword yang hanya berisi string kosong atau spasi (misal: ['   '])."""
+        cleaned = [kw.strip() for kw in v if kw.strip()]
+        if not cleaned:
+            raise ValueError(
+                "Daftar keywords tidak boleh kosong atau hanya berisi spasi. "
+                "Masukkan minimal 1 kata kunci yang valid."
+            )
+        return cleaned
 
     class Config:
         json_schema_extra = {

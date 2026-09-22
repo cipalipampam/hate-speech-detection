@@ -6,6 +6,7 @@ import sys
 import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable, Optional
 
 from parsel import Selector
 from playwright.async_api import async_playwright, Page
@@ -82,7 +83,7 @@ class XScrapeConfig:
     search_mode       : str   = field(default_factory=lambda: SCRAPER_CONFIG.get("search_mode", "latest"))
     goto_timeout_ms   : int   = field(default_factory=lambda: SCRAPER_CONFIG["goto_timeout_ms"])
     delay_range       : tuple = field(default_factory=lambda: SCRAPER_CONFIG["delay_range"])
-    search_scroll     : int   = 300          # Max rounds scroll di halaman pencarian
+    search_scroll     : int   = field(default_factory=lambda: SCRAPER_CONFIG["search_scroll"])
     max_links         : int   = field(default_factory=lambda: SCRAPER_CONFIG["max_links"])
     scan_step_px      : int   = field(default_factory=lambda: SCRAPER_CONFIG["scan_step_px"])
     scan_delay_range  : tuple = field(default_factory=lambda: SCRAPER_CONFIG["scan_delay_range"])
@@ -492,14 +493,20 @@ def _parse_post_page_html(html: str, source_link: str) -> list[dict]:
 
 def _keyword_matches_text(text: str, keywords: list[str]) -> bool:
     """Cek apakah teks mengandung salah satu keyword (case-insensitive, ignore spasi)."""
+    # Jika teks kosong atau media, anggap valid karena sudah berasal dari search resmi X
+    if not text or not text.strip():
+        return True
+
     text_lower    = text.lower()
     text_no_space = text_lower.replace(" ", "")
     for kw in keywords:
-        clean         = kw.lstrip('#').lower()
+        clean          = kw.lstrip('#').lower()
         clean_no_space = clean.replace(" ", "")
-        if clean in text_lower:
+        if clean in text_lower or (clean_no_space and clean_no_space in text_no_space):
             return True
-        if clean_no_space and clean_no_space in text_no_space:
+        # Dukungan kecocokan kata individual untuk query majemuk
+        words = [w for w in clean.split() if len(w) > 2]
+        if words and any(w in text_lower for w in words):
             return True
     return False
 
@@ -509,7 +516,10 @@ def _keyword_matches_text(text: str, keywords: list[str]) -> bool:
 # ---------------------------------------------------------------------------
 
 async def collect_post_urls(
-    page: Page, keyword: str, config: XScrapeConfig, all_keywords: list[str] = None,
+    page: Page,
+    keyword: str,
+    config: XScrapeConfig,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[str]:
     """
     Stage 1 — Search Discovery:
@@ -517,15 +527,17 @@ async def collect_post_urls(
     dengan keyword menggunakan smart scroll dan pre-filtering.
 
     Args:
-        page        : Halaman Playwright yang sudah aktif.
-        keyword     : Kata kunci utama pencarian.
-        config      : Konfigurasi scraper.
-        all_keywords: Daftar semua keyword untuk filtering (opsional).
+        page           : Halaman Playwright yang sudah aktif.
+        keyword        : Kata kunci utama pencarian.
+        config         : Konfigurasi scraper.
+        status_callback: Callback pelaporan progress real-time (opsional).
 
     Returns:
         list[str]: URL-URL postingan yang relevan (sudah di-deduplikasi).
     """
-    match_keywords = all_keywords or [keyword]
+    # Kuota discovery berlaku per keyword; relevansi juga harus diuji terhadap
+    # keyword pencarian yang sedang diproses, bukan keyword lain dalam job.
+    match_keywords = [keyword]
     encoded_query  = urllib.parse.quote(keyword)
 
     if config.search_mode.lower() == "top":
@@ -536,12 +548,15 @@ async def collect_post_urls(
         mode_label = "LATEST / Terbaru"
 
     logger.info(f"--- Stage 1: Mencari URL ({mode_label}) untuk keyword '{keyword}' ---")
+    if status_callback:
+        status_callback(f"[X] Mencari URL tweet ({mode_label}) untuk keyword '{keyword}'...")
+
     seen_urls: set[str] = set()
     ordered_urls: list[str] = []
     skipped_count = 0
 
-    SCROLL_STEP_PX  = 600
-    STALE_LIMIT     = 8
+    SCROLL_STEP_PX  = 850
+    STALE_LIMIT     = 20  # Toleransi stagnasi lebih tinggi (20 round) agar timeline sempat memuat
 
     try:
         await page.goto(search_url, wait_until="domcontentloaded", timeout=config.goto_timeout_ms)
@@ -569,7 +584,10 @@ async def collect_post_urls(
 
             if new_kept > 0:
                 stale_count = 0
-                logger.info(f"  Scroll #{scroll_round}: +{new_kept} URL relevan (total: {len(ordered_urls)}, dilewati: {skipped_count})")
+                msg = f"  Scroll #{scroll_round}: +{new_kept} URL relevan (total: {len(ordered_urls)}, dilewati: {skipped_count})"
+                logger.info(msg)
+                if status_callback:
+                    status_callback(f"[X] Mengumpulkan URL ({len(ordered_urls)}/{config.max_links} tweet relevan ditemukan)...")
             elif new_skipped > 0:
                 stale_count = 0
             else:
@@ -577,13 +595,19 @@ async def collect_post_urls(
 
             if len(ordered_urls) >= config.max_links:
                 logger.info(f"  Kuota {config.max_links} URL tercapai pada scroll #{scroll_round}.")
+                if status_callback:
+                    status_callback(f"[X] Kuota {config.max_links} URL berhasil tercapai.")
                 break
+
             if stale_count >= STALE_LIMIT:
-                logger.info(f"  Tidak ada tweet baru selama {STALE_LIMIT} scroll berturut-turut. Berhenti.")
+                logger.info(f"  Tidak ada tweet baru selama {STALE_LIMIT} scroll berturut-turut. Mengakhiri Stage 1.")
                 break
 
         ordered_urls = ordered_urls[:config.max_links]
-        logger.info(f"Stage 1 selesai: {len(ordered_urls)} URL relevan dari {len(seen_urls)} total.")
+        summary_msg = f"Stage 1 selesai: {len(ordered_urls)} URL relevan dari {len(seen_urls)} total tweet terdeteksi."
+        logger.info(summary_msg)
+        if status_callback:
+            status_callback(f"[X] {summary_msg}")
 
     except Exception as e:
         logger.warning(f"Stage 1 gagal untuk keyword '{keyword}': {e}")
@@ -596,7 +620,11 @@ async def collect_post_urls(
 # ---------------------------------------------------------------------------
 
 async def deep_crawl_post(
-    page: Page, link: str, config: XScrapeConfig, max_retries: int = 2,
+    page: Page,
+    link: str,
+    config: XScrapeConfig,
+    max_retries: int = 2,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[dict]:
     """
     Stage 2 — Deep Crawl:
@@ -604,10 +632,11 @@ async def deep_crawl_post(
     menggunakan slow scan.
 
     Args:
-        page       : Halaman Playwright yang sudah aktif.
-        link       : URL postingan X yang akan di-crawl.
-        config     : Konfigurasi scraper.
-        max_retries: Jumlah retry jika terjadi error.
+        page           : Halaman Playwright yang sudah aktif.
+        link           : URL postingan X yang akan di-crawl.
+        config         : Konfigurasi scraper.
+        max_retries    : Jumlah retry jika terjadi error.
+        status_callback: Callback pelaporan status (opsional).
 
     Returns:
         list[dict]: Data postingan dan reply.
@@ -646,6 +675,7 @@ async def run_x_scraper(
     config         : XScrapeConfig = None,
     checkpoint_path: str = DEFAULT_CHECKPOINT,
     final_path     : str = DEFAULT_OUTPUT,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> "pd.DataFrame":
     """
     Pipeline scraping X (Twitter) lengkap:
@@ -658,6 +688,7 @@ async def run_x_scraper(
         config         : Konfigurasi scraper (default: XScrapeConfig()).
         checkpoint_path: Path file CSV checkpoint inkremental.
         final_path     : Path file CSV hasil akhir.
+        status_callback: Callback pelaporan progress real-time (opsional).
 
     Returns:
         pd.DataFrame: Seluruh data yang terkumpul (baris = 1 tweet/reply).
@@ -712,7 +743,12 @@ async def run_x_scraper(
 
             # Stage 1 — Keyword Search
             for kw in keywords:
-                urls = await collect_post_urls(page, kw, config, all_keywords=keywords)
+                urls = await collect_post_urls(
+                    page,
+                    kw,
+                    config,
+                    status_callback=status_callback,
+                )
                 for u in urls:
                     if u not in global_seen_urls:
                         global_seen_urls.add(u)
@@ -721,13 +757,20 @@ async def run_x_scraper(
             logger.info(f"Total URL untuk di-crawl: {len(session_urls)}")
 
             if not session_urls:
-                logger.warning("Tidak ada URL yang ditemukan. Coba periksa keyword atau sesi login.")
+                msg_empty = "Tidak ada URL yang ditemukan. Coba periksa keyword atau sesi login."
+                logger.warning(msg_empty)
+                if status_callback:
+                    status_callback(f"[X] {msg_empty}")
                 return pd.DataFrame()
 
             # Stage 2 — Deep Crawl
+            total_urls = len(session_urls)
             for idx, link in enumerate(session_urls, start=1):
-                logger.info(f"[{idx}/{len(session_urls)}] {link}")
-                post_data = await deep_crawl_post(page, link, config)
+                logger.info(f"[{idx}/{total_urls}] {link}")
+                if status_callback:
+                    status_callback(f"[X] Tahap 2: Deep Crawl postingan {idx}/{total_urls} ({link})...")
+
+                post_data = await deep_crawl_post(page, link, config, status_callback=status_callback)
                 if post_data:
                     all_results.extend(post_data)
                     append_checkpoint(post_data, checkpoint_path)

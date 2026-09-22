@@ -11,7 +11,7 @@ Fungsi Publik:
     run_threads_scraper(keywords, urls, config, checkpoint_path, final_path) -> pd.DataFrame
         Pipeline scraping lengkap (Stage 1 + Stage 2) untuk input keyword / URL.
 
-    collect_post_urls(page, keyword, config, all_keywords) -> list[str]
+    collect_post_urls(page, keyword, config) -> list[str]
         Stage 1: Kumpulkan URL dari hasil pencarian Threads.
 
     deep_crawl_post(page, link, config) -> list[dict]
@@ -36,6 +36,7 @@ import sys
 import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable, Optional
 
 from parsel import Selector
 from playwright.async_api import async_playwright, Page
@@ -63,6 +64,12 @@ if not logger.handlers:
 
 DEFAULT_CHECKPOINT = str(EXPORTS_DIR / "threads_checkpoint.csv")
 DEFAULT_OUTPUT     = str(EXPORTS_DIR / "threads_scraper_result.csv")
+
+# Regex validasi URL postingan Threads yang valid:
+# https://www.threads.com/@<username>/post/<post_id>
+_THREADS_POST_URL_RE = re.compile(
+    r'^https?://(?:www\.)?threads\.(?:net|com)/@[^/]+/post/[A-Za-z0-9_-]+/?$'
+)
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +109,7 @@ class ThreadsScrapeConfig:
     search_mode       : str   = field(default_factory=lambda: SCRAPER_CONFIG.get("search_mode", "latest"))
     goto_timeout_ms   : int   = field(default_factory=lambda: SCRAPER_CONFIG["goto_timeout_ms"])
     delay_range       : tuple = field(default_factory=lambda: (1.5, 3.0))
-    search_scroll     : int   = 300          # Max rounds scroll di halaman pencarian
+    search_scroll     : int   = field(default_factory=lambda: SCRAPER_CONFIG["search_scroll"])
     max_links         : int   = field(default_factory=lambda: SCRAPER_CONFIG["max_links"])
     scan_step_px      : int   = field(default_factory=lambda: SCRAPER_CONFIG["scan_step_px"])
     scan_delay_range  : tuple = field(default_factory=lambda: (0.10, 0.25))
@@ -195,35 +202,36 @@ _JS_EXTRACT_COMMENTS = f"""
 
 _JS_EXTRACT_SEARCH_CARDS = """
 () => {
+    // Hanya ambil link yang benar-benar postingan Threads:
+    // pola: /@username/post/<post_id>  (tanpa path tambahan setelahnya)
+    const POST_URL_RE = /^https?:\\/\\/(?:www\\.)?threads\\.(?:net|com)\\/@[^/]+\\/post\\/[A-Za-z0-9_-]+\\/?$/;
+
     const links = document.querySelectorAll('a[href*="/post/"]');
     const results = [];
     const seenUrls = new Set();
 
     for (const link of links) {
         let url = link.href || '';
+        // Bersihkan query string dan fragment, hapus trailing slash
         url = url.split('?')[0].split('#')[0].replace(/\\/$/, '');
-        if (!url || seenUrls.has(url) || url.includes('/media')) continue;
+        if (!url) continue;
 
-        let card = link;
-        while (card.parentElement && card.parentElement.tagName !== 'BODY' && card.parentElement.getAttribute('role') !== 'main') {
-            const parent = card.parentElement;
-            const parentPostLinks = parent.querySelectorAll('a[href*="/post/"]');
-            const postIds = new Set();
-            for (const pl of parentPostLinks) {
-                const pUrl = (pl.href || '').split('?')[0].split('#')[0].replace(/\\/$/, '');
-                if (pUrl && !pUrl.includes('/media')) postIds.add(pUrl);
+        // Validasi: harus cocok pola URL postingan asli Threads
+        if (!POST_URL_RE.test(url + '/')) continue;  // tambah / agar regex \\/$ cocok
+        if (seenUrls.has(url)) continue;
+
+        // Cari container post Threads terdekat
+        const card = link.closest('div[data-pressable-container="true"], article') || link.parentElement;
+        let fullText = '';
+        if (card) {
+            const dirAutos = card.querySelectorAll('[dir="auto"]');
+            const tokens = [];
+            for (const da of dirAutos) {
+                const t = (da.textContent || '').trim();
+                if (t) tokens.push(t);
             }
-            if (postIds.size > 1) break;
-            card = parent;
+            fullText = tokens.length > 0 ? tokens.join(' ') : (card.textContent || '').trim();
         }
-
-        const dirAutos = card.querySelectorAll('[dir="auto"]');
-        const tokens = [];
-        for (const da of dirAutos) {
-            const t = (da.textContent || '').trim();
-            if (t) tokens.push(t);
-        }
-        const fullText = tokens.length > 0 ? tokens.join(' ') : (card.textContent || '').trim();
 
         seenUrls.add(url);
         results.push({ url: url, text: fullText });
@@ -338,7 +346,7 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
     for step in range(config.scan_max_steps):
         try:
             has_divider = await _check_thread_divider(page)
-            if has_divider and step >= 5:
+            if has_divider and step >= 10:
                 await _collect_js_items(page, source_link, collected)
                 logger.info(f"Thread divider terdeteksi pada step {step + 1}. Berhenti forward scan.")
                 break
@@ -544,14 +552,22 @@ def _parse_post_page_html(html: str, source_link: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def _keyword_matches_text(text: str, keywords: list[str]) -> bool:
+    """Cek apakah teks postingan relevan dengan keyword pencarian."""
+    # Jika teks kosong atau hanya media, tetap anggap valid karena sudah
+    # merupakan hasil kurasi dari endpoint search resmi Threads untuk query tersebut.
+    if not text or not text.strip():
+        return True
+
     text_lower    = text.lower()
     text_no_space = text_lower.replace(" ", "")
     for kw in keywords:
         clean          = kw.lstrip('#').lower()
         clean_no_space = clean.replace(" ", "")
-        if clean in text_lower:
+        if clean in text_lower or (clean_no_space and clean_no_space in text_no_space):
             return True
-        if clean_no_space and clean_no_space in text_no_space:
+        # Dukungan kecocokan kata individual untuk query majemuk
+        words = [w for w in clean.split() if len(w) > 2]
+        if words and any(w in text_lower for w in words):
             return True
     return False
 
@@ -561,7 +577,10 @@ def _keyword_matches_text(text: str, keywords: list[str]) -> bool:
 # ---------------------------------------------------------------------------
 
 async def collect_post_urls(
-    page: Page, keyword: str, config: ThreadsScrapeConfig, all_keywords: list[str] = None,
+    page: Page,
+    keyword: str,
+    config: ThreadsScrapeConfig,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[str]:
     """
     Stage 1 — Search Discovery:
@@ -569,28 +588,33 @@ async def collect_post_urls(
     dengan keyword menggunakan smart scroll dan pre-filtering.
 
     Args:
-        page        : Halaman Playwright yang sudah aktif.
-        keyword     : Kata kunci utama pencarian.
-        config      : Konfigurasi scraper.
-        all_keywords: Daftar semua keyword untuk filtering (opsional).
+        page           : Halaman Playwright yang sudah aktif.
+        keyword        : Kata kunci utama pencarian.
+        config         : Konfigurasi scraper.
+        status_callback: Callback pelaporan progress real-time (opsional).
 
     Returns:
         list[str]: URL-URL postingan yang relevan (sudah di-deduplikasi).
     """
-    match_keywords = all_keywords or [keyword]
+    # Kuota discovery berlaku per keyword; relevansi juga harus diuji terhadap
+    # keyword pencarian yang sedang diproses, bukan keyword lain dalam job.
+    match_keywords = [keyword]
     encoded_query  = urllib.parse.quote(keyword)
-    search_url     = f"https://www.threads.net/search?q={encoded_query}&serp_type=default"
+    search_url     = f"https://www.threads.com/search?q={encoded_query}&serp_type=default"
 
     is_top_mode = config.search_mode.lower() == "top"
     mode_label = "TOP / Terpopuler" if is_top_mode else "LATEST / Terbaru"
 
     logger.info(f"--- Stage 1: Mencari URL ({mode_label}) untuk keyword '{keyword}' ---")
+    if status_callback:
+        status_callback(f"[Threads] Mencari URL postingan ({mode_label}) untuk keyword '{keyword}'...")
+
     seen_urls: set[str] = set()
     ordered_urls: list[str] = []
     skipped_count = 0
 
-    SCROLL_STEP_PX = 600
-    STALE_LIMIT    = 8
+    SCROLL_STEP_PX = 850
+    STALE_LIMIT    = 20  # Toleransi stagnasi lebih tinggi (20 round) agar feed sempat me-render
 
     try:
         await page.goto(search_url, wait_until="domcontentloaded", timeout=config.goto_timeout_ms)
@@ -623,6 +647,7 @@ async def collect_post_urls(
 
         stale_count = 0
         for scroll_round in range(1, config.search_scroll + 1):
+            # Scroll normal ke bawah
             await page.evaluate(f"window.scrollBy({{ top: {SCROLL_STEP_PX}, behavior: 'smooth' }})")
             await random_delay(config.delay_range)
 
@@ -632,6 +657,10 @@ async def collect_post_urls(
             for card in cards:
                 url = card["url"]
                 if url in seen_urls:
+                    continue
+                # Safety net Python: validasi URL adalah postingan Threads yang valid
+                if not _THREADS_POST_URL_RE.match(url):
+                    logger.debug(f"  URL dibuang (bukan postingan valid): {url}")
                     continue
                 seen_urls.add(url)
                 if _keyword_matches_text(card["text"], match_keywords):
@@ -643,7 +672,10 @@ async def collect_post_urls(
 
             if new_kept > 0:
                 stale_count = 0
-                logger.info(f"  Scroll #{scroll_round}: +{new_kept} URL relevan (total: {len(ordered_urls)}, dilewati: {skipped_count})")
+                msg = f"  Scroll #{scroll_round}: +{new_kept} URL relevan (total: {len(ordered_urls)}, dilewati: {skipped_count})"
+                logger.info(msg)
+                if status_callback:
+                    status_callback(f"[Threads] Mengumpulkan URL ({len(ordered_urls)}/{config.max_links} URL relevan ditemukan)...")
             elif new_skipped > 0:
                 stale_count = 0
             else:
@@ -651,13 +683,19 @@ async def collect_post_urls(
 
             if len(ordered_urls) >= config.max_links:
                 logger.info(f"  Kuota {config.max_links} URL tercapai pada scroll #{scroll_round}.")
+                if status_callback:
+                    status_callback(f"[Threads] Kuota {config.max_links} URL berhasil tercapai.")
                 break
+
             if stale_count >= STALE_LIMIT:
-                logger.info(f"  Tidak ada post baru selama {STALE_LIMIT} scroll berturut-turut. Berhenti.")
+                logger.info(f"  Tidak ada post baru selama {STALE_LIMIT} scroll berturut-turut. Mengakhiri Stage 1.")
                 break
 
         ordered_urls = ordered_urls[:config.max_links]
-        logger.info(f"Stage 1 selesai: {len(ordered_urls)} URL relevan dari {len(seen_urls)} total.")
+        summary_msg = f"Stage 1 selesai: {len(ordered_urls)} URL relevan dari {len(seen_urls)} total postingan terdeteksi."
+        logger.info(summary_msg)
+        if status_callback:
+            status_callback(f"[Threads] {summary_msg}")
 
     except Exception as e:
         logger.warning(f"Stage 1 gagal untuk keyword '{keyword}': {e}")
@@ -670,7 +708,11 @@ async def collect_post_urls(
 # ---------------------------------------------------------------------------
 
 async def deep_crawl_post(
-    page: Page, link: str, config: ThreadsScrapeConfig, max_retries: int = 2,
+    page: Page,
+    link: str,
+    config: ThreadsScrapeConfig,
+    max_retries: int = 2,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[dict]:
     """
     Stage 2 — Deep Crawl:
@@ -678,10 +720,11 @@ async def deep_crawl_post(
     menggunakan slow scan.
 
     Args:
-        page       : Halaman Playwright yang sudah aktif.
-        link       : URL postingan Threads yang akan di-crawl.
-        config     : Konfigurasi scraper.
-        max_retries: Jumlah retry jika terjadi error.
+        page           : Halaman Playwright yang sudah aktif.
+        link           : URL postingan Threads yang akan di-crawl.
+        config         : Konfigurasi scraper.
+        max_retries    : Jumlah retry jika terjadi error.
+        status_callback: Callback pelaporan status (opsional).
 
     Returns:
         list[dict]: Data postingan dan reply.
@@ -720,6 +763,7 @@ async def run_threads_scraper(
     config         : ThreadsScrapeConfig = None,
     checkpoint_path: str = DEFAULT_CHECKPOINT,
     final_path     : str = DEFAULT_OUTPUT,
+    status_callback: Optional[Callable[[str], None]] = None,
 ) -> "pd.DataFrame":
     """
     Pipeline scraping Threads (Meta) lengkap:
@@ -732,6 +776,7 @@ async def run_threads_scraper(
         config         : Konfigurasi scraper (default: ThreadsScrapeConfig()).
         checkpoint_path: Path file CSV checkpoint inkremental.
         final_path     : Path file CSV hasil akhir.
+        status_callback: Callback pelaporan progress real-time (opsional).
 
     Returns:
         pd.DataFrame: Seluruh data yang terkumpul (baris = 1 thread/reply).
@@ -770,7 +815,7 @@ async def run_threads_scraper(
 
             # Standby di home
             try:
-                await page.goto("https://www.threads.net/", timeout=60_000)
+                await page.goto("https://www.threads.com/", timeout=60_000)
             except Exception:
                 pass
 
@@ -784,7 +829,12 @@ async def run_threads_scraper(
 
             # Stage 1 — Keyword Search
             for kw in keywords:
-                urls = await collect_post_urls(page, kw, config, all_keywords=keywords)
+                urls = await collect_post_urls(
+                    page,
+                    kw,
+                    config,
+                    status_callback=status_callback,
+                )
                 for u in urls:
                     if u not in global_seen_urls:
                         global_seen_urls.add(u)
@@ -793,13 +843,20 @@ async def run_threads_scraper(
             logger.info(f"Total URL untuk di-crawl: {len(session_urls)}")
 
             if not session_urls:
-                logger.warning("Tidak ada URL yang ditemukan. Coba periksa keyword atau sesi login.")
+                msg_empty = "Tidak ada URL yang ditemukan. Coba periksa keyword atau sesi login."
+                logger.warning(msg_empty)
+                if status_callback:
+                    status_callback(f"[Threads] {msg_empty}")
                 return pd.DataFrame()
 
             # Stage 2 — Deep Crawl
+            total_urls = len(session_urls)
             for idx, link in enumerate(session_urls, start=1):
-                logger.info(f"[{idx}/{len(session_urls)}] {link}")
-                post_data = await deep_crawl_post(page, link, config)
+                logger.info(f"[{idx}/{total_urls}] {link}")
+                if status_callback:
+                    status_callback(f"[Threads] Tahap 2: Deep Crawl postingan {idx}/{total_urls} ({link})...")
+
+                post_data = await deep_crawl_post(page, link, config, status_callback=status_callback)
                 if post_data:
                     all_results.extend(post_data)
                     append_checkpoint(post_data, checkpoint_path)
@@ -815,6 +872,7 @@ async def run_threads_scraper(
     if not df.empty:
         save_dataframe(df, final_path)
         logger.info(f"Scraping Threads selesai. Total: {len(df)} baris. File: {final_path}")
+
     else:
         logger.warning("Tidak ada data yang terkumpul dari sesi ini.")
     return df

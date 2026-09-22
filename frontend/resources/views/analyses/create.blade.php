@@ -241,7 +241,7 @@
 
                     {{-- Max Links --}}
                     <div>
-                        <label class="label" for="max_links">Batas Kuota Postingan (5–500)</label>
+                        <label class="label" for="max_links">Batas Kuota Postingan per Keyword (5–500)</label>
                         <input id="max_links" type="number" name="max_links" value="{{ old('max_links', 100) }}"
                                min="5" max="500" class="input" style="height:42px;">
                     </div>
@@ -249,7 +249,7 @@
 
                 {{-- Max Scroll Steps --}}
                 <div>
-                    <label class="label" for="max_scroll_steps">Batas Langkah Scroll Browser (50–5000)</label>
+                    <label class="label" for="max_scroll_steps">Batas Scroll Pencarian URL per Keyword (50–5000)</label>
                     <input id="max_scroll_steps" type="number" name="max_scroll_steps" value="{{ old('max_scroll_steps', 300) }}"
                            min="50" max="5000" class="input" style="height:42px;">
                     <p style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);margin-top:0.35rem;">

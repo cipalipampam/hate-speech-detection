@@ -50,9 +50,10 @@ SCRAPER_CONFIG = {
     "goto_timeout_ms"   : 60_000,           # Timeout navigasi halaman (ms)
     "delay_range"       : (2.0, 4.0),       # Range random delay antar aksi (detik)
     "max_links"         : 500,              # Batas maks URL postingan per keyword
+    "search_scroll"     : 300,              # Batas default scroll discovery per keyword
     "scan_step_px"      : 250,             # Langkah scroll micro-step (px)
     "scan_delay_range"  : (0.15, 0.30),    # Delay antar langkah scroll (detik)
-    "scan_max_steps"    : 3000,            # Maks langkah scroll per postingan
+    "scan_max_steps"    : 3000,            # Batas pengaman langkah deep crawl per postingan
 }
 
 # ---------------------------------------------------------------------------

@@ -29,7 +29,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import pandas as pd
+import pandas as pd  
 
 from configs.config import EXPORTS_DIR
 from src.auth.session_manager import is_session_valid, get_all_sessions_status
@@ -64,13 +64,13 @@ class EndToEndPipeline:
     Kelas Orchestrator untuk menjalankan alur analisis end-to-end secara utuh.
     """
 
-    def __init__(self):
+    def __init__(self, predictor: Optional[HateSpeechPredictor] = None):
         self.prep_pipeline = PreprocessingPipeline()
-        self._predictor = None  # Lazy-loaded saat tahap klasifikasi
+        self._predictor = predictor  # Jika diinjeksi, gunakan instance yang ada (mencegah re-load model)
 
     @property
     def predictor(self) -> HateSpeechPredictor:
-        """Lazy loader untuk HateSpeechPredictor agar tidak memakan RAM sebelum waktunya."""
+        """Lazy loader untuk HateSpeechPredictor jika belum diinjeksi."""
         if self._predictor is None:
             self._predictor = HateSpeechPredictor()
         return self._predictor
@@ -92,13 +92,13 @@ class EndToEndPipeline:
         statuses = get_all_sessions_status()
 
         if platform in ("x", "both"):
-            x_valid = is_session_valid("x")
-            if not x_valid:
+            x_status = is_session_valid("x")
+            if not x_status.get("is_valid", False):
                 errors.append("Sesi X (Twitter) tidak aktif atau profil belum login.")
 
         if platform in ("threads", "both"):
-            t_valid = is_session_valid("threads")
-            if not t_valid:
+            t_status = is_session_valid("threads")
+            if not t_status.get("is_valid", False):
                 errors.append("Sesi Threads tidak aktif atau profil belum login.")
 
         return {
@@ -135,13 +135,13 @@ class EndToEndPipeline:
         x_config = XScrapeConfig(
             search_mode=search_mode,
             max_links=max_links,
-            scan_max_steps=max_scroll_steps,
+            search_scroll=max_scroll_steps,
             headless=headless,
         )
         threads_config = ThreadsScrapeConfig(
             search_mode=search_mode,
             max_links=max_links,
-            scan_max_steps=max_scroll_steps,
+            search_scroll=max_scroll_steps,
             headless=headless,
         )
 
@@ -149,8 +149,8 @@ class EndToEndPipeline:
             if status_callback:
                 status_callback("Meluncurkan scraping paralel: X & Threads...")
 
-            task_x = run_x_scraper(keywords=keywords, direct_urls=direct_urls, config=x_config)
-            task_t = run_threads_scraper(keywords=keywords, direct_urls=direct_urls, config=threads_config)
+            task_x = run_x_scraper(keywords=keywords, direct_urls=direct_urls, config=x_config, status_callback=status_callback)
+            task_t = run_threads_scraper(keywords=keywords, direct_urls=direct_urls, config=threads_config, status_callback=status_callback)
             res_x, res_t = await asyncio.gather(task_x, task_t, return_exceptions=True)
 
             if isinstance(res_x, Exception):
@@ -166,14 +166,14 @@ class EndToEndPipeline:
         elif platform == "x":
             if status_callback:
                 status_callback("Meluncurkan scraping X (Twitter)...")
-            res_x = await run_x_scraper(keywords=keywords, direct_urls=direct_urls, config=x_config)
+            res_x = await run_x_scraper(keywords=keywords, direct_urls=direct_urls, config=x_config, status_callback=status_callback)
             if isinstance(res_x, pd.DataFrame) and not res_x.empty:
                 frames.append(res_x)
 
         elif platform == "threads":
             if status_callback:
                 status_callback("Meluncurkan scraping Threads...")
-            res_t = await run_threads_scraper(keywords=keywords, direct_urls=direct_urls, config=threads_config)
+            res_t = await run_threads_scraper(keywords=keywords, direct_urls=direct_urls, config=threads_config, status_callback=status_callback)
             if isinstance(res_t, pd.DataFrame) and not res_t.empty:
                 frames.append(res_t)
 
@@ -371,15 +371,24 @@ class EndToEndPipeline:
                 "total_data": 0,
             }
 
-        # 3. Preprocessing
+        # 3. Preprocessing (non-blocking ke event loop asyncio)
         if status_callback:
             status_callback(f"[Langkah 3/5] Membersihkan dan menormalisasi teks ({len(df_raw)} baris)...")
-        df_clean = self.execute_preprocessing(df_raw, status_callback=status_callback)
+        df_clean = await asyncio.to_thread(
+            self.execute_preprocessing,
+            df_raw,
+            status_callback,
+        )
 
-        # 4. Klasifikasi IndoBERT
+        # 4. Klasifikasi IndoBERT (non-blocking ke event loop asyncio)
         if status_callback:
-            status_callback(f"[Langkah 4/5] Melakukan inferensi model IndoBERT Multi-Head...")
-        df_classified = self.execute_classification(df_clean, status_callback=status_callback)
+            status_callback("[Langkah 4/5] Melakukan inferensi model IndoBERT Multi-Head...")
+        df_classified = await asyncio.to_thread(
+            self.execute_classification,
+            df_clean,
+            32,
+            status_callback,
+        )
 
         # 5. Statistik & Ekspor
         if status_callback:

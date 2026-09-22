@@ -402,7 +402,7 @@ function analysisDetail() {
                 <span>·</span>
                 <span>MODE: <strong style="color:#0A0A0A;">{{ strtoupper($analysis->search_mode) }}</strong></span>
                 <span>·</span>
-                <span>KUOTA: <strong style="color:#0A0A0A;">{{ $analysis->max_links }} URL</strong></span>
+                <span>KUOTA/KEYWORD: <strong style="color:#0A0A0A;">{{ $analysis->max_links }} URL</strong></span>
                 <span>·</span>
                 <span>PENELITI: <strong style="color:#0A0A0A;">{{ $analysis->user->name ?? 'SYSTEM' }}</strong></span>
                 <span>·</span>
@@ -480,7 +480,7 @@ function analysisDetail() {
                     <div>
                         <span class="stat-block-label">PARAMETER KONTROL RISET</span>
                         <p style="font-family:var(--font-mono);font-size:0.8125rem;margin:0.5rem 0 0.25rem;">
-                            TARGET: <strong>{{ strtoupper($analysis->platform) }}</strong> · BATAS: <strong>{{ $analysis->max_links }} POST</strong>
+                            TARGET: <strong>{{ strtoupper($analysis->platform) }}</strong> · BATAS/KEYWORD: <strong>{{ $analysis->max_links }} POST</strong>
                         </p>
                         <div style="display:flex;flex-wrap:wrap;gap:0.25rem;margin-top:0.5rem;">
                             @foreach($analysis->keywords ?? [] as $kw)

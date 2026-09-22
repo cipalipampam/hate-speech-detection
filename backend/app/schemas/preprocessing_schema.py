@@ -40,6 +40,7 @@ class PreprocessBatchRequest(BaseModel):
     texts: List[str] = Field(
         ...,
         min_length=1,
+        max_length=1000,  # Validasi batas 1000 dilakukan Pydantic, bukan manual if di router
         description="Daftar teks mentah yang akan dipreprocess. Maksimum 1000 item.",
         examples=[["bgt tolol ga jelas", "ini mah keren bgt!", "biasa aja sih"]],
     )
