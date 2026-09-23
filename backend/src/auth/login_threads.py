@@ -8,10 +8,13 @@ seluruh state sesi secara permanen ke disk.
 
 Alur Kerja:
     1. Buka browser Chrome/Edge asli (GUI, headless=False) dengan Persistent Context.
-    2. Arahkan ke halaman login Threads: https://www.threads.net/login
+    2. Arahkan ke halaman login Threads: https://www.threads.com/login
+       (host `threads.com` sengaja dipakai karena itulah host yang dibuka scraper —
+       login di `threads.net` menghasilkan cookie yang tidak berlaku di `threads.com`).
     3. Tampilkan instruksi di terminal untuk user melakukan login manual.
     4. Polling setiap 5 detik (maks 10 menit) hingga login terdeteksi via:
-       - Cookie sessionid & ds_user_id terdeteksi, DAN URL sudah bukan /login.
+       - Cookie sessionid & ds_user_id terdeteksi DAN berlaku untuk host threads.com,
+         DAN beranda threads.com menampilkan elemen navigasi terautentikasi.
        - ATAU elemen DOM navigasi terotentikasi (ikon Create/Activity/Profile) terdeteksi.
     5. Tunggu 3 detik, tutup context, sesi tersimpan permanen ke disk.
 
@@ -50,7 +53,8 @@ if not logger.handlers:
 # Konstanta
 # ---------------------------------------------------------------------------
 
-LOGIN_URL       = "https://www.threads.net/login"
+LOGIN_URL       = "https://www.threads.com/login"
+VERIFY_URL      = "https://www.threads.com/"
 MAX_WAIT_SEC    = 600       # Maks 10 menit (120 polling x 5 detik)
 POLL_INTERVAL   = 5         # Interval cek sesi (detik)
 
@@ -64,6 +68,14 @@ STEALTH_ARGS = [
 
 # Cookie primer autentikasi Threads / Instagram
 AUTH_COOKIES = ("sessionid", "ds_user_id")
+
+# Host domain tempat cookie autentikasi HARUS berlaku.
+#
+# Scraper membuka `threads.com`. Cookie `sessionid` yang hanya terbit untuk
+# `.threads.net` / `.instagram.com` tidak dikirim ke `threads.com`, sehingga
+# scraping berjalan sebagai tamu — Threads lalu membounce permalink ke beranda.
+# Karena itu login dilakukan dan diverifikasi pada host `threads.com`.
+AUTH_COOKIE_HOSTS = ("threads.com",)
 
 # Selektor DOM ikon navigasi yang hanya muncul setelah akun login
 LOGGED_IN_SELECTORS = [
@@ -130,6 +142,53 @@ async def _create_browser(playwright, profile_dir: str, headless: bool = False):
     )
 
 
+async def _cookie_hosts_for(context, name: str) -> list[str]:
+    """Ambil daftar domain tempat cookie `name` berlaku (untuk verifikasi host)."""
+    try:
+        cookies = await context.cookies()
+    except Exception:
+        return []
+    return sorted({
+        (c.get("domain") or "").lower()
+        for c in cookies
+        if c.get("name") == name and c.get("value")
+    })
+
+
+def _host_is_allowed(hosts: list[str]) -> bool:
+    """True bila minimal satu cookie auth berlaku untuk host threads.com."""
+    return any(
+        host and any(allowed in host for allowed in AUTH_COOKIE_HOSTS)
+        for host in hosts
+    )
+
+
+async def _verify_login_on_threads(page) -> bool:
+    """
+    Verifikasi status login langsung pada host `threads.com`.
+
+    Bukan sekadar cek NAMA cookie: membuka beranda threads.com dan memastikan
+    elemen navigasi terautentikasi benar-benar muncul, sehingga sesi yang tidak
+    berlaku untuk host tersebut tidak dianggap berhasil.
+    """
+    try:
+        if "threads.com" not in (page.url or "").lower():
+            await page.goto(VERIFY_URL, wait_until="domcontentloaded", timeout=60_000)
+        await asyncio.sleep(3.0)
+        if "/login" in (page.url or "").lower():
+            return False
+        for selector in LOGGED_IN_SELECTORS:
+            try:
+                if await page.locator(selector).count() > 0:
+                    return True
+            except Exception:
+                continue
+        return False
+    except Exception as error:
+        logger.debug(f"Verifikasi login threads.com gagal: {error}")
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Fungsi Utama: Setup Login Threads
 # ---------------------------------------------------------------------------
@@ -187,27 +246,60 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
                 if page.is_closed():
                     logger.info("Tab browser ditutup oleh pengguna.")
                     try:
-                        cookies = await context.cookies()
-                        if any(
+                        cookies   = await context.cookies()
+                        has_auth  = any(
                             c.get("name") in AUTH_COOKIES and bool(c.get("value"))
                             for c in cookies
-                        ):
+                        )
+                        hosts = sorted({
+                            (c.get("domain") or "").lower()
+                            for c in cookies
+                            if c.get("name") == "sessionid" and c.get("value")
+                        })
+                        if has_auth and _host_is_allowed(hosts):
                             logged_in = True
+                        else:
+                            logger.warning(
+                                "Cookie auth ditemukan tetapi tidak berlaku untuk threads.com "
+                                f"(host: {', '.join(hosts) or '<kosong>'}). Sesi tidak dianggap valid."
+                            )
                     except Exception:
                         pass
                     break
 
                 try:
-                    # --- Cek 1: Cookie sessionid & ds_user_id ---
+                    # --- Cek 1: Cookie sessionid & ds_user_id (host-aware) ---
                     cookies         = await context.cookies()
                     has_session     = any(c.get("name") == "sessionid"  and bool(c.get("value")) for c in cookies)
                     has_ds_user     = any(c.get("name") == "ds_user_id" and bool(c.get("value")) for c in cookies)
                     current_url     = page.url.lower()
 
-                    if has_session and has_ds_user and "login" not in current_url:
-                        logged_in = True
-                        logger.info("✓ Cookie sessionid & ds_user_id terdeteksi — login berhasil!")
-                        break
+                    session_hosts = sorted({
+                        (c.get("domain") or "").lower()
+                        for c in cookies
+                        if c.get("name") == "sessionid" and c.get("value")
+                    })
+                    host_ok = _host_is_allowed(session_hosts)
+
+                    if has_session and has_ds_user and host_ok and "login" not in current_url:
+                        # Verifikasi akhir di host threads.com: cookie saja tidak cukup,
+                        # harus terbukti login pada host yang dipakai scraper.
+                        if await _verify_login_on_threads(page):
+                            logged_in = True
+                            logger.info(
+                                f"✓ Login terverifikasi di threads.com (cookie sessionid host: "
+                                f"{', '.join(session_hosts)}) — login berhasil!"
+                            )
+                            break
+                        logger.info(
+                            "Cookie terdeteksi, tetapi threads.com belum menampilkan status login. "
+                            "Menunggu..."
+                        )
+                    elif has_session and has_ds_user and not host_ok:
+                        logger.info(
+                            f"Menunggu cookie berlaku untuk threads.com... "
+                            f"(host sessionid saat ini: {', '.join(session_hosts) or '<kosong>'})"
+                        )
 
                     # --- Cek 2: Elemen DOM navigasi terotentikasi ---
                     if "login" not in current_url:

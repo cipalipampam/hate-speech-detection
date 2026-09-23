@@ -125,6 +125,22 @@ def print_error(msg: str):
         print(f"[ERROR] {msg}")
 
 
+def print_scraper_failure(platform_label: str, error: Exception):
+    """
+    Tampilkan kegagalan scraper beserta detail actionable.
+
+    Exception terklasifikasi (punya atribut `reason`/`detail`, mis. ThreadsScrapeAborted)
+    pesannya sudah menjelaskan penyebab dan tindakan perbaikan, jadi ditampilkan utuh
+    alih-alih hanya sebagai traceback.
+    """
+    reason = getattr(error, "reason", None)
+    detail = getattr(error, "detail", "")
+    print_error(f"Scraping {platform_label} gagal: {reason or error}")
+    if detail:
+        for line in str(detail).splitlines():
+            print(f"    {line}")
+
+
 # ---------------------------------------------------------------------------
 # Fitur Modul 1: Manajemen Autentikasi & Sesi
 # ---------------------------------------------------------------------------
@@ -361,7 +377,7 @@ def handle_scraping_menu():
                     else:
                         print_warning("Tidak ada data yang terkumpul. Periksa keyword atau sesi login.")
                 except Exception as e:
-                    print_error(f"Scraping Threads gagal: {e}")
+                    print_scraper_failure("Threads", e)
 
             input("\nTekan Enter untuk kembali ke menu scraping...")
 
@@ -418,7 +434,7 @@ def handle_scraping_menu():
                     else:
                         print_warning("Tidak ada data Threads yang terkumpul.")
                 except Exception as e:
-                    print_error(f"Scraping Threads gagal: {e}")
+                    print_scraper_failure("Threads", e)
             else:
                 print_warning("Sesi Threads tidak aktif, melewati scraping Threads.")
 
@@ -484,7 +500,7 @@ def handle_scraping_menu():
 
                 # Evaluasi hasil Threads
                 if isinstance(res_t, Exception):
-                    print_error(f"Scraping Threads error: {res_t}")
+                    print_scraper_failure("Threads", res_t)
                 elif not res_t.empty:
                     threads_count = len(res_t)
                     print_success(f"Scraping Threads selesai: {threads_count} baris.")

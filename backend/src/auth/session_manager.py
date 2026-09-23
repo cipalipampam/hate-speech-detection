@@ -55,6 +55,18 @@ AUTH_COOKIE_NAMES = {
     "x": ("auth_token", "twid"),
     "threads": ("sessionid", "ds_user_id"),
 }
+
+# Host domain yang sah untuk cookie autentikasi tiap platform.
+#
+# Penting: cookie autentikasi harus benar-benar berlaku untuk host yang di-scrape.
+# Cookie `sessionid` milik `.threads.net` atau `.instagram.com` TIDAK dikirim ke
+# `threads.com`, sehingga sesi tampak valid padahal halaman di-scrape sebagai
+# tamu — inilah yang membuat Threads membounce permalink ke beranda.
+AUTH_COOKIE_HOSTS = {
+    "x": ("x.com", "twitter.com"),
+    "threads": ("threads.com",),
+}
+
 CHROMIUM_EPOCH_OFFSET = 11644473600
 
 
@@ -89,9 +101,26 @@ def check_profile_exists(platform: str) -> bool:
         return False
 
 
-def _has_auth_cookies(profile_path: Path, platform: str) -> bool:
-    """Check authenticated Chromium cookies without launching a browser."""
+def _has_auth_cookies(profile_path: Path, platform: str) -> dict:
+    """
+    Periksa cookie autentikasi Chromium tanpa membuka browser.
+
+    Selain nama + masa berlaku, cookie juga harus berlaku untuk host domain yang
+    sah bagi platform (`AUTH_COOKIE_HOSTS`). Pemeriksaan host ini penting karena
+    profil bisa saja punya `sessionid` untuk domain lain yang tidak dipakai scraper.
+
+    Returns:
+        dict: {
+            "valid"        : bool,
+            "matched_names": set[str],  # nama cookie yang lolos semua syarat
+            "matched_hosts": set[str],  # host_key yang lolos
+            "seen_hosts"   : set[str],  # semua host_key dari cookie auth apa pun
+        }
+    """
     required_names = set(AUTH_COOKIE_NAMES[platform])
+    allowed_hosts  = AUTH_COOKIE_HOSTS.get(platform, ())
+    result = {"valid": False, "matched_names": set(), "matched_hosts": set(), "seen_hosts": set()}
+
     # Cek lokasi standar database cookie Chromium terlebih dahulu (hindari glob rekursif ribuan file di Docker mount)
     candidate_dbs = [
         profile_path / "Default" / "Cookies",
@@ -115,31 +144,38 @@ def _has_auth_cookies(profile_path: Path, platform: str) -> bool:
             connection = sqlite3.connect(temporary_database)
             try:
                 rows = connection.execute(
-                    "SELECT name, expires_utc, length(encrypted_value) "
+                    "SELECT name, host_key, expires_utc, length(encrypted_value) "
                     "FROM cookies WHERE name IN (?, ?)",
                     tuple(required_names),
                 ).fetchall()
             finally:
                 connection.close()
 
-            valid_names = {
-                name
-                for name, expires_utc, value_length in rows
-                if value_length > 0
-                and (
-                    not expires_utc
-                    or expires_utc / 1_000_000 - CHROMIUM_EPOCH_OFFSET > time()
-                )
-            }
-            if required_names.issubset(valid_names):
-                return True
+            for name, host_key, expires_utc, value_length in rows:
+                host = (host_key or "").lower()
+                if host:
+                    result["seen_hosts"].add(host)
+
+                if value_length <= 0:
+                    continue
+                if expires_utc and expires_utc / 1_000_000 - CHROMIUM_EPOCH_OFFSET <= time():
+                    continue
+                if allowed_hosts and not any(allowed in host for allowed in allowed_hosts):
+                    continue
+
+                result["matched_names"].add(name)
+                result["matched_hosts"].add(host)
+
+            if required_names.issubset(result["matched_names"]):
+                result["valid"] = True
+                return result
         except (OSError, sqlite3.Error) as error:
             logger.debug("Gagal membaca database cookie %s: %s", cookie_database, error)
         finally:
             if temporary_database:
                 temporary_database.unlink(missing_ok=True)
 
-    return False
+    return result
 
 def is_session_valid(platform: str) -> dict:
     """
@@ -182,7 +218,7 @@ def is_session_valid(platform: str) -> dict:
     p = Path(profile_path)
     exists = p.exists() and p.is_dir()
     has_data = False
-    has_auth_cookies = False
+    cookie_check = {"valid": False, "matched_names": set(), "matched_hosts": set(), "seen_hosts": set()}
     last_modified = None
 
     if exists:
@@ -204,14 +240,23 @@ def is_session_valid(platform: str) -> dict:
                     last_modified = datetime.fromtimestamp(ts).strftime("%Y-%m-%dT%H:%M:%S")
                 except Exception:
                     pass
-                has_auth_cookies = _has_auth_cookies(p, key)
+                cookie_check = _has_auth_cookies(p, key)
         except Exception as e:
             logger.debug(f"Gagal membaca direktori profil {platform}: {e}")
 
+    has_auth_cookies = bool(cookie_check["valid"])
     is_valid = exists and has_data and has_auth_cookies
 
+    # Bedakan penyebab kegagalan agar tidak selalu jatuh ke pesan "belum login".
     if is_valid:
         msg = f"Sesi {platform.upper()} ditemukan dan masih aktif."
+    elif exists and has_data and cookie_check["seen_hosts"] and not has_auth_cookies:
+        allowed = ", ".join(AUTH_COOKIE_HOSTS.get(key, ()))
+        msg = (
+            f"Cookie autentikasi {platform.upper()} ada, tetapi TIDAK berlaku untuk host "
+            f"{allowed}. Host yang ditemukan: {', '.join(sorted(cookie_check['seen_hosts']))}. "
+            "Login ulang pada host yang benar lalu ulangi scraping."
+        )
     else:
         msg = LOGIN_INSTRUCTIONS.get(key, f"Sesi {platform.upper()} tidak ditemukan.")
 
@@ -222,6 +267,8 @@ def is_session_valid(platform: str) -> dict:
         "is_valid"      : is_valid,
         "last_modified" : last_modified,
         "message"       : msg,
+        "auth_hosts"    : sorted(cookie_check["matched_hosts"]),
+        "warning_hosts" : sorted(cookie_check["seen_hosts"] - cookie_check["matched_hosts"]),
     }
 
 

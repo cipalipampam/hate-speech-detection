@@ -67,6 +67,18 @@ class EndToEndPipeline:
     def __init__(self, predictor: Optional[HateSpeechPredictor] = None):
         self.prep_pipeline = PreprocessingPipeline()
         self._predictor = predictor  # Jika diinjeksi, gunakan instance yang ada (mencegah re-load model)
+        # Menampung kegagalan scraping agar tidak hilang sebagai "sukses 0 baris".
+        self.scraping_errors: List[str] = []
+
+    def _record_scraping_error(self, platform_label: str, error: Exception) -> None:
+        """Catat kegagalan scraping satu platform beserta alasannya."""
+        reason = getattr(error, "reason", None) or str(error)
+        detail = getattr(error, "detail", "") or ""
+        message = f"Scraping {platform_label} gagal: {reason}"
+        if detail:
+            message = f"{message}\n{detail}"
+        self.scraping_errors.append(message)
+        logger.error(message)
 
     @property
     def predictor(self) -> HateSpeechPredictor:
@@ -128,6 +140,7 @@ class EndToEndPipeline:
         """
         platform = platform.lower().strip()
         frames = []
+        self.scraping_errors = []
 
         if status_callback:
             status_callback(f"Memulai scraping pada platform [{platform.upper()}] dengan mode '{search_mode}'...")
@@ -154,28 +167,35 @@ class EndToEndPipeline:
             res_x, res_t = await asyncio.gather(task_x, task_t, return_exceptions=True)
 
             if isinstance(res_x, Exception):
-                logger.error(f"Error scraping X: {res_x}")
+                self._record_scraping_error("X", res_x)
             elif isinstance(res_x, pd.DataFrame) and not res_x.empty:
                 frames.append(res_x)
 
             if isinstance(res_t, Exception):
-                logger.error(f"Error scraping Threads: {res_t}")
+                self._record_scraping_error("Threads", res_t)
             elif isinstance(res_t, pd.DataFrame) and not res_t.empty:
                 frames.append(res_t)
 
         elif platform == "x":
             if status_callback:
                 status_callback("Meluncurkan scraping X (Twitter)...")
-            res_x = await run_x_scraper(keywords=keywords, direct_urls=direct_urls, config=x_config, status_callback=status_callback)
-            if isinstance(res_x, pd.DataFrame) and not res_x.empty:
-                frames.append(res_x)
+            try:
+                res_x = await run_x_scraper(keywords=keywords, direct_urls=direct_urls, config=x_config, status_callback=status_callback)
+                if isinstance(res_x, pd.DataFrame) and not res_x.empty:
+                    frames.append(res_x)
+            except Exception as error:
+                self._record_scraping_error("X", error)
 
         elif platform == "threads":
             if status_callback:
                 status_callback("Meluncurkan scraping Threads...")
-            res_t = await run_threads_scraper(keywords=keywords, direct_urls=direct_urls, config=threads_config, status_callback=status_callback)
-            if isinstance(res_t, pd.DataFrame) and not res_t.empty:
-                frames.append(res_t)
+            try:
+                res_t = await run_threads_scraper(keywords=keywords, direct_urls=direct_urls, config=threads_config, status_callback=status_callback)
+                if isinstance(res_t, pd.DataFrame) and not res_t.empty:
+                    frames.append(res_t)
+            except Exception as error:
+                # Termasuk ThreadsScrapeAborted (sesi tidak aktif / semua URL di-skip).
+                self._record_scraping_error("Threads", error)
 
         if not frames:
             return pd.DataFrame(columns=["platform", "source", "user_id", "type", "date", "content"])
@@ -364,6 +384,17 @@ class EndToEndPipeline:
         )
 
         if df_raw.empty:
+            # Bedakan "memang tidak ada hasil" dari "scraping gagal" agar bug tidak
+            # terlihat sebagai sukses tanpa data.
+            if self.scraping_errors:
+                first_line = self.scraping_errors[0].splitlines()[0]
+                return {
+                    "status": "error",
+                    "stage": "scraping",
+                    "message": first_line,
+                    "errors": self.scraping_errors,
+                    "total_data": 0,
+                }
             return {
                 "status": "warning",
                 "stage": "scraping",

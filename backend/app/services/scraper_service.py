@@ -160,7 +160,12 @@ class ScraperService:
                 job_manager.update_job(
                     job_id,
                     status="success",
-                    message=f"Scraping selesai. Berhasil mengumpulkan {len(data_list):,} postingan.",
+                    message=(
+                        f"Scraping selesai. Berhasil mengumpulkan {len(data_list):,} postingan."
+                        if data_list
+                        else "Scraping selesai tanpa data. Periksa log backend untuk rincian "
+                             "(kata kunci, sesi login, atau pemblokiran halaman oleh platform)."
+                    ),
                     total_scraped=len(data_list),
                     elapsed_seconds=elapsed,
                     data=data_list,
@@ -169,13 +174,28 @@ class ScraperService:
 
             except Exception as e:
                 elapsed = round((datetime.now() - t_start).total_seconds(), 2)
-                logger.error(f"ScraperService [Job {job_id}]: Gagal: {e}", exc_info=True)
+
+                # Kondisi yang sudah terklasifikasi (mis. ThreadsScrapeAborted) tidak perlu
+                # traceback penuh — pesannya sudah actionable dan penting untuk ditampilkan.
+                reason = getattr(e, "reason", None)
+                detail = getattr(e, "detail", "")
+                if reason:
+                    logger.error(f"ScraperService [Job {job_id}]: Dibatalkan: {reason}")
+                    if detail:
+                        logger.error(detail)
+                    message = f"Scraping dibatalkan: {reason}"
+                else:
+                    logger.error(f"ScraperService [Job {job_id}]: Gagal: {e}", exc_info=True)
+                    message = "Scraping gagal karena terjadi error."
+
                 job_manager.update_job(
                     job_id,
                     status="error",
-                    message="Scraping gagal karena terjadi error.",
+                    message=message,
                     elapsed_seconds=elapsed,
-                    error_detail=str(e),
+                    error_detail=(
+                        f"{reason}\n{detail}" if reason and detail else str(e)
+                    ),
                 )
 
     @staticmethod

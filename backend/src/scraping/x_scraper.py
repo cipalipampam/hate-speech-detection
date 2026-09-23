@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
+import pandas as pd
 from parsel import Selector
 from playwright.async_api import async_playwright, Page
 
