@@ -7,6 +7,7 @@ use App\Models\Analysis;
 use App\Services\AnalysisService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -20,7 +21,7 @@ class AnalysisController extends Controller
     /**
      * Daftar semua sesi analisis (Admin: semua, Analyst: milik sendiri) dengan filter & pagination.
      */
-    public function index(Request $request): View|\Illuminate\Http\JsonResponse
+    public function index(Request $request): View|JsonResponse
     {
         $userId = auth()->user()->hasRole('admin') ? null : auth()->id();
         
@@ -82,7 +83,7 @@ class AnalysisController extends Controller
     /**
      * Detail dan progress satu sesi analisis.
      */
-    public function show(Request $request, Analysis $analysis): View|\Illuminate\Http\JsonResponse
+    public function show(Request $request, Analysis $analysis): View|JsonResponse
     {
         // Sinkronisasi status jika masih running atau queued
         if ($analysis->status === 'running' || $analysis->status === 'queued') {
