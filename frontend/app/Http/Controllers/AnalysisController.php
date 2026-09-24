@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Analysis\FilterPostRequest;
+use App\Http\Requests\Analysis\FilterAnalysisRequest;
 use App\Http\Requests\Analysis\StoreAnalysisRequest;
 use App\Models\Analysis;
 use App\Services\AnalysisService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AnalysisController extends Controller
@@ -21,24 +22,28 @@ class AnalysisController extends Controller
     /**
      * Daftar semua sesi analisis (Admin: semua, Analyst: milik sendiri) dengan filter & pagination.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(FilterAnalysisRequest $request): View|JsonResponse
     {
         $userId = auth()->user()->hasRole('admin') ? null : auth()->id();
         
-        // 1. Sinkronisasi status analisis yang masih running / queued ke FastAPI
-        if (Analysis::whereIn('status', ['running', 'queued'])->exists()) {
+        // 1. Sinkronisasi status analisis yang masih running / queued ke FastAPI.
+        //    Dicek SEKALI saja dan di-scope ke user ini (admin: semua) agar indikator
+        //    polling tidak menyala hanya karena ada job milik user lain.
+        $hasRunning = Analysis::whereIn('status', ['running', 'queued'])
+            ->when($userId, fn ($query) => $query->where('user_id', $userId))
+            ->exists();
+
+        if ($hasRunning) {
             $this->analysisService->syncRunningAnalyses($userId);
         }
 
         $analyses = $this->analysisService->getPaginatedAnalyses(
             userId:   $userId,
-            perPage:  12,
-            search:   $request->query('search'),
-            platform: $request->query('platform'),
-            status:   $request->query('status')
+            perPage:  (int) ($request->validated('per_page') ?? 12),
+            search:   $request->validated('search'),
+            platform: $request->validated('platform'),
+            status:   $request->validated('status')
         );
-
-        $hasRunning = Analysis::whereIn('status', ['running', 'queued'])->exists();
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -83,8 +88,11 @@ class AnalysisController extends Controller
     /**
      * Detail dan progress satu sesi analisis.
      */
-    public function show(Request $request, Analysis $analysis): View|JsonResponse
+    public function show(FilterPostRequest $request, Analysis $analysis): View|JsonResponse
     {
+        // Otorisasi kepemilikan: admin bebas, pengguna lain hanya analisis miliknya sendiri.
+        Gate::authorize('view', $analysis);
+
         // Sinkronisasi status jika masih running atau queued
         if ($analysis->status === 'running' || $analysis->status === 'queued') {
             $analysis = $this->analysisService->syncAnalysisStatus($analysis);
@@ -94,13 +102,14 @@ class AnalysisController extends Controller
 
         // Ambil data postingan hasil analisis dengan filter & pagination
         $filters = [
-            'search'     => $request->query('search'),
-            'label_lvl1' => $request->query('label_lvl1'),
-            'label_lvl2' => $request->query('label_lvl2'),
-            'platform'   => $request->query('platform'),
+            'search'     => $request->validated('search'),
+            'label_lvl1' => $request->validated('label_lvl1'),
+            'label_lvl2' => $request->validated('label_lvl2'),
+            'platform'   => $request->validated('platform'),
         ];
+        $perPage = (int) ($request->validated('per_page') ?? 20);
 
-        $posts = $this->analysisService->getFilteredPosts($analysis, $filters, 20);
+        $posts = $this->analysisService->getFilteredPosts($analysis, $filters, $perPage);
 
         if ($request->ajax() || $request->wantsJson()) {
             $pipelineMsg = $analysis->pipeline_message;
@@ -137,64 +146,11 @@ class AnalysisController extends Controller
      */
     public function exportCsv(Analysis $analysis): StreamedResponse
     {
-        $safeTitle = Str::slug($analysis->title, '_');
-        $filename  = "hatesense_analisis_{$analysis->id}_{$safeTitle}.csv";
+        // Permission `export-reports` sudah dijaga middleware rute; di sini ditegaskan
+        // kepemilikan analisis agar analyst tidak bisa mengunduh data peneliti lain.
+        Gate::authorize('export', $analysis);
 
-        $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0',
-        ];
-
-        $callback = function () use ($analysis) {
-            $handle = fopen('php://output', 'w');
-
-            // Tulis BOM UTF-8 agar karakter Indonesia/emoji terbaca mulus di Excel
-            fputs($handle, "\xEF\xBB\xBF");
-
-            // Header Kolom CSV
-            fputcsv($handle, [
-                'ID',
-                'Platform',
-                'Author Username',
-                'Tanggal Post',
-                'Konten Asli (Raw Text)',
-                'Konten Preprocessing (Clean Text)',
-                'Sentimen Level 1',
-                'Confidence Level 1',
-                'Kategori Level 2',
-                'Confidence Level 2',
-                'Source URL',
-            ]);
-
-            // Query chunking hemat memori
-            $analysis->posts()
-                ->with('classification')
-                ->chunk(200, function ($posts) use ($handle) {
-                    foreach ($posts as $post) {
-                        $c = $post->classification;
-                        fputcsv($handle, [
-                            $post->id,
-                            $post->platform,
-                            $post->author_username ?? '-',
-                            $post->post_date ?? '-',
-                            $c->raw_content ?? '',
-                            $c->clean_content ?? '',
-                            $c->label_lvl1 ?? '',
-                            $c ? round($c->confidence_lvl1, 4) : 0,
-                            $c ? str_replace('_', ' ', ucwords($c->label_lvl2 ?? '')) : '',
-                            $c ? round($c->confidence_lvl2, 4) : 0,
-                            $post->source_url ?? '',
-                        ]);
-                    }
-                });
-
-            fclose($handle);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return $this->analysisService->streamExportCsv($analysis);
     }
 }
 

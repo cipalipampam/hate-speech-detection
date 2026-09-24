@@ -48,21 +48,21 @@ Layanan backend dirancang secara modular dan asinkron untuk menangani komputasi 
 ```
 backend/
 ├── app/                                # Layer API Web (FastAPI)
-│   ├── routers/                        # Controller REST API per domain
+│   ├── routers/                        # Controller REST API per domain (thin controller)
 │   │   ├── api_auth.py                 # Endpoint sesi login browser (X & Threads)
-│   │   ├── api_classification.py       # Endpoint prediksi tunggal & batch
-│   │   ├── api_pipeline.py             # Endpoint orkestrasi end-to-end
-│   │   ├── api_preprocessing.py        # Endpoint pembersihan teks
-│   │   └── api_scraper.py              # Endpoint background scraper
-│   └── schemas/                        # Validasi data request/response (Pydantic)
-│       ├── auth_schema.py
-│       ├── classification_schema.py
-│       ├── pipeline_schema.py
-│       ├── preprocessing_schema.py
-│       └── scraper_schema.py
+│   │   ├── api_classification.py       # Endpoint prediksi satu teks
+│   │   └── api_pipeline.py             # Endpoint orkestrasi end-to-end + unduh CSV
+│   ├── schemas/                        # Validasi data request/response (Pydantic v2)
+│   │   ├── auth_schema.py
+│   │   └── classification_schema.py
+│   └── services/                       # Application Service Layer (business logic)
+│       ├── job_service.py              # In-memory job store + platform lock
+│       ├── auth_service.py             # Deteksi runtime GUI + status sesi
+│       ├── classification_service.py   # Inferensi IndoBERT
+│       └── pipeline_service.py         # Orkestrasi pipeline + penyajian berkas ekspor
 │
-├── configs/                            # Pengaturan runtime & logging
-│   └── settings.py
+├── configs/                            # Pengaturan runtime terpusat
+│   └── config.py                       # Path direktori, SCRAPER_CONFIG, MODEL_CONFIG
 │
 ├── saved_models/                       # Artefak Model AI & Laporan Evaluasi
 │   ├── best_model.pt                   # Checkpoint PyTorch bobot model (~499 MB)
@@ -70,18 +70,25 @@ backend/
 │   ├── model_config.json               # Hyperparameter arsitektur model
 │   └── reports/                        # Laporan metrik F1, Confusion Matrix, kurva loss
 │
-├── src/                                # Core Engine & Business Logic
+├── src/                                # Core Engine (komputasi murni)
+│   ├── auth/                           # Sesi & login interaktif Playwright
+│   │   ├── login_x.py                  # Alur login X (GUI)
+│   │   ├── login_threads.py            # Alur login Threads (GUI)
+│   │   └── session_manager.py          # Validasi cookie & status sesi
 │   ├── classification/                 # Engine Klasifikasi PyTorch
 │   │   ├── model_loader.py             # Definisi arsitektur PyTorch & model loading
 │   │   └── predictor.py                # Wrapper inferensi, tokenizer, & softmax
+│   ├── pipeline/                       # Orkestrator end-to-end
+│   │   └── end_to_end_pipeline.py      # Scrape -> Preprocess -> Classify -> Export
 │   ├── preprocessing/                  # Pipeline Pembersihan Teks
 │   │   ├── cleaner.py                  # Regex URLs, mentions, emojis, angka
 │   │   ├── normalizer.py               # Kamus substitusi kata alay/slang
 │   │   └── pipeline.py                 # Orchestrator preprocessing
-│   └── scraping/                       # Engine Scraping Media Sosial
-│       ├── browser_context.py          # Session & Playwright lifecycle manager
-│       ├── threads_scraper.py          # DOM selector & scroll engine Threads
-│       └── x_scraper.py                # DOM selector & scroll engine X (Twitter)
+│   ├── scraping/                       # Engine Scraping Media Sosial
+│   │   ├── base_scraper.py             # Browser factory, scroll, & helper CSV bersama
+│   │   ├── threads_scraper.py          # DOM selector & scroll engine Threads
+│   │   └── x_scraper.py                # DOM selector & scroll engine X (Twitter)
+│   └── utils/                          # Helper kompatibilitas asyncio (Windows)
 │
 ├── storage/                            # Penyimpanan Lokal & Runtime State
 │   ├── dictionaries/                   # Kamus referensi (kamusalay.csv)
@@ -89,6 +96,10 @@ backend/
 │   └── sessions/                       # Browser cookies & local storage
 │       ├── threads_profile/
 │       └── x_profile/
+│
+├── tests/                              # Test regresi (stdlib unittest, tanpa pytest)
+│   ├── check_pipeline_text_columns.py  # Guard pemisahan teks mentah vs bersih
+│   └── test_paket_f*.py                # Test regresi per paket perbaikan
 │
 ├── main_api.py                         # Entrypoint Server REST API (Uvicorn)
 ├── main_cli.py                         # Entrypoint CLI interaktif untuk debug
@@ -152,30 +163,29 @@ Scraper berada di `src/scraping/` menggunakan modul **Playwright Python**:
 
 ## 🌐 Daftar REST API Endpoints
 
-Server REST API berjalan pada port **8080**. Dokumentasi interaktif Swagger dapat diakses di `http://localhost:8080/docs`.
+Server REST API berjalan pada port **8080**. Dokumentasi interaktif Swagger: `http://localhost:8080/docs`.
 
-### 1. Klasifikasi (`/api/v1/classify`)
-* `GET /api/v1/classify/info`: Menampilkan status model IndoBERT (device CPU/CUDA, daftar kelas).
-* `POST /api/v1/classify/single`: Prediksi klasifikasi untuk 1 teks.
-* `POST /api/v1/classify/batch`: Prediksi klasifikasi untuk array teks (maks. 500 baris per request).
+Kolom **Konsumen** mencatat pemakai nyata endpoint tersebut.
 
-### 2. Preprocessing (`/api/v1/preprocess`)
-* `POST /api/v1/preprocess/clean`: Menguji hasil pembersihan dan normalisasi teks tanpa inferensi model.
+| Endpoint | Metode | Konsumen | Keterangan |
+| :--- | :---: | :--- | :--- |
+| `/api/v1/health` | GET | Frontend Laravel (badge masthead) | Health check ringan untuk polling telemetri |
+| `/api/v1/auth/status` | GET | Frontend (halaman telemetri scraper) | Status sesi X & Threads + `login_environment` (noVNC vs native) |
+| `/api/v1/auth/login-trigger/{platform}` | POST | Frontend (tombol RE-AUTHENTICATE) | Buka browser GUI login di background |
+| `/api/v1/classify/single` | POST | Frontend (Live Predict Sandbox) | Inferensi hierarkis 1 teks |
+| `/api/v1/pipeline/run` | POST | Frontend (form analisis baru) | Pipeline end-to-end sebagai background job |
+| `/api/v1/pipeline/status/{job_id}` | GET | Frontend (polling halaman analisis) | Status + statistik job pipeline |
+| `/api/v1/pipeline/exports/{filename}` | GET | Frontend (`AnalysisImportService`) | Unduh CSV hasil analisis (stream, anti path-traversal) |
+| `/` | GET | `docker-compose.yml` healthcheck | Info server + status model (`curl -f http://localhost:8080/`) |
 
-### 3. Media Social Scraping (`/api/v1/scrape`)
-* `POST /api/v1/scrape/x`: Memulai background scraping platform X (Twitter).
-* `POST /api/v1/scrape/threads`: Memulai background scraping platform Threads.
-* `GET /api/v1/scrape/status/{task_id}`: Memeriksa progres scraping (jumlah item terkumpul, persentase).
-
-### 4. Sesi Autentikasi (`/api/v1/auth`)
-* `GET /api/v1/auth/sessions`: Memeriksa status login sesi X dan Threads.
-* `POST /api/v1/auth/login-browser`: Membuka browser interaktif untuk login manual jika session expired.
-
-### 5. Pipeline (`/api/v1/pipeline`)
-* `POST /api/v1/pipeline/run`: Menjalankan alur lengkap: Ambil Data $\rightarrow$ Preprocessing $\rightarrow$ Klasifikasi $\rightarrow$ Export CSV.
+> **Catatan konsumen CLI:** `main_cli.py` **tidak** memakai HTTP sama sekali — ia memanggil modul `src/`
+> (scraper, preprocessing, predictor, pipeline) secara langsung.
+>
+> **Riwayat pembersihan (2026-09-25):** endpoint *info model*, *klasifikasi batch*, seluruh
+> *preprocessing*, seluruh *scraping*, dan *daftar berkas ekspor* dihapus karena tidak memiliki
+> konsumen — server kini menyisakan 8 endpoint di atas. Riwayat lengkapnya tetap tersedia di git.
 
 ---
-
 ## 🚀 Panduan Instalasi & Menjalankan
 
 ### Melalui Docker (Bagian dari Docker Compose)

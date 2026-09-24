@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\User\UpdatePasswordRequest;
+use App\Http\Requests\User\UpdateProfileRequest;
+use App\Services\ProfileService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        protected ProfileService $profileService
+    ) {}
+
     public function edit(): View
     {
         return view('profile.edit');
@@ -19,14 +22,9 @@ class ProfileController extends Controller
     /**
      * Perbarui nama dan email pengguna.
      */
-    public function updateInfo(Request $request): RedirectResponse
+    public function updateInfo(UpdateProfileRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . Auth::id()],
-        ]);
-
-        Auth::user()->update($request->only('name', 'email'));
+        $this->profileService->updateProfileInfo($request->user(), $request->validated());
 
         return back()->with('profile_success', 'Informasi akun berhasil diperbarui.');
     }
@@ -34,16 +32,9 @@ class ProfileController extends Controller
     /**
      * Perbarui kata sandi pengguna.
      */
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(UpdatePasswordRequest $request): RedirectResponse
     {
-        $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password'         => ['required', 'confirmed', Password::min(8)],
-        ]);
-
-        Auth::user()->update([
-            'password' => Hash::make($request->input('password')),
-        ]);
+        $this->profileService->updatePassword($request->user(), $request->validated('password'));
 
         return back()->with('profile_success', 'Kata sandi berhasil diperbarui.');
     }

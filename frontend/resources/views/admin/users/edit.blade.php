@@ -32,6 +32,15 @@
                     @endforeach
                 </select>
             </div>
+            <div>
+                <label class="label" for="password">Kata Sandi Baru <span style="color:var(--color-text-muted);font-weight:400;">(opsional)</span></label>
+                <input id="password" type="password" name="password" class="input {{ $errors->has('password') ? 'error' : '' }}" placeholder="Kosongkan bila tidak diubah (min. 8 karakter)" autocomplete="new-password">
+                @error('password')<p style="font-size:0.75rem;color:var(--color-danger);margin-top:0.25rem;">{{ $message }}</p>@enderror
+            </div>
+            <div>
+                <label class="label" for="password_confirmation">Konfirmasi Kata Sandi Baru</label>
+                <input id="password_confirmation" type="password" name="password_confirmation" class="input" placeholder="Ulangi kata sandi baru" autocomplete="new-password">
+            </div>
             <div style="display:flex;gap:0.75rem;justify-content:space-between;">
                 <a href="{{ route('admin.users.index') }}" class="btn btn-ghost">← Kembali</a>
                 <button type="submit" class="btn btn-primary">Simpan Perubahan</button>

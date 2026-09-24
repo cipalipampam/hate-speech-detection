@@ -36,7 +36,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/new',               [AnalysisController::class, 'create'])->name('create')->middleware('can:run-analysis');
         Route::post('/',                 [AnalysisController::class, 'store'])->name('store')->middleware('can:run-analysis');
         Route::get('/{analysis}',        [AnalysisController::class, 'show'])->name('show');
-        Route::get('/{analysis}/export', [AnalysisController::class, 'exportCsv'])->name('export');
+        // Permission export-reports akhirnya ditegakkan (sebelumnya hanya `auth`).
+        Route::get('/{analysis}/export', [AnalysisController::class, 'exportCsv'])
+            ->name('export')
+            ->middleware('can:export-reports');
     });
 
     // ── Live Text Classifier ───────────────────────────────────────────────────
@@ -70,6 +73,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{user}/edit',  [UserManagementController::class, 'edit'])->name('edit');
             Route::patch('/{user}',     [UserManagementController::class, 'update'])->name('update');
             Route::patch('/{user}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('toggle-status');
+            // Hapus akun: service menolak bila akun masih memiliki sesi analisis.
+            Route::delete('/{user}',    [UserManagementController::class, 'destroy'])->name('destroy');
         });
     });
 

@@ -10,7 +10,6 @@
 # Akun default setelah seeding:
 #   Admin   : admin@hatespeech.test   / password
 #   Analyst : analyst@hatespeech.test / password
-#   Viewer  : viewer@hatespeech.test  / password
 #
 # CATATAN: File backend/saved_models/best_model.pt (~499MB) harus tersedia.
 # ==============================================================================
@@ -59,6 +58,17 @@ services:
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV:-development}
+      # ── Mode GUI login scraper (dibaca AuthService, dipakai frontend) ──────
+      # 'novnc' = browser Playwright tampil di virtual display (Xvfb) dan hanya
+      # bisa dipantau lewat noVNC di http://localhost:<NOVNC_PORT>.
+      # Di-set EKSPLISIT supaya UI tidak menebak-nebak apakah sedang di Docker.
+      LOGIN_GUI_MODE: ${LOGIN_GUI_MODE:-novnc}
+      # Port publik noVNC — dipakai backend untuk menyusun URL, dan dipakai
+      # Compose untuk port binding di bawah.
+      NOVNC_PORT: ${NOVNC_PORT:-6080}
+      # Opsional: override URL tampilan noVNC (mis. di balik reverse proxy /
+      # diakses lewat IP LAN). Kosongkan untuk default http://localhost:<port>/vnc.html
+      NOVNC_PUBLIC_URL: ${NOVNC_PUBLIC_URL:-}
       # URL GitHub Releases untuk auto-download best_model.pt jika belum ada
       # Ganti setelah upload release selesai, atau biarkan otomatis ambil dari /releases/latest
       MODEL_DOWNLOAD_URL: ${MODEL_DOWNLOAD_URL:-https://github.com/cipalipampam/hate-speech-detection/releases/latest/download/best_model.pt}
@@ -102,7 +112,10 @@ services:
     environment:
       APP_NAME: "HateSense ID Lab"
       APP_ENV: ${APP_ENV:-local}
-      APP_KEY: ${APP_KEY:-}
+      # APP_KEY sengaja TIDAK di-set di sini. Nilai kosong (${APP_KEY:-}) akan
+      # MENIMPA APP_KEY yang valid di frontend/.env pada proses `php artisan serve`
+      # dan memicu "No application encryption key has been specified".
+      # Key di-generate otomatis oleh entrypoint ke frontend/.env bila belum ada.
       APP_DEBUG: ${APP_DEBUG:-true}
       APP_URL: "http://localhost:${FRONTEND_PORT:-8000}"
       # ── Database (via Docker internal network, hostname = nama service) ──
@@ -132,6 +145,12 @@ services:
       # Ini penting di Windows karena symlink & permission bermasalah di NTFS
       - frontend_vendor:/var/www/html/vendor
       - frontend_node_modules:/var/www/html/node_modules
+      # Cache bootstrap Laravel (packages.php, services.php, config/route cache)
+      # dipisah dari host: file hasil `php artisan` di Windows dibuat dengan
+      # dev-dependency (laravel/pail, laravel/pao) yang tidak ada di vendor
+      # container (composer install --no-dev) → penyebab error
+      # "Class Laravel\Pail\PailServiceProvider not found" saat migrate.
+      - frontend_bootstrap_cache:/var/www/html/bootstrap/cache
       # Storage Laravel (logs, framework sessions/views/cache)
       - frontend_storage:/var/www/html/storage
       # Cache composer
@@ -156,6 +175,8 @@ volumes:
   frontend_node_modules:
     driver: local
   frontend_storage:
+    driver: local
+  frontend_bootstrap_cache:
     driver: local
   pip_cache:
     driver: local

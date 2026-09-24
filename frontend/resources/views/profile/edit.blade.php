@@ -23,7 +23,7 @@
         <div>
             <p style="font-size:1.125rem;font-weight:700;color:var(--color-navy);">{{ auth()->user()->name }}</p>
             <p style="font-size:0.875rem;color:var(--color-text-muted);">{{ auth()->user()->email }}</p>
-            <span class="badge badge-navy" style="margin-top:0.375rem;text-transform:capitalize;">{{ auth()->user()->getRoleNames()->first() ?? 'viewer' }}</span>
+            <span class="badge badge-navy" style="margin-top:0.375rem;text-transform:capitalize;">{{ auth()->user()->getRoleNames()->first() ?? 'tanpa peran' }}</span>
         </div>
     </div>
 

@@ -35,7 +35,7 @@ try:
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
-    from rich.prompt import Prompt, Confirm
+    from rich.prompt import Prompt
     from rich.text import Text
     from rich import box
     HAS_RICH = True
@@ -52,8 +52,8 @@ from src.auth import (
 from configs.config import (
     X_PROFILE_DIR,
     THREADS_PROFILE_DIR,
-    STORAGE_DIR,
     EXPORTS_DIR,
+    MODEL_DIR,
 )
 
 # Import modul scraping backend
@@ -66,7 +66,6 @@ from src.scraping import (
 
 # Import modul preprocessing backend
 from src.preprocessing import PreprocessingPipeline, clean_text, case_folding
-from configs.config import MODEL_DIR
 
 console = Console() if HAS_RICH else None
 
@@ -235,7 +234,7 @@ def handle_auth_menu():
 
 
 # ---------------------------------------------------------------------------
-# Placeholder Menu Modul Lain (Akan dihubungkan saat modul dibuat)
+# Helper Input & Menu Modul Analisis
 # ---------------------------------------------------------------------------
 
 def _input_keywords_and_urls() -> tuple[list[str], list[str]]:
@@ -565,7 +564,6 @@ def handle_preprocessing_menu():
             if HAS_RICH:
                 console.print("\nFile CSV yang tersedia:")
                 for i, f in enumerate(csv_files, start=1):
-                    import os
                     size_kb = os.path.getsize(f) // 1024
                     console.print(f"  [{i}] {f.name} ({size_kb} KB)")
                 idx_str = Prompt.ask(
@@ -587,7 +585,6 @@ def handle_preprocessing_menu():
 
             # Load dan preprocess
             try:
-                import pandas as pd
                 print_info(f"Memuat file: {selected_file.name}...")
                 df_raw = pd.read_csv(selected_file, encoding="utf-8-sig")
                 print_info(f"Loaded {len(df_raw):,} baris dari '{selected_file.name}'.")
@@ -600,8 +597,15 @@ def handle_preprocessing_menu():
                 print_info("Menginisialisasi pipeline (memuat kamus slang kamusalay)...")
                 pipeline = PreprocessingPipeline()
 
-                show_prog = True
-                df_clean = pipeline.transform_dataframe(df_raw, text_column="content", show_progress=show_prog)
+                # Artefak ini memang khusus hasil preprocessing (bukan dataset riset),
+                # sehingga kolom 'content' sengaja ditimpa — dinyatakan eksplisit agar
+                # tidak bergantung pada nilai default fungsi.
+                df_clean = pipeline.transform_dataframe(
+                    df_raw,
+                    text_column="content",
+                    overwrite_content=True,
+                    show_progress=True,
+                )
 
                 # Simpan output
                 stem = selected_file.stem.replace("_result", "").replace("_scraper", "")
@@ -730,7 +734,7 @@ def handle_classification_menu():
         # Inisialisasi Predictor (Lazy-loaded singleton: hanya dimuat saat menu 4 dibuka)
         try:
             print_info("Memuat model IndoBERT ke memori...")
-            from src.classification import HateSpeechPredictor, ModelLoader
+            from src.classification import HateSpeechPredictor
             predictor = HateSpeechPredictor()
         except Exception as e:
             print_error(f"Gagal memuat model: {e}")
@@ -816,7 +820,6 @@ def handle_classification_menu():
             if HAS_RICH:
                 console.print("\nFile CSV yang tersedia:")
                 for i, f in enumerate(csv_files, start=1):
-                    import os
                     size_kb = os.path.getsize(f) // 1024
                     tag = " [bold green](Preprocessed)[/bold green]" if "_preprocessed" in f.name else ""
                     console.print(f"  [{i}] {f.name}{tag} ({size_kb} KB)")
@@ -838,7 +841,6 @@ def handle_classification_menu():
                 continue
 
             try:
-                import pandas as pd
                 print_info(f"Memuat file: {selected_file.name}...")
                 df_input = pd.read_csv(selected_file, encoding="utf-8-sig")
                 print_info(f"Loaded {len(df_input):,} baris dari '{selected_file.name}'.")
@@ -848,11 +850,12 @@ def handle_classification_menu():
                     input("\nTekan Enter untuk kembali...")
                     continue
 
-                # Tentukan kolom teks yang akan diprediksi
-                text_col = "content"
-                if "content" not in df_input.columns and "clean_text" in df_input.columns:
-                    text_col = "clean_text"
-                elif text_col not in df_input.columns:
+                # Tentukan kolom teks yang akan diprediksi — memakai resolver yang SAMA
+                # dengan pipeline API agar hasil CLI tidak menyimpang dari API
+                # (API memprioritaskan 'clean_text', bukan 'content' mentah).
+                from src.pipeline import resolve_text_column
+                text_col = resolve_text_column(df_input)
+                if text_col not in df_input.columns:
                     print_error(f"Kolom teks ('content' / 'clean_text') tidak ditemukan di file. Kolom: {list(df_input.columns)}")
                     input("\nTekan Enter untuk kembali...")
                     continue

@@ -42,7 +42,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from configs.config import THREADS_PROFILE_DIR, SCRAPER_CONFIG
+from configs.config import THREADS_PROFILE_DIR
+from src.scraping.base_scraper import create_browser
 from src.utils.async_compat import ensure_proactor_loop
 
 logger = logging.getLogger("login_threads")
@@ -57,14 +58,6 @@ LOGIN_URL       = "https://www.threads.com/login"
 VERIFY_URL      = "https://www.threads.com/"
 MAX_WAIT_SEC    = 600       # Maks 10 menit (120 polling x 5 detik)
 POLL_INTERVAL   = 5         # Interval cek sesi (detik)
-
-STEALTH_ARGS = [
-    "--disable-blink-features=AutomationControlled",
-    "--no-first-run",
-    "--no-default-browser-check",
-    "--disable-infobars",
-    "--disable-extensions",
-]
 
 # Cookie primer autentikasi Threads / Instagram
 AUTH_COOKIES = ("sessionid", "ds_user_id")
@@ -84,75 +77,9 @@ LOGGED_IN_SELECTORS = [
     'svg[aria-label*="Profile"]',   'svg[aria-label*="Profil"]',
 ]
 
-STEALTH_SCRIPT = """
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-    Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en', 'id'] });
-"""
-
-
-# ---------------------------------------------------------------------------
-# Helper: Buka Browser dengan Persistent Context & Stealth
-# ---------------------------------------------------------------------------
-
-async def _create_browser(playwright, profile_dir: str, headless: bool = False):
-    """
-    Membuka browser native (Chrome → Edge → Chromium fallback) dengan
-    Playwright Persistent Context dan konfigurasi stealth anti-detection.
-
-    Args:
-        playwright: Instance async_playwright.
-        profile_dir (str): Path ke direktori User Data Directory.
-        headless (bool): False = tampilkan GUI browser.
-
-    Returns:
-        tuple: (context, page)
-
-    Raises:
-        RuntimeError: Jika tidak ada browser yang berhasil diluncurkan.
-    """
-    for channel in ("chrome", "msedge", None):
-        try:
-            launch_kwargs = {
-                "headless"  : headless,
-                "args"      : STEALTH_ARGS,
-            }
-            if channel:
-                launch_kwargs["channel"] = channel
-
-            context = await playwright.chromium.launch_persistent_context(
-                profile_dir,
-                **launch_kwargs,
-            )
-            browser_name = channel or "Chromium (bundled)"
-            logger.info(f"Browser terbuka: {browser_name} | Profile: {profile_dir}")
-
-            page = context.pages[0] if context.pages else await context.new_page()
-            await page.add_init_script(STEALTH_SCRIPT)
-
-            return context, page
-
-        except Exception as e:
-            logger.debug(f"Gagal membuka {channel or 'chromium'}: {e}")
-            continue
-
-    raise RuntimeError(
-        "Tidak dapat membuka browser. Pastikan Google Chrome atau Microsoft Edge "
-        "terinstal di sistem Anda."
-    )
-
-
-async def _cookie_hosts_for(context, name: str) -> list[str]:
-    """Ambil daftar domain tempat cookie `name` berlaku (untuk verifikasi host)."""
-    try:
-        cookies = await context.cookies()
-    except Exception:
-        return []
-    return sorted({
-        (c.get("domain") or "").lower()
-        for c in cookies
-        if c.get("name") == name and c.get("value")
-    })
+# `STEALTH_ARGS` / `STEALTH_SCRIPT` + factory browser lokal DIHAPUS (2026-09-25):
+# sekarang memakai `create_browser()` dari `src/scraping/base_scraper.py` — satu
+# implementasi untuk scraping & login (diimpor di blok import di atas).
 
 
 def _host_is_allowed(hosts: list[str]) -> bool:
@@ -220,7 +147,7 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
 
     async with async_playwright() as p:
         try:
-            context, page = await _create_browser(p, profile_dir=profile_dir, headless=False)
+            context, page = await create_browser(p, profile_dir=profile_dir, headless=False)
         except RuntimeError as e:
             logger.error(str(e))
             return False

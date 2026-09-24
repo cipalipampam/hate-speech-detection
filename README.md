@@ -84,7 +84,7 @@ Model dilatih menggunakan arsitektur fine-tuning **IndoBERT Base (`indobenchmark
 - 📑 **Ekspor Laporan**
   - Unduh hasil klasifikasi ke dalam format **CSV** dan **PDF** untuk kebutuhan pelaporan atau arsip penelitian.
 - 🔐 **Manajemen Hak Akses Pengguna (RBAC)**
-  - Menggunakan Spatie Permission untuk membedakan hak akses Admin, Analyst, dan Viewer.
+  - Menggunakan Spatie Permission untuk membedakan hak akses Admin dan Analyst.
 
 ---
 
@@ -273,7 +273,6 @@ Setelah database dimigrasi dan di-seed, akun bawaan berikut siap digunakan untuk
 |---|---|---|---|
 | **Administrator** | `admin@hatespeech.test` | `password` | Akses penuh: manajemen pengguna, konfigurasi sesi, seluruh fitur analisis |
 | **Analyst** | `analyst@hatespeech.test` | `password` | Pengujian prediksi tunggal, upload CSV, scraping media sosial, ekspor laporan |
-| **Viewer** | `viewer@hatespeech.test` | `password` | Hanya melihat visualisasi ringkasan dashboard & mengunduh laporan |
 
 ---
 
@@ -286,14 +285,14 @@ Backend FastAPI menyediakan dokumentasi interaktif berbasis OpenAPI:
 ### Ringkasan Endpoint Utama:
 | Method | Endpoint | Fungsi |
 |---|---|---|
-| `GET` | `/health` | Healthcheck status server backend |
-| `GET` | `/api/v1/classify/info` | Status model IndoBERT aktif & perangkat komputasi (CPU/CUDA) |
+| `GET` | `/` | Info server + status model (sekaligus healthcheck `docker-compose.yml`) |
+| `GET` | `/api/v1/health` | Healthcheck ringan untuk polling badge telemetri frontend |
+| `GET` | `/api/v1/auth/status` | Status sesi login X & Threads + mode GUI (`login_environment`) |
+| `POST` | `/api/v1/auth/login-trigger/{platform}` | Membuka browser GUI login (noVNC saat Docker, desktop saat lokal) |
 | `POST` | `/api/v1/classify/single` | Prediksi klasifikasi hierarki untuk 1 kalimat teks |
-| `POST` | `/api/v1/classify/batch` | Prediksi klasifikasi hierarki untuk array/daftar teks |
-| `POST` | `/api/v1/preprocess/clean` | Pembersihan teks & normalisasi slang tanpa klasifikasi |
-| `POST` | `/api/v1/scrape/x` | Menjalankan scraping postingan/komentar X (Twitter) |
-| `POST` | `/api/v1/scrape/threads` | Menjalankan scraping thread/komentar Threads |
-| `POST` | `/api/v1/pipeline/run` | Menjalankan pipeline lengkap (Scraping $\rightarrow$ Preprocessing $\rightarrow$ Klasifikasi) |
+| `POST` | `/api/v1/pipeline/run` | Menjalankan pipeline lengkap (Scraper $\rightarrow$ Preprocessing $\rightarrow$ Klasifikasi) sebagai background job |
+| `GET` | `/api/v1/pipeline/status/{job_id}` | Polling status & statistik job pipeline |
+| `GET` | `/api/v1/pipeline/exports/{filename}` | Mengunduh CSV hasil analisis (aman dari path traversal) |
 
 ---
 

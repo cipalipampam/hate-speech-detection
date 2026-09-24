@@ -1,27 +1,7 @@
-"""
-Pydantic Schema untuk Modul Klasifikasi IndoBERT & Pipeline API.
-
-Model Klasifikasi:
-    - ClassifySingleRequest    : Body request POST /api/v1/classify/single
-    - ClassifyBatchRequest     : Body request POST /api/v1/classify/batch
-    - LevelPrediction          : Hasil prediksi satu level (label + confidence + probabilities)
-    - ClassifyItemResponse     : Hasil klasifikasi satu teks (level1 + level2 + is_hate_speech)
-    - ClassifyBatchResponse    : Hasil klasifikasi batch
-    - ModelInfoResponse        : Info model (GET /api/v1/classify/info)
-
-Model Pipeline:
-    - PipelineRunRequest       : Body request POST /api/v1/pipeline/run
-    - PipelineJobResponse      : Response 202 Accepted saat pipeline job dibuat
-    - Level2Breakdown          : Detail per sub-kategori
-    - PlatformBreakdown        : Detail per platform
-    - PipelineStatistics       : Ringkasan statistik hasil analisis
-    - PipelineJobStatusResponse: Response polling GET /api/v1/pipeline/status/{job_id}
-    - ExportFileItem           : Satu file CSV di storage/exports/
-    - ExportListResponse       : Daftar file CSV tersedia
-"""
+"""Schema Pydantic untuk klasifikasi IndoBERT & pipeline end-to-end."""
 
 from typing import Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ===========================================================================
@@ -48,45 +28,15 @@ class ClassifySingleRequest(BaseModel):
         ),
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "text": "bunuh saja semua kafir yang ada di sini, mereka tidak layak hidup",
                 "preprocess": True,
             }
         }
-
-
-class ClassifyBatchRequest(BaseModel):
-    """Request prediksi untuk kumpulan teks secara batch."""
-
-    texts: List[str] = Field(
-        ...,
-        min_length=1,
-        max_length=500,  # Validasi batas 500 dilakukan Pydantic, bukan manual if di router
-        description="Daftar teks yang akan diklasifikasikan. Maksimum 500 item per request.",
-    )
-    preprocess: bool = Field(
-        default=True,
-        description="Jika True, jalankan preprocessing pada setiap teks sebelum inferensi.",
     )
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "texts": [
-                    "bunuh saja mereka semua!",
-                    "saya setuju dengan kebijakan ini, sangat baik",
-                    "biasa aja sih menurut saya",
-                ],
-                "preprocess": True,
-            }
-        }
-
-
-# ---------------------------------------------------------------------------
-# Response Models — Klasifikasi
-# ---------------------------------------------------------------------------
 
 class LevelPrediction(BaseModel):
     """Hasil prediksi untuk satu level klasifikasi."""
@@ -118,29 +68,6 @@ class ClassifyItemResponse(BaseModel):
     is_hate_speech: bool = Field(
         description="True jika Level 1 diprediksi sebagai 'hate_speech'."
     )
-
-
-class ClassifyBatchResponse(BaseModel):
-    """Hasil klasifikasi batch teks."""
-
-    total: int = Field(description="Jumlah teks yang diklasifikasikan.")
-    hate_speech_count: int = Field(description="Jumlah teks yang terdeteksi sebagai hate speech.")
-    non_hate_speech_count: int = Field(description="Jumlah teks yang terdeteksi sebagai non-hate speech.")
-    hate_speech_pct: float = Field(description="Persentase hate speech dari total teks (%).")
-    data: List[ClassifyItemResponse] = Field(
-        description="Daftar hasil klasifikasi per teks, sesuai urutan input."
-    )
-
-
-class ModelInfoResponse(BaseModel):
-    """Informasi model IndoBERT yang sedang aktif (GET /api/v1/classify/info)."""
-
-    model_name: str = Field(description="Nama pretrained model IndoBERT.")
-    device: str = Field(description="Device inferensi: 'cuda' atau 'cpu'.")
-    max_length: int = Field(description="Panjang token maksimum untuk tokenizer.")
-    is_loaded: bool = Field(description="Apakah model sudah berhasil dimuat ke memori.")
-    classes_lvl1: List[str] = Field(description="Daftar label kelas Level 1.")
-    classes_lvl2: List[str] = Field(description="Daftar label kelas Level 2 (sub-kategori).")
 
 
 # ===========================================================================
@@ -196,8 +123,8 @@ class PipelineRunRequest(BaseModel):
             )
         return cleaned
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "keywords": ["RUU Polri", "tolak polisi"],
                 "platform": "both",
@@ -208,6 +135,7 @@ class PipelineRunRequest(BaseModel):
                 "export_csv": True,
             }
         }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -277,7 +205,7 @@ class PipelineJobStatusResponse(BaseModel):
     )
     exported_file: Optional[str] = Field(
         default=None,
-        description="Path atau nama file CSV hasil ekspor (jika export_csv=True).",
+        description="Nama berkas CSV hasil ekspor di storage/exports/ (basename, bukan path lengkap).",
     )
     error_detail: Optional[str] = Field(
         default=None,

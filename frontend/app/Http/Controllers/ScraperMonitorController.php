@@ -54,6 +54,10 @@ class ScraperMonitorController extends Controller
             return back()->with('error', $result['message'] ?? 'Gagal memicu proses login.');
         }
 
-        return back()->with('success', "Proses login {$platformName} berhasil diinisiasi. Silakan selesaikan login pada jendela browser yang terbuka.");
+        // Pesan dari backend sudah kontekstual (noVNC saat Docker, jendela desktop saat lokal).
+        $message = $result['data']['message'] ?? null;
+
+        return back()
+            ->with('success', $message ?: "Proses login {$platformName} berhasil diinisiasi. Silakan selesaikan login pada jendela browser yang terbuka.");
     }
 }

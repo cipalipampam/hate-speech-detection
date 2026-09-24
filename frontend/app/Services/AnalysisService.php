@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Analysis;
 use App\Models\AnalysisPost;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AnalysisService
 {
@@ -148,6 +150,13 @@ class AnalysisService
                 }
             }
             $fresh->setAttribute('pipeline_step', $step);
+
+            // `pipeline_message` & `pipeline_step` BUKAN kolom tabel `analyses` — keduanya
+            // atribut virtual untuk kebutuhan UI. Ditandai "original" agar tidak pernah ikut
+            // ter-UPDATE bila instance ini di-save() nanti (mencegah error Unknown column).
+            $fresh->syncOriginalAttribute('pipeline_message');
+            $fresh->syncOriginalAttribute('pipeline_step');
+
             return $fresh;
         }
 
@@ -263,10 +272,84 @@ class AnalysisService
     }
 
     /**
-     * Menghapus sesi analisis beserta seluruh postingan, klasifikasi, dan file ekspor.
+     * Menghasilkan StreamedResponse untuk ekspor dataset analisis ke format CSV
+     * dengan mitigasi CSV/Formula Injection (=, +, -, @) dan chunking hemat memori.
      */
-    public function deleteAnalysis(Analysis $analysis): bool
+    public function streamExportCsv(Analysis $analysis): StreamedResponse
     {
-        return $analysis->delete();
+        $safeTitle = Str::slug($analysis->title, '_');
+        $filename  = "hatesense_analisis_{$analysis->id}_{$safeTitle}.csv";
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $callback = function () use ($analysis) {
+            $handle = fopen('php://output', 'w');
+
+            // Tulis BOM UTF-8 agar karakter Indonesia/emoji terbaca mulus di Excel
+            fputs($handle, "\xEF\xBB\xBF");
+
+            // Header Kolom CSV
+            fputcsv($handle, [
+                'ID',
+                'Platform',
+                'Author Username',
+                'Tanggal Post',
+                'Konten Asli (Raw Text)',
+                'Konten Preprocessing (Clean Text)',
+                'Sentimen Level 1',
+                'Confidence Level 1',
+                'Kategori Level 2',
+                'Confidence Level 2',
+                'Source URL',
+            ]);
+
+            // Query chunking hemat memori
+            $analysis->posts()
+                ->with('classification')
+                ->chunk(200, function ($posts) use ($handle) {
+                    foreach ($posts as $post) {
+                        $c = $post->classification;
+                        fputcsv($handle, [
+                            $post->id,
+                            $post->platform,
+                            $this->sanitizeCsvCell($post->author_username ?? '-'),
+                            $post->post_date ?? '-',
+                            $this->sanitizeCsvCell($c->raw_content ?? ''),
+                            $this->sanitizeCsvCell($c->clean_content ?? ''),
+                            $c->label_lvl1 ?? '',
+                            $c ? round($c->confidence_lvl1, 4) : 0,
+                            $c ? str_replace('_', ' ', ucwords($c->label_lvl2 ?? '')) : '',
+                            $c ? round($c->confidence_lvl2, 4) : 0,
+                            $this->sanitizeCsvCell($post->source_url ?? ''),
+                        ]);
+                    }
+                });
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Sanitasi nilai string untuk mencegah CSV / Formula Injection (=, +, -, @)
+     * saat file dibuka di Microsoft Excel atau LibreOffice Calc.
+     */
+    protected function sanitizeCsvCell(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '') {
+            $firstChar = $value[0];
+            if (in_array($firstChar, ['=', '+', '-', '@', "\t", "\r"], true)) {
+                return "'" . $value;
+            }
+        }
+        return $value;
     }
 }
+

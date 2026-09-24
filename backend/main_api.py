@@ -15,9 +15,7 @@ Fitur:
 
 Struktur Endpoint:
     /api/v1/auth/         → Autentikasi & sesi browser (X & Threads)
-    /api/v1/scrape/       → Scraping data media sosial (background job)
-    /api/v1/preprocess/   → Pembersihan & normalisasi teks
-    /api/v1/classify/     → Inferensi IndoBERT (hate speech detection)
+    /api/v1/classify/     → Inferensi IndoBERT 1 teks (hate speech detection)
     /api/v1/pipeline/     → Analisis lengkap end-to-end + download hasil CSV
 
 Cara Menjalankan:
@@ -50,8 +48,6 @@ from app.routers import (
     auth_router,
     classification_router,
     pipeline_router,
-    preprocessing_router,
-    scraper_router,
 )
 
 # Setup logging
@@ -179,8 +175,6 @@ app.add_middleware(
 API_PREFIX = "/api/v1"
 
 app.include_router(auth_router,           prefix=API_PREFIX)
-app.include_router(scraper_router,        prefix=API_PREFIX)
-app.include_router(preprocessing_router,  prefix=API_PREFIX)
 app.include_router(classification_router, prefix=API_PREFIX)
 app.include_router(pipeline_router,       prefix=API_PREFIX)
 
@@ -218,8 +212,6 @@ def root():
         "redoc": "/redoc",
         "endpoints": {
             "auth":         f"{API_PREFIX}/auth",
-            "scrape":       f"{API_PREFIX}/scrape",
-            "preprocess":   f"{API_PREFIX}/preprocess",
             "classify":     f"{API_PREFIX}/classify",
             "pipeline":     f"{API_PREFIX}/pipeline",
         },

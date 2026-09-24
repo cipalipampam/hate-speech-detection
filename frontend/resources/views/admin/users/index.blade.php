@@ -42,12 +42,6 @@
         <div class="stat-block-meta" style="border-color:var(--color-primary);color:var(--color-primary);">[RUN PIPELINE]</div>
     </div>
 
-    <div class="stat-block">
-        <span class="stat-block-label">PENGAMAT (VIEWER)</span>
-        <span class="stat-block-val">{{ $roleCounts['viewer'] ?? 0 }}</span>
-        <div class="stat-block-meta">[READ ONLY]</div>
-    </div>
-
     <div class="stat-block" style="background:var(--color-surface-2);">
         <span class="stat-block-label">TOTAL AKUN AKTIF</span>
         <span class="stat-block-val">{{ $activeCount ?? 0 }}</span>
@@ -71,7 +65,6 @@
             <option value="all">SEMUA PERAN</option>
             <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>ADMIN</option>
             <option value="analyst" {{ request('role') === 'analyst' ? 'selected' : '' }}>ANALYST</option>
-            <option value="viewer" {{ request('role') === 'viewer' ? 'selected' : '' }}>VIEWER</option>
         </select>
 
         <select name="status" onchange="this.form.submit()" class="input" style="width:auto;height:38px;font-size:0.8125rem;cursor:pointer;">
@@ -114,13 +107,13 @@
                     </div>
                 </td>
                 <td style="text-align:center;">
-                    @php $role = $user->getRoleNames()->first() ?? 'viewer'; @endphp
+                    @php $role = $user->getRoleNames()->first(); @endphp
                     @if($role === 'admin')
                         <span class="badge badge-black" style="font-size:0.65rem;">ADMIN</span>
                     @elseif($role === 'analyst')
                         <span class="badge badge-primary" style="font-size:0.65rem;">ANALYST</span>
                     @else
-                        <span class="badge badge-mono" style="font-size:0.65rem;">VIEWER</span>
+                        <span class="badge badge-mono" style="font-size:0.65rem;">TANPA PERAN</span>
                     @endif
                 </td>
                 <td style="text-align:center;">
@@ -141,6 +134,19 @@
                         <a href="{{ route('admin.users.edit', $user->id) }}" class="btn btn-outline btn-sm" style="font-size:0.6875rem;padding:0.25rem 0.5rem;" title="Edit Pengguna">
                             EDIT
                         </a>
+                        @if($user->id !== auth()->id())
+                        <form method="POST" action="{{ route('admin.users.destroy', $user->id) }}"
+                              onsubmit="return confirm('Hapus akun &quot;{{ $user->name }}&quot;? Akun yang masih memiliki sesi analisis akan ditolak oleh sistem.');"
+                              style="margin:0;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-sm"
+                                    style="font-size:0.6875rem;padding:0.25rem 0.5rem;background:var(--color-danger);color:#FFFFFF;border:1px solid #0A0A0A;"
+                                    title="Hapus Pengguna">
+                                HAPUS
+                            </button>
+                        </form>
+                        @endif
                     </div>
                 </td>
             </tr>

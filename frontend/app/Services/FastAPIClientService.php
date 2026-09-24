@@ -109,15 +109,20 @@ class FastAPIClientService
      */
     public function getTelemetryData(): array
     {
-        $statusResult   = $this->getAuthStatus();
-        $isServerOnline = (bool) ($statusResult['success'] ?? false);
-        $sessionData    = $this->sanitizeSessionData($statusResult['data'] ?? null);
+        $statusResult    = $this->getAuthStatus();
+        $isServerOnline  = (bool) ($statusResult['success'] ?? false);
+        $sessionData     = $this->sanitizeSessionData($statusResult['data'] ?? null);
+
+        // Runtime & mode GUI login (novnc saat Docker, native saat lokal).
+        // Menjadi sumber kebenaran tunggal untuk instruksi login di UI.
+        $loginEnvironment = $statusResult['data']['login_environment'] ?? null;
 
         return [
-            'isServerOnline' => $isServerOnline,
-            'sessionData'    => $sessionData,
-            'statusResult'   => $statusResult,
-            'serviceChannel' => 'Internal Microservice Bridge',
+            'isServerOnline'   => $isServerOnline,
+            'sessionData'      => $sessionData,
+            'loginEnvironment' => $loginEnvironment,
+            'statusResult'     => $statusResult,
+            'serviceChannel'   => 'Internal Microservice Bridge',
         ];
     }
 
@@ -194,81 +199,12 @@ class FastAPIClientService
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // 2. Modul Preprocessing Teks
+    // 2. Modul Preprocessing Teks — TIDAK DIPAKAI FRONTEND (wrapper dihapus; endpoint FastAPI tetap ada)
     // ──────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Membersihkan dan menormalisasi satu string teks.
-     */
-    public function preprocessSingle(string $text): array
-    {
-        try {
-            $response = $this->client()->post('/preprocess/single', ['text' => $text]);
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'data'    => $response->json(),
-                ];
-            }
-            return [
-                'success' => false,
-                'message' => $response->json('detail') ?? 'Gagal memproses teks.',
-            ];
-        } catch (Exception $e) {
-            Log::error("FastAPI preprocessSingle error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Membersihkan dan menormalisasi batch teks.
-     */
-    public function preprocessBatch(array $texts): array
-    {
-        try {
-            $response = $this->client()->post('/preprocess/batch', ['texts' => $texts]);
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'data'    => $response->json(),
-                ];
-            }
-            return [
-                'success' => false,
-                'message' => $response->json('detail') ?? 'Gagal memproses batch teks.',
-            ];
-        } catch (Exception $e) {
-            Log::error("FastAPI preprocessBatch error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
 
     // ──────────────────────────────────────────────────────────────────────────
     // 3. Modul Klasifikasi IndoBERT
     // ──────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Mengambil metadata model IndoBERT yang aktif.
-     */
-    public function getModelInfo(): array
-    {
-        try {
-            $response = $this->client()->get('/classify/info');
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'data'    => $response->json(),
-                ];
-            }
-            return [
-                'success' => false,
-                'message' => $response->json('detail') ?? 'Model IndoBERT belum siap.',
-            ];
-        } catch (Exception $e) {
-            Log::error("FastAPI getModelInfo error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
 
     /**
      * Melakukan klasifikasi satu teks kalimat.
@@ -303,32 +239,6 @@ class FastAPIClientService
                 return ['success' => false, 'message' => 'Server AI tidak dapat dihubungi. Pastikan subsistem pemrosesan AI telah aktif.'];
             }
             return ['success' => false, 'message' => 'Kesalahan komunikasi dengan server AI: ' . $msg];
-        }
-    }
-
-    /**
-     * Melakukan klasifikasi batch teks.
-     */
-    public function classifyBatch(array $texts, bool $preprocess = true): array
-    {
-        try {
-            $response = $this->client()->post('/classify/batch', [
-                'texts'      => $texts,
-                'preprocess' => $preprocess,
-            ]);
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'data'    => $response->json(),
-                ];
-            }
-            return [
-                'success' => false,
-                'message' => $response->json('detail') ?? 'Gagal melakukan klasifikasi batch.',
-            ];
-        } catch (Exception $e) {
-            Log::error("FastAPI classifyBatch error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
@@ -401,30 +311,34 @@ class FastAPIClientService
     }
 
     /**
-     * Mendapatkan daftar file CSV hasil ekspor.
+     * Mengunduh file CSV ekspor dan menuliskannya LANGSUNG ke stream tujuan.
+     *
+     * Memakai opsi `sink` Guzzle agar isi file tidak ditampung utuh di memori PHP
+     * (ekspor bisa puluhan MB). Nama file dibersihkan dengan basename() sebagai
+     * pertahanan berlapis — backend juga memvalidasi path traversal.
+     *
+     * @param  resource  $sink  Stream tujuan, mis. fopen('php://temp', 'r+')
+     * @return bool  true bila file berhasil ditulis ke $sink.
      */
-    public function getExportList(): array
+    public function downloadExportToStream(string $filename, $sink): bool
     {
+        $filename = basename($filename);
+
         try {
-            $response = $this->client()->get('/pipeline/exports');
+            $response = $this->client(120)
+                ->withOptions(['sink' => $sink])
+                ->get("/pipeline/exports/{$filename}");
+
             if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'data'    => $response->json(),
-                ];
+                return true;
             }
-            return ['success' => false, 'message' => 'Gagal mengambil daftar file ekspor.'];
+
+            Log::warning("FastAPI downloadExportToStream gagal untuk {$filename}: HTTP " . $response->status());
+            return false;
         } catch (Exception $e) {
-            Log::error("FastAPI getExportList error: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            Log::error("FastAPI downloadExportToStream error untuk {$filename}: " . $e->getMessage());
+            return false;
         }
     }
-
-    /**
-     * Mengambil URL download file ekspor.
-     */
-    public function getExportDownloadUrl(string $filename): string
-    {
-        return "{$this->baseUrl}/pipeline/exports/{$filename}";
-    }
 }
+

@@ -27,12 +27,12 @@ import logging
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pandas as pd  
 
 from configs.config import EXPORTS_DIR
-from src.auth.session_manager import is_session_valid, get_all_sessions_status
+from src.auth.session_manager import is_session_valid
 from src.scraping.x_scraper import run_x_scraper, XScrapeConfig
 from src.scraping.threads_scraper import run_threads_scraper, ThreadsScrapeConfig
 from src.preprocessing.pipeline import PreprocessingPipeline
@@ -53,6 +53,51 @@ def _create_filename_slug(keywords: List[str] = None, platform: str = "both") ->
         clean_kw = re.sub(r"[^\w\-]", "_", raw_kw)[:25].strip("_")
         return f"analysis_{platform}_{clean_kw}_{ts}"
     return f"analysis_{platform}_{ts}"
+
+
+def resolve_text_column(df: pd.DataFrame) -> str:
+    """
+    Tentukan kolom teks yang dipakai untuk inferensi.
+
+    Prioritas `clean_text` (hasil pembersihan & normalisasi) dengan fallback `content`
+    untuk DataFrame lama/pra-refactor. Fungsi ini dipakai BERSAMA oleh pipeline API dan
+    menu klasifikasi CLI — sebelumnya CLI memilih `content` (teks mentah) sehingga file
+    yang sama bisa menghasilkan label/confidence berbeda dari jalur API.
+    """
+    return "clean_text" if "clean_text" in df.columns else "content"
+
+
+def validate_platform_sessions(platform: str) -> Tuple[bool, List[str]]:
+    """
+    Periksa keabsahan sesi login untuk platform yang diminta — SATU sumber kebijakan.
+
+    Dipakai jalur pipeline (`EndToEndPipeline.validate_sessions()`). Sebelumnya aturan yang
+    sama disalin juga di `ScraperService` untuk endpoint `/api/v1/scrape/run`; salinan itu
+    ikut terhapus bersama endpoint-nya pada 2026-09-25 sehingga kini tunggal.
+
+    Pesan error sengaja menyebut endpoint `login-trigger` karena tampil di UI.
+
+    Returns:
+        tuple[bool, list[str]]: (valid, daftar error yang bisa langsung ditampilkan)
+    """
+    plat = platform.lower().strip()
+    errors: List[str] = []
+
+    if plat in ("x", "both"):
+        if not is_session_valid("x").get("is_valid", False):
+            errors.append(
+                "Sesi X (Twitter) tidak aktif. Login terlebih dahulu via "
+                "POST /api/v1/auth/login-trigger/x"
+            )
+
+    if plat in ("threads", "both"):
+        if not is_session_valid("threads").get("is_valid", False):
+            errors.append(
+                "Sesi Threads tidak aktif. Login terlebih dahulu via "
+                "POST /api/v1/auth/login-trigger/threads"
+            )
+
+    return len(errors) == 0, errors
 
 
 # ---------------------------------------------------------------------------
@@ -93,31 +138,17 @@ class EndToEndPipeline:
         """
         Memeriksa ketersediaan dan keabsahan sesi login media sosial.
 
+        Delegasi ke `validate_platform_sessions()` agar aturan & pesannya identik dengan
+        endpoint `/api/v1/scrape/run` (satu sumber kebijakan sesi).
+
         Args:
             platform (str): 'x', 'threads', atau 'both'.
 
         Returns:
-            dict: Status validasi sesi.
+            dict: {"valid": bool, "errors": list[str]}
         """
-        platform = platform.lower().strip()
-        errors = []
-        statuses = get_all_sessions_status()
-
-        if platform in ("x", "both"):
-            x_status = is_session_valid("x")
-            if not x_status.get("is_valid", False):
-                errors.append("Sesi X (Twitter) tidak aktif atau profil belum login.")
-
-        if platform in ("threads", "both"):
-            t_status = is_session_valid("threads")
-            if not t_status.get("is_valid", False):
-                errors.append("Sesi Threads tidak aktif atau profil belum login.")
-
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "statuses": statuses,
-        }
+        valid, errors = validate_platform_sessions(platform)
+        return {"valid": valid, "errors": errors}
 
     # ── Tahap 2: Eksekusi Scraping ────────────────────────────────────────
 
@@ -215,7 +246,13 @@ class EndToEndPipeline:
         status_callback: Optional[Callable[[str], None]] = None,
     ) -> pd.DataFrame:
         """
-        Menjalankan pembersihan dan normalisasi teks secara in-place pada kolom 'content'.
+        Menambahkan kolom 'clean_text' hasil pembersihan & normalisasi TANPA menimpa
+        kolom 'content' (teks mentah).
+
+        Penting: teks mentah harus tetap ikut ke file ekspor CSV dan ke database
+        (`analysis_classifications.raw_content`) agar hasil analisis dapat diaudit.
+        Sebelumnya kolom 'content' ditimpa di tempat sehingga teks mentah hilang dan
+        frontend menyimpan teks bersih pada kolom 'raw_content'.
         """
         if df.empty:
             return df
@@ -226,6 +263,7 @@ class EndToEndPipeline:
         df_clean = self.prep_pipeline.transform_dataframe(
             df,
             text_column="content",
+            overwrite_content=False,
             show_progress=True,
         )
         return df_clean
@@ -247,9 +285,13 @@ class EndToEndPipeline:
         if status_callback:
             status_callback(f"Menjalankan Klasifikasi IndoBERT Hierarkis pada {len(df):,} baris...")
 
+        # Model IndoBERT harus menerima teks BERSIH (URL/emoji/@mention sudah dibuang),
+        # jadi kolom 'clean_text' yang dipakai — resolusinya sama dengan yang dipakai CLI.
+        text_column = resolve_text_column(df)
+
         df_classified = self.predictor.predict_dataframe(
             df,
-            text_column="content",
+            text_column=text_column,
             batch_size=batch_size,
             show_progress=True,
         )

@@ -1,3 +1,5 @@
+"""Helper bersama scraper: browser factory, delay, scroll, penyimpanan CSV, filter teks."""
+
 import asyncio
 import logging
 import os
@@ -33,21 +35,7 @@ STEALTH_SCRIPT = """
 # ---------------------------------------------------------------------------
 
 async def create_browser(playwright, profile_dir: str, headless: bool = False):
-    """
-    Membuka browser native (Chrome → Edge → Chromium fallback) dengan
-    Playwright Persistent Context dan konfigurasi stealth anti-detection.
-
-    Args:
-        playwright : Instance async_playwright.
-        profile_dir (str): Path ke direktori User Data Directory (persistent profile).
-        headless (bool): False = tampilkan GUI browser.
-
-    Returns:
-        tuple: (context, page)
-
-    Raises:
-        RuntimeError: Jika tidak ada browser yang berhasil diluncurkan.
-    """
+    """Buka browser persistent (Chrome → Edge → Chromium); kembalikan (context, page)."""
     for channel in ("chrome", "msedge", None):
         try:
             launch_kwargs = {"headless": headless, "args": STEALTH_ARGS}
@@ -84,10 +72,7 @@ async def random_delay(delay_range: tuple):
 
 
 async def scroll_page(page: Page, times: int, delay_range: tuple):
-    """
-    Scroll halaman ke bawah sebanyak `times` kali dengan random delay di antaranya.
-    Berhenti lebih awal jika halaman sudah tidak bisa di-scroll lagi.
-    """
+    """Scroll ke bawah `times` kali dengan delay acak (berhenti bila mentok)."""
     prev_height = 0
     for _ in range(times):
         try:
@@ -110,17 +95,7 @@ STANDARD_SCRAPER_COLUMNS = ["platform", "source", "user_id", "type", "date", "co
 
 
 def results_to_dataframe(raw_results: list[dict]) -> pd.DataFrame:
-    """
-    Konversi list of dict hasil scraping ke pandas DataFrame.
-    Melakukan deduplikasi berdasarkan kolom (user_id, content) dan
-    menata urutan kolom standar: platform, source, user_id, type, date, content.
-
-    Args:
-        raw_results: List of dict hasil scraping.
-
-    Returns:
-        pd.DataFrame: DataFrame bersih, siap diproses ke tahap preprocessing.
-    """
+    """Konversi list of dict ke DataFrame (dedup user_id+content, urutkan kolom)."""
     df = pd.DataFrame(raw_results)
     if not df.empty:
         if "user_id" in df.columns and "content" in df.columns:
@@ -135,14 +110,7 @@ def results_to_dataframe(raw_results: list[dict]) -> pd.DataFrame:
 
 
 def save_dataframe(df: pd.DataFrame, path: str):
-    """
-    Menyimpan DataFrame ke file CSV dengan encoding UTF-8 BOM.
-    Direktori akan dibuat otomatis jika belum ada.
-
-    Args:
-        df (pd.DataFrame): DataFrame yang akan disimpan.
-        path (str): Path file CSV tujuan.
-    """
+    """Simpan DataFrame ke CSV (UTF-8 BOM); direktori dibuat otomatis bila belum ada."""
     dirname = os.path.dirname(path)
     if dirname:
         os.makedirs(dirname, exist_ok=True)
@@ -156,15 +124,7 @@ def save_dataframe(df: pd.DataFrame, path: str):
 
 
 def append_checkpoint(results: list[dict], path: str):
-    """
-    Menambahkan (append) data scraping baru ke file CSV checkpoint secara inkremental
-    dengan urutan kolom standar: platform, source, user_id, type, date, content.
-    Jika file belum ada, header akan ditulis otomatis.
-
-    Args:
-        results: List of dict baris baru yang akan ditambahkan.
-        path (str): Path file CSV checkpoint.
-    """
+    """Append baris baru ke CSV checkpoint (header ditulis bila file belum ada)."""
     if not results:
         return
     dirname = os.path.dirname(path)
@@ -182,15 +142,7 @@ def append_checkpoint(results: list[dict], path: str):
 
 
 def check_profile_exists(profile_dir: str) -> bool:
-    """
-    Memeriksa apakah direktori persistent profile browser ada dan berisi data.
-
-    Args:
-        profile_dir (str): Path direktori profil browser.
-
-    Returns:
-        bool: True jika folder ada dan memiliki isi, False jika tidak.
-    """
+    """True bila direktori profil browser ada dan berisi data."""
     p = Path(profile_dir)
     if not p.exists() or not p.is_dir():
         return False
@@ -198,3 +150,32 @@ def check_profile_exists(profile_dir: str) -> bool:
         return any(p.iterdir())
     except Exception:
         return False
+
+
+# ---------------------------------------------------------------------------
+# Filter Teks Bersama — dipakai oleh x_scraper & threads_scraper
+# ---------------------------------------------------------------------------
+
+def keyword_matches_text(text: str, keywords: list[str]) -> bool:
+    """True bila teks mengandung salah satu keyword (case-insensitive, spasi diabaikan)."""
+    # Teks kosong / kartu media dianggap valid karena berasal dari hasil search resmi platform
+    if not text or not text.strip():
+        return True
+
+    text_lower    = text.lower()
+    text_no_space = text_lower.replace(" ", "")
+    for kw in keywords:
+        clean          = kw.lstrip('#').lower()
+        clean_no_space = clean.replace(" ", "")
+        if clean in text_lower or (clean_no_space and clean_no_space in text_no_space):
+            return True
+        # Dukungan kecocokan kata individual untuk query majemuk
+        words = [w for w in clean.split() if len(w) > 2]
+        if words and any(w in text_lower for w in words):
+            return True
+    return False
+
+
+def is_system_text(content: str, phrases: frozenset[str] | set[str]) -> bool:
+    """True bila teks persis sama dengan salah satu frasa antarmuka sistem platform."""
+    return content.strip().lower() in phrases

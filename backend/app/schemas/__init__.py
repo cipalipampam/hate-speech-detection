@@ -3,68 +3,14 @@ Pydantic Schemas Package.
 Menyimpan model validasi tipe data untuk Request dan Response FastAPI.
 """
 
-from .auth_schema import (
-    SessionStatusItem,
-    AllSessionsStatusResponse,
-    LoginTriggerResponse,
-)
-from .scraper_schema import (
-    ScrapeRequest,
-    ScrapePostItem,
-    ScrapeJobResponse,
-    ScrapeJobStatusResponse,
-)
-from .preprocessing_schema import (
-    PreprocessSingleRequest,
-    PreprocessSingleResponse,
-    PreprocessBatchRequest,
-    PreprocessBatchResponse,
-)
-from .classification_schema import (
-    ClassifySingleRequest,
-    ClassifyBatchRequest,
-    LevelPrediction,
-    ClassifyItemResponse,
-    ClassifyBatchResponse,
-    ModelInfoResponse,
-    PipelineRunRequest,
-    PipelineJobResponse,
-    Level2Breakdown,
-    PlatformBreakdown,
-    PipelineStatistics,
-    PipelineJobStatusResponse,
-    ExportFileItem,
-    ExportListResponse,
-)
+# CATATAN ARSITEKTUR (dihapus 2026-09-25):
+# Barrel re-export `__all__` (26 nama schema) yang dulu ada di file ini DIHAPUS karena
+# dead code — tidak ada satu pun modul yang mengimpor `from app.schemas import ...`.
+# Seluruh pemakai sudah mengimpor langsung dari modul subdomainnya, mis.:
+#     from app.schemas.auth_schema import AllSessionsStatusResponse
+#     from app.schemas.scraper_schema import ScrapeRequest
+#     from app.schemas.classification_schema import PipelineRunRequest
+# Impor langsung seperti ini juga menghindari memuat 26 schema sekaligus dan
+# mencegah nama modul tertutup (shadowed) oleh nama kelas saat refactor berikutnya.
 
-__all__ = [
-    # Auth
-    "SessionStatusItem",
-    "AllSessionsStatusResponse",
-    "LoginTriggerResponse",
-    # Scraper
-    "ScrapeRequest",
-    "ScrapePostItem",
-    "ScrapeJobResponse",
-    "ScrapeJobStatusResponse",
-    # Preprocessing
-    "PreprocessSingleRequest",
-    "PreprocessSingleResponse",
-    "PreprocessBatchRequest",
-    "PreprocessBatchResponse",
-    # Classification & Pipeline
-    "ClassifySingleRequest",
-    "ClassifyBatchRequest",
-    "LevelPrediction",
-    "ClassifyItemResponse",
-    "ClassifyBatchResponse",
-    "ModelInfoResponse",
-    "PipelineRunRequest",
-    "PipelineJobResponse",
-    "Level2Breakdown",
-    "PlatformBreakdown",
-    "PipelineStatistics",
-    "PipelineJobStatusResponse",
-    "ExportFileItem",
-    "ExportListResponse",
-]
+__all__: list[str] = []

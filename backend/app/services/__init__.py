@@ -6,7 +6,6 @@ Mengekspor seluruh instance service publik untuk diakses oleh Controller / Route
 
 from .job_service import JobManager, job_manager
 from .auth_service import AuthService, auth_service
-from .scraper_service import ScraperService, scraper_service
 from .classification_service import ClassificationService, classification_service
 from .pipeline_service import PipelineService, pipeline_service
 
@@ -15,8 +14,6 @@ __all__ = [
     "job_manager",
     "AuthService",
     "auth_service",
-    "ScraperService",
-    "scraper_service",
     "ClassificationService",
     "classification_service",
     "PipelineService",

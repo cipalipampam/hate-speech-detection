@@ -85,7 +85,7 @@ frontend/
 │   └── seeders/                               # Data awal akun demo & role
 │       ├── DatabaseSeeder.php                 # Master seeder
 │       ├── DemoAnalysisSeeder.php             # Sampel data analisis untuk presentasi
-│       └── RoleAndPermissionSeeder.php        # Setup role Admin, Analyst, Viewer
+│       └── RoleAndPermissionSeeder.php        # Setup role Admin & Analyst
 │
 ├── resources/
 │   ├── css/                                   # Kustomisasi stylesheet CSS
@@ -193,7 +193,6 @@ Sistem menggunakan paket **Spatie Laravel Permission** dengan 3 tingkatan peran:
 |---|---|---|
 | **Admin** | `manage-users`, `manage-auth-sessions`, `run-analysis`, `test-single-prediction`, `view-dashboard`, `export-reports` | Administrator sistem: akses penuh ke semua modul termasuk kelola akun pengguna. |
 | **Analyst** | `manage-auth-sessions`, `run-analysis`, `test-single-prediction`, `view-dashboard`, `export-reports` | Peneliti/Analis data: dapat melakukan scraping, mengunggah CSV, dan ekspor laporan. |
-| **Viewer** | `view-dashboard`, `export-reports` | Pengguna umum/Penguji: hanya dapat melihat data statistik dan mengunduh laporan. |
 
 ---
 

@@ -1,33 +1,4 @@
-"""
-Threads (Meta) Scraper Service.
-
-Mengimplementasikan 2-Stage Scraping Engine untuk platform Threads (Meta):
-  - Stage 1 (Search Discovery): Mengumpulkan URL postingan dari halaman pencarian
-    Threads secara otomatis dengan smart-scroll, klik tab 'Recent', dan filtering keyword.
-  - Stage 2 (Deep Crawl): Membuka setiap URL postingan dan mengekstrak konten
-    thread asli + seluruh reply menggunakan micro-step slow scan + reverse sweep.
-
-Fungsi Publik:
-    run_threads_scraper(keywords, urls, config, checkpoint_path, final_path) -> pd.DataFrame
-        Pipeline scraping lengkap (Stage 1 + Stage 2) untuk input keyword / URL.
-
-    collect_post_urls(page, keyword, config) -> list[str]
-        Stage 1: Kumpulkan URL dari hasil pencarian Threads.
-
-    deep_crawl_post(page, link, config) -> Stage2Outcome
-        Stage 2: Crawl mendalam satu postingan + semua replynya.
-        Mengembalikan data + status skip + alasan (kegagalan tidak senyap).
-
-Format data output setiap baris:
-    {
-        "platform"       : "Threads",
-        "source"         : str,   # URL postingan sumber
-        "user_id"        : str,   # username penulis
-        "type"           : str,   # "Original Post" | "Reply/Comment"
-        "date"           : str,   # ISO-8601 dari <time datetime=>
-        "content"        : str,   # teks bersih postingan / reply
-    }
-"""
+"""Scraper Threads (Meta): Stage 1 search discovery + Stage 2 deep crawl post & reply."""
 
 import asyncio
 import json
@@ -56,6 +27,7 @@ from src.utils.async_compat import ensure_proactor_loop
 from src.scraping.base_scraper import (
     create_browser, random_delay, scroll_page,
     results_to_dataframe, save_dataframe, append_checkpoint, check_profile_exists,
+    keyword_matches_text, is_system_text as _system_text_matches,
 )
 
 logger = logging.getLogger("threads_scraper")
@@ -64,16 +36,7 @@ if not logger.handlers:
 
 
 def _ensure_file_logging() -> Optional[str]:
-    """
-    Pasang RotatingFileHandler agar log scraping Threads tersimpan ke disk.
-
-    Sebelumnya log hanya keluar ke stdout, sehingga kegagalan Stage 2 tidak dapat
-    diperiksa setelah kejadian. Handler dipasang pada root logger agar pesan dari
-    modul pendukung (base_scraper, session_manager) ikut terekam.
-
-    Returns:
-        Optional[str]: Path file log bila berhasil, None bila gagal.
-    """
+    """Pasang RotatingFileHandler pada root logger; kembalikan path file log."""
     try:
         logs_dir = BACKEND_DIR / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
@@ -101,13 +64,7 @@ def _ensure_file_logging() -> Optional[str]:
 
 
 class ThreadsScrapeAborted(RuntimeError):
-    """
-    Job scraping dihentikan karena kondisi yang tidak dapat dipulihkan.
-
-    Dipakai agar kegagalan TIDAK terlihat sebagai "sukses dengan 0 baris",
-    misalnya saat sesi tidak aktif (login wall) atau saat seluruh URL Stage 2
-    di-skip karena Threads membounce ke beranda.
-    """
+    """Job dihentikan karena kegagalan fatal (sesi tidak aktif / semua URL di-skip)."""
 
     def __init__(self, reason: str, detail: str = ""):
         super().__init__(reason)
@@ -116,15 +73,7 @@ class ThreadsScrapeAborted(RuntimeError):
 
 
 def _dump_stage1_urls(urls: list[str], keywords: list[str], direct_urls: list[str]) -> Optional[str]:
-    """
-    Simpan daftar URL hasil Stage 1 ke disk agar dapat diverifikasi terpisah.
-
-    Tanpa ini, isi Stage 1 hanya ada di memori sehingga sulit memastikan apakah
-    masalahnya "Stage 1 salah mengumpulkan URL" atau "Stage 2 salah membuka URL".
-
-    Returns:
-        Optional[str]: Path file JSON bila berhasil, None bila gagal/dilewati.
-    """
+    """Simpan daftar URL Stage 1 ke JSON agar isinya bisa diverifikasi terpisah."""
     if not urls:
         return None
     try:
@@ -188,14 +137,8 @@ def _threads_post_path(url: str) -> str:
 
 # ---------------------------------------------------------------------------
 # Identitas Halaman — Anti-Hijack & Anti-Salah-Label
-#
-# Latar belakang: Threads dapat membounce permalink post ke beranda SETELAH
-# event `domcontentloaded`. Pengecekan sekali pakai pada saat itu saja TIDAK
-# cukup: guard lolos, slow scan berjalan di DOM beranda, lalu semua item feed
-# diberi label `source` = URL post yang diminta (data sampah + salah label).
-#
-# Solusi: verifikasi identitas halaman berulang (sebelum, menjelang, dan selama
-# scan) menggunakan URL + keberadaan elemen milik post id yang diminta.
+# Threads bisa membounce permalink ke beranda SETELAH domcontentloaded, jadi
+# identitas halaman diverifikasi berulang (URL + elemen milik post id).
 # ---------------------------------------------------------------------------
 
 # Ambang jumlah langkah scan antar-verifikasi identitas (overhead kecil).
@@ -206,12 +149,7 @@ _NON_POST_PATH_MARKERS = ("/login", "/explore", "/search", "/activity", "/settin
 
 
 class Stage2IdentityLost(RuntimeError):
-    """
-    Halaman Stage 2 berpindah dari postingan yang diminta.
-
-    Dilempar saat verifikasi identitas gagal di tengah scan sehingga data yang
-    sudah terkumpul TIDAK boleh disimpan (mencegah salah label feed beranda).
-    """
+    """Halaman berpindah dari post yang diminta — data scan dibatalkan (anti salah label)."""
 
     def __init__(self, reason: str):
         super().__init__(reason)
@@ -254,19 +192,7 @@ _JS_CHECK_POST_IDENTITY = """
 
 
 async def _verify_post_identity(page: Page, requested_url: str) -> tuple[bool, str]:
-    """
-    Pastikan halaman yang sedang terbuka benar-benar postingan yang diminta.
-
-    Dijalankan sebelum, menjelang, dan selama Stage 2 scan. Ini yang menangkap
-    kasus Threads membounce permalink ke beranda (sebelumnya tidak terdeteksi).
-
-    Args:
-        page          : Halaman Playwright aktif.
-        requested_url : URL post yang seharusnya terbuka.
-
-    Returns:
-        tuple[bool, str]: (True, "") jika identitas cocok; (False, alasan) jika tidak.
-    """
+    """Pastikan halaman aktif benar-benar post yang diminta; kembalikan (ok, alasan)."""
     expected_post_id = _extract_post_id(requested_url)
     if not expected_post_id:
         return False, f"post_id tidak dapat diekstrak dari '{requested_url}'"
@@ -298,10 +224,8 @@ async def _verify_post_identity(page: Page, requested_url: str) -> tuple[bool, s
     if int(info.get("timeCount") or 0) <= 0:
         return False, "tidak ada elemen <time datetime> di DOM (konten post tidak ter-render)"
 
-    # Sinyal tambahan: anchor permalink / container konten milik post yang diminta.
-    # Sengaja TIDAK dijadikan syarat keras — struktur DOM Threads dapat berubah
-    # (mis. anchor memakai bentuk lain) dan false-negative akan melewati semua post.
-    # Peringatan ini tetap terekam agar perubahan struktur DOM terlihat di log.
+    # Anchor/container hanya jadi peringatan (bukan syarat keras) agar perubahan DOM
+    # tidak membuat semua post dilewati — syarat ketat tetap URL + <time>.
     if int(info.get("ownAnchors") or 0) <= 0 or int(info.get("containers") or 0) <= 0:
         logger.warning(
             f"  Peringatan identitas: anchor=/post/{expected_post_id} "
@@ -313,12 +237,7 @@ async def _verify_post_identity(page: Page, requested_url: str) -> tuple[bool, s
 
 
 async def _click_in_app_anchor(page: Page, target_path: str) -> bool:
-    """
-    Klik anchor yang di-inject agar perpindahan ditangani router SPA Threads.
-
-    Returns:
-        bool: True bila klik berhasil dikirim (bukan jaminan halaman sudah pindah).
-    """
+    """Klik anchor yang di-inject agar perpindahan ditangani router SPA Threads."""
     try:
         await page.evaluate(
             """(targetPath) => {
@@ -345,18 +264,10 @@ async def _click_in_app_anchor(page: Page, target_path: str) -> bool:
 
 async def _open_post_in_app(page: Page, requested_url: str) -> bool:
     """
-    Buka permalink post memakai router in-app Threads (klik anchor), bukan `page.goto`.
+    Buka permalink post lewat router in-app Threads (klik anchor).
 
-    Alasan (terverifikasi terhadap profil & sesi riil, 2026-09-23):
-    navigasi top-level ke permalink SELALU dibalas Threads dengan HTTP 302 ke
-    `https://www.threads.com/?injected_media_ids=...` — yaitu post dibuka di dalam
-    feed beranda, bukan sebagai halaman post. Percobaan dengan host `.net` pun
-    berakhir sama (301 → 302 → beranda). Sebaliknya, klik anchor membuat router SPA
-    Threads yang menangani perpindahan, dan halaman post termuat normal
-    (`pathHasPostId=True`, `<time datetime>` ada, jumlah balasan ter-render).
-
-    Returns:
-        bool: True jika identitas post terverifikasi setelah navigasi.
+    `page.goto` ke permalink selalu dibalas 302 ke beranda (terverifikasi 2026-09-23),
+    sehingga klik anchor adalah jalur utama dan `goto` hanya fallback.
     """
     from urllib.parse import urlsplit
 
@@ -385,12 +296,8 @@ async def _open_post_in_app(page: Page, requested_url: str) -> bool:
 
 # ---------------------------------------------------------------------------
 # Verifikasi Sesi Live (host-aware)
-#
-# Validasi lama hanya memeriksa NAMA cookie (sessionid/ds_user_id) tanpa
-# memastikan cookie tersebut berlaku untuk host `threads.com`. Cookie milik
-# `.threads.net` atau `.instagram.com` tetap lolos, padahal halaman yang
-# di-crawl adalah `threads.com`. Akibatnya Stage 1/Stage 2 berjalan dengan
-# sesi yang tidak sah dan Threads membounce permalink ke beranda.
+# Cek nama cookie saja tidak cukup: cookie .threads.net/.instagram.com harus
+# ditolak karena halaman yang di-crawl adalah threads.com.
 # ---------------------------------------------------------------------------
 
 _LOGIN_MARKER_JS = """
@@ -409,16 +316,7 @@ _LOGIN_MARKER_JS = """
 
 
 async def _check_logged_in_live(page: Page, navigate: bool = True) -> tuple[bool, str]:
-    """
-    Verifikasi status login Threads secara LIVE pada host `threads.com`.
-
-    Args:
-        page     : Halaman Playwright aktif.
-        navigate : True bila boleh melakukan navigasi ke beranda threads.com.
-
-    Returns:
-        tuple[bool, str]: (logged_in, url_saat_ini)
-    """
+    """Verifikasi login LIVE pada host threads.com; kembalikan (logged_in, url)."""
     try:
         if navigate and "threads.com" not in _normalize_threads_url(page.url):
             await page.goto("https://www.threads.com/", wait_until="domcontentloaded", timeout=60_000)
@@ -473,16 +371,15 @@ NOISE_EXACT = {
     "Translate", "Terjemahkan",
     "See more", "Lihat lainnya",
     "AI info", "Verified",
-    # Placeholder UI saat post belum punya balasan — bukan bagian dari konten.
-    # Tanpa ini, teks tersebut menempel di akhir `content` (terlihat pada uji
-    # verifikasi 2026-09-23: "... di korupsi No replies yet").
+    # Placeholder "belum ada balasan" — jangan ikut menempel di akhir content.
     "No replies yet", "Belum ada balasan",
     "Be the first to reply", "Jadilah yang pertama membalas",
 }
 
 
 def is_system_text(content: str) -> bool:
-    return content.strip().lower() in SYSTEM_EXACT_PHRASES
+    """Filter teks antarmuka sistem Threads memakai implementasi bersama di base_scraper."""
+    return _system_text_matches(content, SYSTEM_EXACT_PHRASES)
 
 
 # ---------------------------------------------------------------------------
@@ -512,9 +409,7 @@ class ThreadsScrapeConfig:
 _SYSTEM_EXACT_JS = json.dumps(sorted(SYSTEM_EXACT_PHRASES))
 _NOISE_JS        = json.dumps(sorted(NOISE_EXACT))
 
-# Teks pembatas "akhir thread" di Threads. Item yang muncul SETELAH pembatas ini
-# (mis. "Related threads") bukan bagian dari thread yang diminta, sehingga harus
-# diabaikan oleh extractor JS — bukan hanya dihentikan oleh scroll scan.
+# Pembatas akhir thread: item SETELAH ini (mis. "Related threads") bukan bagian thread ini.
 _THREAD_DIVIDER_TEXTS = [
     "related threads", "postingan terkait", "suggested threads",
     "postingan yang disarankan", "more threads", "postingan lainnya",
@@ -532,8 +427,7 @@ _JS_EXTRACT_COMMENTS = f"""
     const NOISE = new Set({_NOISE_JS});
     const DIVIDER_TEXTS = {_DIVIDER_TEXTS_JS};
 
-    // Cari elemen pembatas "akhir thread" (Related threads, dll). Item setelahnya
-    // bukan bagian dari thread ini dan tidak boleh ikut terekstrak.
+    // Pembatas akhir thread: item setelahnya bukan bagian dari thread ini.
     let dividerEl = null;
     for (const el of document.querySelectorAll('h2, h3, h4, [role="heading"], div[dir="auto"], span[dir="auto"]')) {{
         const t = (el.textContent || '').trim().toLowerCase();
@@ -596,9 +490,8 @@ _JS_EXTRACT_COMMENTS = f"""
         seen.add(key);
 
         let type = 'Reply/Comment';
-        // owner_post_id = post id pemilik item ini (dari anchor <time>).
-        // Dipakai Python untuk menolak item yang bukan milik post yang diminta,
-        // sehingga konten feed beranda tidak bisa salah dilabeli sebagai reply.
+        // owner_post_id dipakai Python untuk menolak item milik post lain
+        // (mencegah konten feed beranda salah dilabeli sebagai reply).
         let ownerPostId = '';
         const ownerAnchor = timeEl.closest('a[href*="/post/"]');
         if (ownerAnchor) {{
@@ -618,8 +511,7 @@ _JS_EXTRACT_COMMENTS = f"""
 
 _JS_EXTRACT_SEARCH_CARDS = """
 () => {
-    // Hanya ambil link yang benar-benar postingan Threads:
-    // pola: /@username/post/<post_id>  (tanpa path tambahan setelahnya)
+    // Hanya ambil link yang benar-benar postingan Threads: /@user/post/<post_id>.
     const POST_URL_RE = /^https?:\\/\\/(?:www\\.)?threads\\.(?:net|com)\\/@[^/]+\\/post\\/[A-Za-z0-9_-]+\\/?$/;
 
     const links = document.querySelectorAll('a[href*="/post/"]');
@@ -722,13 +614,9 @@ async def _collect_js_items(
     collected: dict,
     expected_post_id: str = "",
 ) -> int:
-    """
-    Eksekusi JS extractor dan masukkan hasilnya ke dict 'collected' tanpa duplikasi.
+    """Jalankan JS extractor dan tambahkan item unik ke `collected`.
 
-    Args:
-        expected_post_id: Post id yang seharusnya sedang dibuka. Bila diisi, item
-            yang mengaku sebagai "Original Post" milik post id LAIN akan ditolak
-            (anti salah-label feed beranda).
+    Bila `expected_post_id` diisi, item "Original Post" milik post lain ditolak.
     """
     count_before = len(collected)
     rejected = 0
@@ -771,15 +659,9 @@ async def _collect_js_items(
 # ---------------------------------------------------------------------------
 
 async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrapeConfig) -> list[dict]:
-    """
-    Mengekstrak konten thread + semua reply dari halaman postingan Threads yang sudah dibuka.
-    Menggunakan micro-step scroll ke bawah (forward scan) + sweep ke atas (reverse scan)
-    untuk memastikan semua thread/reply ter-render dan ter-ekstrasi.
+    """Ekstrak post + seluruh reply via micro-step forward scan + reverse sweep.
 
-    Raises:
-        Stage2IdentityLost: Jika halaman berpindah dari postingan yang diminta di
-            tengah scan (mis. Threads membounce ke beranda). Seluruh data dibatalkan
-            agar konten feed beranda tidak tersimpan dengan label post yang salah.
+    Raises Stage2IdentityLost bila halaman berpindah dari post yang diminta.
     """
     CONFIRM_ROUNDS  = 5
     LOG_EVERY       = 20
@@ -795,8 +677,7 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
 
     for step in range(config.scan_max_steps):
         try:
-            # Verifikasi identitas berkala: mencegah scan berlanjut di halaman yang
-            # sudah dibounce Threads ke beranda / berpindah ke post lain.
+            # Verifikasi identitas berkala (anti bounce ke beranda / post lain).
             if expected_post_id and step % IDENTITY_CHECK_EVERY == 0:
                 identity_ok, identity_reason = await _verify_post_identity(page, source_link)
                 if not identity_ok:
@@ -900,8 +781,7 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
     except Exception as e:
         logger.warning(f"HTML consolidation gagal: {e}")
 
-    # Verifikasi terakhir: pastikan halaman masih postingan yang diminta sebelum
-    # data dianggap sah. Menangkap bounce yang terjadi selama reverse sweep/settle.
+    # Verifikasi akhir: halaman harus masih post yang diminta sebelum data dianggap sah.
     if expected_post_id:
         final_ok, final_reason = await _verify_post_identity(page, source_link)
         if not final_ok:
@@ -1028,25 +908,8 @@ def _parse_post_page_html(html: str, source_link: str) -> list[dict]:
 # Utilitas Keyword Matching
 # ---------------------------------------------------------------------------
 
-def _keyword_matches_text(text: str, keywords: list[str]) -> bool:
-    """Cek apakah teks postingan relevan dengan keyword pencarian."""
-    # Jika teks kosong atau hanya media, tetap anggap valid karena sudah
-    # merupakan hasil kurasi dari endpoint search resmi Threads untuk query tersebut.
-    if not text or not text.strip():
-        return True
-
-    text_lower    = text.lower()
-    text_no_space = text_lower.replace(" ", "")
-    for kw in keywords:
-        clean          = kw.lstrip('#').lower()
-        clean_no_space = clean.replace(" ", "")
-        if clean in text_lower or (clean_no_space and clean_no_space in text_no_space):
-            return True
-        # Dukungan kecocokan kata individual untuk query majemuk
-        words = [w for w in clean.split() if len(w) > 2]
-        if words and any(w in text_lower for w in words):
-            return True
-    return False
+# Implementasi dipindah ke base_scraper.keyword_matches_text() agar X dan Threads
+# memakai satu kode yang sama (lihat blok import di atas).
 
 
 # ---------------------------------------------------------------------------
@@ -1059,22 +922,8 @@ async def collect_post_urls(
     config: ThreadsScrapeConfig,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[str]:
-    """
-    Stage 1 — Search Discovery:
-    Membuka halaman pencarian Threads dan mengumpulkan URL postingan yang relevan
-    dengan keyword menggunakan smart scroll dan pre-filtering.
-
-    Args:
-        page           : Halaman Playwright yang sudah aktif.
-        keyword        : Kata kunci utama pencarian.
-        config         : Konfigurasi scraper.
-        status_callback: Callback pelaporan progress real-time (opsional).
-
-    Returns:
-        list[str]: URL-URL postingan yang relevan (sudah di-deduplikasi).
-    """
-    # Kuota discovery berlaku per keyword; relevansi juga harus diuji terhadap
-    # keyword pencarian yang sedang diproses, bukan keyword lain dalam job.
+    """Stage 1: kumpulkan URL post relevan dari halaman pencarian Threads."""
+    # Kuota discovery & uji relevansi berlaku per keyword yang sedang diproses.
     match_keywords = [keyword]
     encoded_query  = urllib.parse.quote(keyword)
     search_url     = f"https://www.threads.com/search?q={encoded_query}&serp_type=default"
@@ -1097,8 +946,7 @@ async def collect_post_urls(
         await page.goto(search_url, wait_until="domcontentloaded", timeout=config.goto_timeout_ms)
         await random_delay((2.5, 4.0))
 
-        # Login wall harus dibedakan dari "keyword ini tidak punya hasil".
-        # Sebelumnya keduanya sama-sama berakhir sebagai list kosong tanpa keterangan.
+        # Login wall dibedakan dari "keyword tanpa hasil" agar tidak senyap.
         if await _looks_like_login_wall(page):
             raise ThreadsScrapeAborted(
                 f"Sesi Threads tidak aktif saat Stage 1 (login wall) untuk keyword '{keyword}'",
@@ -1148,7 +996,7 @@ async def collect_post_urls(
                     logger.debug(f"  URL dibuang (bukan postingan valid): {url}")
                     continue
                 seen_urls.add(url)
-                if _keyword_matches_text(card["text"], match_keywords):
+                if keyword_matches_text(card["text"], match_keywords):
                     ordered_urls.append(url)
                     new_kept += 1
                 else:
@@ -1203,38 +1051,18 @@ async def deep_crawl_post(
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> Stage2Outcome:
     """
-    Stage 2 — Deep Crawl:
-    Buka satu URL postingan Threads dan ekstrak konten thread asli + semua reply
-    menggunakan slow scan.
+    Stage 2: crawl satu URL post beserta seluruh reply-nya.
 
-    Strategi navigasi per URL:
-      1. Navigasi in-app via router SPA Threads (`_open_post_in_app`) — jalur UTAMA.
-         Terbukti berhasil pada verifikasi dengan sesi riil (2026-09-23).
-      2. `page.goto` langsung — fallback terakhir; Threads membalas HTTP 302 ke
-         beranda dengan `?injected_media_ids=...`, jadi biasanya hanya menghasilkan skip.
-
-    Identitas halaman diverifikasi beberapa kali: tepat setelah load, setelah halaman
-    sempat hydrate, dan berkala di dalam `_slow_scan_comments`. Ini mencegah scan
-    berjalan di DOM beranda seperti yang terjadi sebelumnya.
-
-    Args:
-        page           : Halaman Playwright yang sudah aktif.
-        link           : URL postingan Threads yang akan di-crawl.
-        config         : Konfigurasi scraper.
-        max_retries    : Jumlah attempt tambahan untuk error tak terduga.
-        status_callback: Callback pelaporan status (opsional).
-
-    Returns:
-        Stage2Outcome: data hasil crawl + status skip + alasannya. Kegagalan tidak
-        lagi dikembalikan sebagai list kosong tanpa keterangan.
+    Urutan attempt: in-app (ganjil) → `page.goto` (genap). Identitas diverifikasi
+    setelah load, setelah hydrate, dan berkala selama scan. Kegagalan dikembalikan
+    sebagai Stage2Outcome(skipped=True, reason=...) sehingga tidak pernah senyap.
     """
     logger.info(f"Deep Crawling : {link}")
     requested_url = _normalize_threads_url(link)
     last_reason = ""
 
     for attempt in range(1, max_retries + 2):
-        # Attempt ganjil = navigasi in-app (jalur utama), attempt genap = fallback goto.
-        # Dengan max_retries=2 urutannya: in-app -> goto -> in-app.
+        # Attempt ganjil = in-app, genap = fallback goto (max_retries=2: in-app→goto→in-app).
         use_in_app = attempt % 2 == 1
         try:
             if use_in_app:
@@ -1252,11 +1080,11 @@ async def deep_crawl_post(
                 )
                 await random_delay(config.delay_range)
 
-            # Verifikasi #1 — tepat setelah load (menangkap bounce cepat).
+            # Verifikasi #1 tepat setelah load, #2 setelah halaman hydrate
+            # (bounce Threads justru terjadi SETELAH pengecekan pertama).
             identity_ok, reason = await _verify_post_identity(page, requested_url)
 
-            # Verifikasi #2 — setelah halaman sempat hydrate. Inilah celah yang
-            # sebelumnya lolos: bounce Threads terjadi SETELAH pengecekan pertama.
+            # Verifikasi #2 — setelah halaman sempat hydrate.
             if identity_ok:
                 await page.wait_for_timeout(3000)
                 identity_ok, reason = await _verify_post_identity(page, requested_url)
@@ -1318,23 +1146,8 @@ async def run_threads_scraper(
     final_path     : str = DEFAULT_OUTPUT,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> "pd.DataFrame":
-    """
-    Pipeline scraping Threads (Meta) lengkap:
-      Stage 1: Kumpulkan URL dari pencarian Threads berdasarkan keyword.
-      Stage 2: Deep crawl setiap URL untuk ekstraksi thread + reply.
-
-    Args:
-        keywords       : List keyword pencarian (bisa None jika hanya pakai direct_urls).
-        direct_urls    : List URL postingan langsung (bisa None jika hanya pakai keywords).
-        config         : Konfigurasi scraper (default: ThreadsScrapeConfig()).
-        checkpoint_path: Path file CSV checkpoint inkremental.
-        final_path     : Path file CSV hasil akhir.
-        status_callback: Callback pelaporan progress real-time (opsional).
-
-    Returns:
-        pd.DataFrame: Seluruh data yang terkumpul (baris = 1 thread/reply).
-    """
-    import pandas as pd  # import lokal agar aman
+    """Pipeline lengkap Threads: Stage 1 cari URL → Stage 2 deep crawl → DataFrame."""
+    import pandas as pd
 
     config      = config or ThreadsScrapeConfig()
     keywords    = keywords or []
@@ -1362,9 +1175,7 @@ async def run_threads_scraper(
             return pd.DataFrame()
 
         try:
-            # ── Pre-flight: verifikasi login LIVE pada host threads.com ────────
-            # Menggantikan cek nama cookie lama yang tidak memeriksa host domain,
-            # sehingga cookie .threads.net/.instagram.com ikut dianggap valid.
+            # Pre-flight: verifikasi login LIVE pada host threads.com (cookie saja tidak cukup).
             cookies = await context.cookies()
             cookie_hosts = sorted({
                 (c.get("domain") or "")
@@ -1410,8 +1221,7 @@ async def run_threads_scraper(
 
             logger.info(f"Total URL untuk di-crawl: {len(session_urls)}")
 
-            # Simpan daftar URL Stage 1 ke disk agar isi Stage 1 dapat diverifikasi
-            # terpisah (sebelumnya hanya ada di memori, tidak bisa diperiksa).
+            # Simpan daftar URL Stage 1 ke disk agar bisa diverifikasi terpisah.
             _dump_stage1_urls(session_urls, keywords, direct_urls)
 
             if not session_urls:
@@ -1439,9 +1249,7 @@ async def run_threads_scraper(
                     skipped_urls.append((link, outcome.reason))
                 await random_delay(config.delay_range)
 
-            # ── Fail-loud: bila SEMUA URL di-skip, ada masalah sistemik ────────
-            # Sebelumnya kondisi ini berakhir sebagai "sukses 0 baris" sehingga
-            # bug Stage 2 tidak terlihat.
+            # Fail-loud: bila SEMUA URL di-skip, masalahnya sistemik (bukan "0 hasil").
             if total_urls and len(skipped_urls) == total_urls:
                 reason = (
                     f"Stage 2 Threads gagal untuk SEMUA {total_urls} URL: halaman tidak pernah "
@@ -1473,7 +1281,6 @@ async def run_threads_scraper(
     if not df.empty:
         save_dataframe(df, final_path)
         logger.info(f"Scraping Threads selesai. Total: {len(df)} baris. File: {final_path}")
-
     else:
         logger.warning("Tidak ada data yang terkumpul dari sesi ini.")
     return df

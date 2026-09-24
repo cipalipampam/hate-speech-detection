@@ -3,16 +3,19 @@
 namespace App\Services;
 
 use App\Models\Analysis;
-use App\Models\AnalysisClassification;
 use App\Models\AnalysisExport;
-use App\Models\AnalysisPost;
 use App\Models\AnalysisStatistic;
-use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class AnalysisImportService
 {
+    public function __construct(
+        protected ?FastAPIClientService $fastApiClient = null
+    ) {
+        $this->fastApiClient = $fastApiClient ?? app(FastAPIClientService::class);
+    }
+
     /**
      * Memproses hasil eksekusi FastAPI: simpan statistik, catat ekspor, dan impor postingan.
      */
@@ -46,7 +49,7 @@ class AnalysisImportService
         if (!empty($jobData['exported_file'])) {
             $this->recordExportFile($analysis, $jobData['exported_file']);
 
-            // 4. Impor detail baris postingan dari file CSV
+            // 4. Impor detail baris postingan dari file CSV (HTTP FastAPI / fallback filesystem)
             $this->importPostsFromCsv($analysis, $jobData['exported_file']);
         }
     }
@@ -54,11 +57,8 @@ class AnalysisImportService
     /**
      * Mencatat informasi file CSV hasil ekspor ke database.
      */
-    public function recordExportFile(Analysis $analysis, string $filename, string $format = 'csv'): AnalysisExport
+    public function recordExportFile(Analysis $analysis, string $filename, string $format = 'csv', int $sizeBytes = 0): AnalysisExport
     {
-        $backendExportPath = base_path('../backend/storage/exports/' . $filename);
-        $sizeBytes = file_exists($backendExportPath) ? filesize($backendExportPath) : 0;
-
         return AnalysisExport::updateOrCreate(
             [
                 'analysis_id' => $analysis->id,
@@ -77,27 +77,55 @@ class AnalysisImportService
     /**
      * Membaca file CSV ekspor dan memasukkan ke analysis_posts + analysis_classifications
      * dengan aman menggunakan Database Transaction per chunk.
+     * Sumber data: HTTP endpoint FastAPI (GET /api/v1/pipeline/exports/{filename}) — sama
+     * untuk lingkungan lokal maupun Docker (tanpa akses path filesystem backend).
      */
     public function importPostsFromCsv(Analysis $analysis, string $filename): int
     {
-        $csvPath = base_path('../backend/storage/exports/' . $filename);
-
-        if (!file_exists($csvPath) || !is_readable($csvPath)) {
-            Log::warning("File ekspor CSV tidak ditemukan: {$csvPath}");
-            return 0;
-        }
-
         // Hindari duplikasi jika sudah pernah diimpor
         if ($analysis->posts()->exists()) {
             return $analysis->posts()->count();
         }
 
-        $file = fopen($csvPath, 'r');
+        // Decoupled penuh: SELALU ambil CSV via HTTP FastAPI, tanpa menyentuh filesystem
+        // backend. Jalur lokal `base_path('../backend/storage/exports/...')` dihapus karena
+        // melanggar prinsip anti-path-mismatch dan membuat perilaku lokal ≠ Docker.
+        // Ditulis streaming ke php://temp (spill ke file setelah 2MB) supaya ekspor
+        // berukuran besar tidak ditampung utuh di memori PHP.
+        $file = fopen('php://temp', 'r+');
+
+        if (! $this->fastApiClient->downloadExportToStream($filename, $file)) {
+            fclose($file);
+            Log::warning("File ekspor CSV gagal diambil via endpoint FastAPI: {$filename}");
+            return 0;
+        }
+
+        $sizeBytes = (int) (fstat($file)['size'] ?? 0);
+        rewind($file);
+
+        // Perbarui ukuran file pada metadata ekspor jika sebelumnya tercatat 0
+        if ($sizeBytes > 0) {
+            AnalysisExport::where('analysis_id', $analysis->id)
+                ->where('filename', $filename)
+                ->where('size_bytes', 0)
+                ->update(['size_bytes' => $sizeBytes]);
+        }
+
         $header = fgetcsv($file);
 
         if (!$header) {
             fclose($file);
             return 0;
+        }
+
+        // Buang UTF-8 BOM dari sel pertama header.
+        // Ekspor pipeline backend ditulis dengan encoding="utf-8-sig"
+        // (lihat backend/src/pipeline/end_to_end_pipeline.py), sehingga nama kolom
+        // pertama terbaca sebagai "\xEF\xBB\xBFplatform" — bukan "platform".
+        // Akibatnya lookup $d['platform'] selalu gagal dan platform post hanya
+        // ditebak dari source_url (bisa salah untuk analisis "both").
+        if (isset($header[0])) {
+            $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $header[0]);
         }
 
         $batchSize = 250;
@@ -136,9 +164,12 @@ class AnalysisImportService
             $count = 0;
             $now = now()->toDateTimeString();
 
-            foreach ($rows as $d) {
-                $parentPlatform = DB::table('analyses')->where('id', $analysisId)->value('platform') ?? 'threads';
+            // Diambil SEKALI di luar loop: nilai ini konstan untuk seluruh batch.
+            // Sebelumnya query ini dieksekusi per baris (N+1) — 1 batch 250 baris
+            // berarti 250 query identik ke tabel `analyses`.
+            $parentPlatform = DB::table('analyses')->where('id', $analysisId)->value('platform') ?? 'threads';
 
+            foreach ($rows as $d) {
                 // Untuk analisis "both", platform per-post dideteksi dari source_url
                 // agar filter platform pada halaman detail bisa bekerja dengan benar
                 $csvPlatform = $d['platform'] ?? '';

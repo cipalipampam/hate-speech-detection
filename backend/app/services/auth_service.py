@@ -1,16 +1,9 @@
-"""
-Auth Service — Application Service Layer.
-
-Mengelola:
-1. Pengecekan ketersediaan Xvfb display server untuk GUI browser.
-2. Pengecekan keabsahan profil browser X dan Threads di filesystem.
-3. Eksekusi proses background login Playwright.
-"""
+"""Auth Service: deteksi runtime GUI, status sesi browser, dan login background."""
 
 import logging
 import os
 import sys
-from typing import Tuple
+from pathlib import Path
 
 from configs.config import X_PROFILE_DIR, THREADS_PROFILE_DIR
 from src.auth.login_threads import setup_threads_login
@@ -18,34 +11,81 @@ from src.auth.login_x import setup_x_login
 from src.auth.session_manager import get_all_sessions_status
 from app.schemas.auth_schema import (
     AllSessionsStatusResponse,
-    LoginTriggerResponse,
+    LoginEnvironmentInfo,
     SessionStatusItem,
 )
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Konstanta deteksi runtime GUI
+# ---------------------------------------------------------------------------
+
+# Mode yang diakui untuk env `LOGIN_GUI_MODE`. Nilai ini di-set EKSPLISIT oleh
+# docker-compose.yml ("novnc") supaya deteksi tidak bergantung pada tebakan.
+VALID_GUI_MODES = ("novnc", "native", "unavailable")
+
+# Sentinel runtime container (Docker membuat file ini di root filesystem).
+DOCKER_SENTINEL = Path("/.dockerenv")
+
+# Port default viewer noVNC (websockify) bila `NOVNC_PORT` tidak di-set.
+DEFAULT_NOVNC_PORT = "6080"
+
+# Path viewer noVNC relatif terhadap akar port (entrypoint membuat symlink index.html).
+NOVNC_VIEW_PATH = "/vnc.html"
 
 
 class AuthService:
     """Service untuk urusan autentikasi dan status sesi scraper."""
 
     @staticmethod
-    def check_display_available() -> Tuple[bool, str]:
+    def get_login_environment() -> LoginEnvironmentInfo:
+        """Tentukan di mana GUI login muncul: 'novnc' (Docker) / 'native' (desktop) / 'unavailable'.
+
+        Urutan keputusan: env LOGIN_GUI_MODE → Windows = native → ada DISPLAY = novnc/native → unavailable.
         """
-        Periksa apakah display server tersedia untuk membuka browser GUI Playwright.
-        Mengembalikan (is_available, reason_message).
-        """
-        if sys.platform == "win32":
-            return True, "Windows host — GUI tersedia."
+        forced_mode    = os.environ.get("LOGIN_GUI_MODE", "").strip().lower()
+        is_container   = DOCKER_SENTINEL.exists() or os.environ.get("HATESENSE_RUNTIME", "").strip().lower() == "docker"
+        display        = os.environ.get("DISPLAY", "").strip()
+        wayland        = os.environ.get("WAYLAND_DISPLAY", "").strip()
 
-        display = os.environ.get("DISPLAY", "").strip()
-        wayland = os.environ.get("WAYLAND_DISPLAY", "").strip()
+        if forced_mode in VALID_GUI_MODES:
+            gui_mode = forced_mode
+        elif sys.platform == "win32":
+            gui_mode = "native"
+        elif display or wayland:
+            gui_mode = "novnc" if is_container else "native"
+        else:
+            gui_mode = "unavailable"
 
-        if display or wayland:
-            return True, f"Display tersedia: {display or wayland}"
+        novnc_url = None
+        if gui_mode == "novnc":
+            port = os.environ.get("NOVNC_PORT", "").strip() or DEFAULT_NOVNC_PORT
+            novnc_url = (
+                os.environ.get("NOVNC_PUBLIC_URL", "").strip()
+                or f"http://localhost:{port}{NOVNC_VIEW_PATH}"
+            )
 
-        return False, (
-            "Tidak ada display server yang terdeteksi ($DISPLAY / $WAYLAND_DISPLAY kosong). "
-            "Kemungkinan Xvfb belum berjalan. Coba restart container."
+        messages = {
+            "novnc": (
+                "GUI browser berjalan pada virtual display container Docker. "
+                f"Pantau dan selesaikan login melalui noVNC: {novnc_url}"
+            ),
+            "native": (
+                "Jendela browser Playwright akan terbuka langsung di desktop perangkat ini. "
+                "Selesaikan login pada jendela tersebut."
+            ),
+            "unavailable": (
+                "Tidak ada display server yang terdeteksi ($DISPLAY / $WAYLAND_DISPLAY kosong). "
+                "Login interaktif tidak dapat dibuka pada runtime ini."
+            ),
+        }
+
+        return LoginEnvironmentInfo(
+            runtime="docker" if is_container else "local",
+            gui_mode=gui_mode,
+            novnc_url=novnc_url,
+            message=messages[gui_mode],
         )
 
     @staticmethod
@@ -73,6 +113,7 @@ class AuthService:
             x=x_item,
             threads=t_item,
             all_valid=x_item.is_valid and t_item.is_valid,
+            login_environment=AuthService.get_login_environment(),
         )
 
     @staticmethod

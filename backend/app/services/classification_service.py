@@ -1,28 +1,19 @@
-"""
-Classification Service — Application Service Layer.
-
-Mengelola:
-1. Inferensi teks tunggal dan batch menggunakan HateSpeechPredictor IndoBERT.
-2. Orkestrasi preprocessing teks (pembersihan & normalisasi Kamusalay).
-3. Agregasi statistik hate speech (jumlah hate/non-hate, persentase).
-"""
+"""Classification Service: inferensi IndoBERT satu teks (/classify/single)."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from src.preprocessing.pipeline import PreprocessingPipeline
 from app.schemas.classification_schema import (
-    ClassifyBatchResponse,
     ClassifyItemResponse,
     LevelPrediction,
-    ModelInfoResponse,
 )
 
 logger = logging.getLogger(__name__)
 
 
 class ClassificationService:
-    """Service untuk menangani inferensi klasifikasi IndoBERT dan kalkulasi statistik."""
+    """Service untuk inferensi klasifikasi IndoBERT (satu teks per request)."""
 
     def __init__(self):
         # Inisialisasi pipeline preprocessing (ringan — hanya kamusalay.csv)
@@ -43,18 +34,6 @@ class ClassificationService:
             raise RuntimeError("Model IndoBERT belum diinisialisasi.")
         return self._predictor
 
-    def get_model_info(self) -> ModelInfoResponse:
-        """Mengambil metadata arsitektur IndoBERT dari model loader."""
-        loader = self._get_predictor().loader
-        return ModelInfoResponse(
-            model_name=loader.pretrained_model,
-            device=loader.device,
-            max_length=loader.max_length,
-            is_loaded=loader.is_loaded(),
-            classes_lvl1=loader.classes_lvl1,
-            classes_lvl2=loader.classes_lvl2,
-        )
-
     def classify_single_text(
         self,
         text: str,
@@ -66,37 +45,6 @@ class ClassificationService:
         result = predictor.predict_text(clean_text)
         result["text"] = clean_text
         return self._build_classify_item(result)
-
-    def classify_batch_texts(
-        self,
-        texts: List[str],
-        preprocess: bool = True,
-    ) -> ClassifyBatchResponse:
-        """Melakukan klasifikasi teks kumpulan batch dan menghitung ringkasan statistik."""
-        predictor = self._get_predictor()
-        if preprocess:
-            processed_texts = [self._preprocessor.transform_text(t) for t in texts]
-        else:
-            processed_texts = texts
-
-        results = predictor.predict_batch(processed_texts)
-
-        items = []
-        for i, res in enumerate(results):
-            res["text"] = texts[i]  # Tampilkan teks asli sebelum preprocess
-            items.append(self._build_classify_item(res))
-
-        total = len(items)
-        hate_count = sum(1 for item in items if item.is_hate_speech)
-        hate_pct = round(hate_count / total * 100, 2) if total > 0 else 0.0
-
-        return ClassifyBatchResponse(
-            total=total,
-            hate_speech_count=hate_count,
-            non_hate_speech_count=total - hate_count,
-            hate_speech_pct=hate_pct,
-            data=items,
-        )
 
     @staticmethod
     def _build_classify_item(result: Dict[str, Any]) -> ClassifyItemResponse:

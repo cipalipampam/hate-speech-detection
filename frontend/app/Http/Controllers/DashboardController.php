@@ -21,9 +21,22 @@ class DashboardController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        // 1. Sinkronisasi status analisis yang masih running / queued ke FastAPI
-        if (Analysis::whereIn('status', ['running', 'queued'])->exists()) {
-            $this->analysisService->syncRunningAnalyses();
+        // 1. Sinkronisasi status analisis yang masih running / queued ke FastAPI.
+        //    DI-SCOPE ke user ini (admin: semua) — sebelumnya setiap kali dashboard
+        //    dibuka, sistem menembak FastAPI untuk job milik siapa pun (boros & lambat).
+        $userId = auth()->user()?->hasRole('admin') ? null : auth()->id();
+
+        $hasRunning = Analysis::whereIn('status', ['running', 'queued'])
+            ->when($userId, fn ($query) => $query->where('user_id', $userId))
+            ->exists();
+
+        if ($hasRunning) {
+            $this->analysisService->syncRunningAnalyses($userId);
+
+            // Status bisa berubah setelah sync → ambil nilai segar untuk indikator polling.
+            $hasRunning = Analysis::whereIn('status', ['running', 'queued'])
+                ->when($userId, fn ($query) => $query->where('user_id', $userId))
+                ->exists();
         }
 
         $metrics        = $this->metricsService->getGlobalMetrics();
@@ -46,7 +59,8 @@ class DashboardController extends Controller
             ];
         });
 
-        $stillHasRunning = Analysis::whereIn('status', ['running', 'queued'])->exists();
+        // Hasil cek di awal (sudah di-scope ke user) dipakai ulang — tanpa query ke-2.
+        $stillHasRunning = $hasRunning;
 
         // 2. Jika dipanggil melalui polling AJAX dari Overview
         if ($request->ajax() || $request->wantsJson()) {

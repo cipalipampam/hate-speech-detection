@@ -3,6 +3,7 @@
 namespace App\Http\Requests\User;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -19,8 +20,8 @@ class StoreUserRequest extends FormRequest
         return [
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password'  => ['required', 'string', 'min:8'],
-            'role'      => ['required', 'string', 'in:admin,analyst,viewer'],
+            'password'  => ['required', 'string', 'min:8', 'confirmed'],
+            'role'      => ['required', 'string', Rule::in(['admin', 'analyst'])],
             'is_active' => ['nullable', 'boolean'],
         ];
     }
@@ -28,13 +29,26 @@ class StoreUserRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required'     => 'Nama pengguna wajib diisi.',
-            'email.required'    => 'Alamat email wajib diisi.',
-            'email.unique'      => 'Email ini sudah terdaftar di sistem.',
-            'password.required' => 'Kata sandi awal wajib diisi.',
-            'password.min'      => 'Kata sandi minimal 8 karakter.',
-            'role.required'     => 'Role pengguna wajib ditentukan.',
-            'role.in'           => 'Role yang dipilih tidak valid (admin, analyst, viewer).',
+            'name.required'      => 'Nama pengguna wajib diisi.',
+            'email.required'     => 'Alamat email wajib diisi.',
+            'email.unique'       => 'Email ini sudah terdaftar di sistem.',
+            'password.required'  => 'Kata sandi awal wajib diisi.',
+            'password.min'       => 'Kata sandi minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'role.required'      => 'Role pengguna wajib ditentukan.',
+            'role.in'            => 'Role yang dipilih tidak valid (pilihan: admin, analyst).',
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'name'      => 'nama pengguna',
+            'email'     => 'alamat email',
+            'password'  => 'kata sandi',
+            'role'      => 'peran pengguna',
+            'is_active' => 'status aktif',
         ];
     }
 }
+

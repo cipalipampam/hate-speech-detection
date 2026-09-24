@@ -12,6 +12,7 @@ function scraperTelemetry(config) {
     return {
         isOnline: config.initialOnline,
         sessionData: config.initialSessionData || null,
+        loginEnv: config.loginEnv || null,
         checkUrl: config.checkUrl,
         isChecking: false,
         pollTimer: null,
@@ -42,6 +43,36 @@ function scraperTelemetry(config) {
                 : 'Sesi belum dikonfigurasi atau cookie kadaluarsa.';
         },
 
+        // ── Lingkungan GUI login (sumber: backend login_environment) ──────────
+        get guiMode() {
+            return (this.loginEnv && this.loginEnv.gui_mode) ? this.loginEnv.gui_mode : null;
+        },
+
+        // URL noVNC dari backend; host ditukar bila portal diakses via IP LAN/host lain.
+        get novncUrl() {
+            const raw = (this.loginEnv && this.loginEnv.novnc_url) ? this.loginEnv.novnc_url : null;
+            if (!raw) return null;
+
+            const host = window.location.hostname;
+            if (host && host !== 'localhost' && host !== '127.0.0.1') {
+                return raw.replace(/\/\/(localhost|127\.0\.0\.1)(?=[:/])/, '//' + host);
+            }
+            return raw;
+        },
+
+        /**
+         * Dipanggil pada event klik tombol Re-Authenticate (user gesture) sehingga
+         * jendela noVNC boleh dibuka tanpa diblokir popup blocker.
+         * Form tetap di-submit secara native agar redirect & flash Laravel berjalan.
+         * Pada runtime lokal (guiMode 'native') jendela Chrome/Edge dibuka oleh server,
+         * jadi tidak ada aksi tambahan yang diperlukan di sisi browser.
+         */
+        requestLogin() {
+            if (this.guiMode === 'novnc' && this.novncUrl) {
+                window.open(this.novncUrl, '_blank', 'noopener');
+            }
+        },
+
         async checkStatus() {
             if (this.isChecking) return;
             this.isChecking = true;
@@ -56,13 +87,16 @@ function scraperTelemetry(config) {
                     const data = await res.json();
                     this.isOnline = !!data.isServerOnline;
                     this.sessionData = data.sessionData || null;
+                    this.loginEnv = data.loginEnvironment || null;
                 } else {
                     this.isOnline = false;
                     this.sessionData = null;
+                    this.loginEnv = null;
                 }
             } catch (err) {
                 this.isOnline = false;
                 this.sessionData = null;
+                this.loginEnv = null;
             } finally {
                 this.isChecking = false;
                 window.__SCRAPER_POLLING_ACTIVE__ = true;
@@ -96,6 +130,7 @@ function scraperTelemetry(config) {
 <div x-data="scraperTelemetry(@js([
     'initialOnline'      => (bool)$isServerOnline,
     'initialSessionData' => $sessionData,
+    'loginEnv'           => $loginEnvironment,
     'checkUrl'           => route('scraper.status'),
 ]))" style="max-width:880px;margin:0 auto;">
 
@@ -233,22 +268,10 @@ function scraperTelemetry(config) {
             @can('manage-auth-sessions')
             <form method="POST" action="{{ route('scraper.login-trigger', 'x') }}">
                 @csrf
-                <button type="submit" class="btn btn-outline" style="width:100%;height:40px;" :disabled="!isOnline" {{ !$isServerOnline ? 'disabled' : '' }}>
+                <button type="submit" class="btn btn-outline" style="width:100%;height:40px;" @click="requestLogin()" :disabled="!isOnline" {{ !$isServerOnline ? 'disabled' : '' }}>
                     <span>⟳ RE-AUTHENTICATE 𝕏 TWITTER</span>
                 </button>
             </form>
-            {{-- Panduan noVNC: muncul saat server online --}}
-            <div class="card-flat" style="padding:0.75rem 1rem;margin-top:0.5rem;border-left:3px solid #22c55e;" x-show="isOnline">
-                <p style="margin:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--color-text-muted);line-height:1.6;">
-                    <strong style="color:#22c55e;">⊙ BROWSER GUI AKTIF VIA NOVNC</strong><br>
-                    Setelah klik tombol di atas, buka tab baru di browser Anda dan akses:<br>
-                    <a href="http://localhost:6080/vnc.html" target="_blank" rel="noopener"
-                       style="color:#22c55e;font-weight:700;text-decoration:underline;">
-                        localhost:6080/vnc.html
-                    </a>
-                    <br>Browser Twitter akan muncul di sana. Login seperti biasa, sesi tersimpan otomatis.
-                </p>
-            </div>
             @endcan
         </div>
 
@@ -287,39 +310,14 @@ function scraperTelemetry(config) {
             @can('manage-auth-sessions')
             <form method="POST" action="{{ route('scraper.login-trigger', 'threads') }}">
                 @csrf
-                <button type="submit" class="btn btn-outline" style="width:100%;height:40px;" :disabled="!isOnline" {{ !$isServerOnline ? 'disabled' : '' }}>
+                <button type="submit" class="btn btn-outline" style="width:100%;height:40px;" @click="requestLogin()" :disabled="!isOnline" {{ !$isServerOnline ? 'disabled' : '' }}>
                     <span>⟳ RE-AUTHENTICATE META THREADS</span>
                 </button>
             </form>
-            {{-- Panduan noVNC: muncul saat server online --}}
-            <div class="card-flat" style="padding:0.75rem 1rem;margin-top:0.5rem;border-left:3px solid #22c55e;" x-show="isOnline">
-                <p style="margin:0;font-family:var(--font-mono);font-size:0.7rem;color:var(--color-text-muted);line-height:1.6;">
-                    <strong style="color:#22c55e;">⊙ BROWSER GUI AKTIF VIA NOVNC</strong><br>
-                    Setelah klik tombol di atas, buka tab baru di browser Anda dan akses:<br>
-                    <a href="http://localhost:6080/vnc.html" target="_blank" rel="noopener"
-                       style="color:#22c55e;font-weight:700;text-decoration:underline;">
-                        localhost:6080/vnc.html
-                    </a>
-                    <br>Browser Threads akan muncul di sana. Login seperti biasa, sesi tersimpan otomatis.
-                </p>
-            </div>
             @endcan
         </div>
 
     </div>
-
-    {{-- ── 3. Catatan Teknis Lab ── --}}
-    <div class="card-flat" style="padding:1.25rem 1.5rem;">
-        <span class="stat-block-label" style="display:block;margin-bottom:0.5rem;">PANDUAN OPERASIONAL PERSISTENT SESSION</span>
-        <ul style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);line-height:1.75;padding-left:1.25rem;margin:0;">
-            <li>Sistem menggunakan <strong>Playwright Persistent Browser Context</strong> sehingga kredensial disimpan lokal dalam direktori aman dan tidak perlu login ulang pada setiap batch crawling.</li>
-            <li>Apabila platform mendeteksi checkpoint berkala, gunakan tombol <strong>Re-Authenticate</strong> — browser interaktif akan terbuka di <strong>virtual display</strong> container Docker.</li>
-            <li>Akses <strong><a href="http://localhost:6080/vnc.html" target="_blank" rel="noopener" style="color:inherit;">localhost:6080/vnc.html</a></strong> di browser Windows Anda untuk melihat dan menyelesaikan proses login. Tidak perlu install apapun — berbasis browser penuh.</li>
-            <li>Setelah login selesai di noVNC, sesi disimpan otomatis dan badge status akan berubah menjadi <strong>SESI AKTIF</strong> (cek ulang dalam ~15 detik).</li>
-            <li>Crawler di latar belakang secara otomatis mengabaikan platform yang sesinya non-aktif untuk mencegah pemblokiran IP.</li>
-        </ul>
-    </div>
-
 </div>
 
 @endsection

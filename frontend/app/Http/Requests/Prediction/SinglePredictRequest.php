@@ -38,4 +38,16 @@ class SinglePredictRequest extends FormRequest
             'text.max'      => 'Panjang teks maksimal 2.000 karakter.',
         ];
     }
+
+    /**
+     * Label atribut khusus.
+     */
+    public function attributes(): array
+    {
+        return [
+            'text'       => 'teks opini',
+            'preprocess' => 'opsi prapemrosesan',
+        ];
+    }
 }
+

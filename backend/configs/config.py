@@ -1,9 +1,4 @@
-"""
-Konfigurasi Terpusat Sistem Backend.
-
-Menyimpan seluruh path direktori, konstanta runtime, dan parameter default
-untuk modul auth, scraping, preprocessing, dan inferensi IndoBERT.
-"""
+"""Konfigurasi terpusat backend: path direktori, SCRAPER_CONFIG, MODEL_CONFIG."""
 
 from pathlib import Path
 
@@ -45,7 +40,10 @@ KAMUSALAY_PATH = DICT_DIR / "kamusalay.csv"
 # ---------------------------------------------------------------------------
 
 SCRAPER_CONFIG = {
-    "headless"          : False,            # False = buka browser GUI (wajib untuk login)
+    # CATATAN: tidak ada kunci "headless" di sini. Opsi itu dikendalikan per-request
+    # (`ScrapeRequest.headless`, `PipelineRunRequest.headless`, default dataclass scraper = True),
+    # sedangkan proses login SELALU memakai GUI (`create_browser(..., headless=False)`).
+    # Sebelumnya kunci `headless` ada di sini tetapi tidak pernah dibaca siapa pun (dead config).
     "search_mode"       : "latest",         # "latest" (Terbaru/Recent) atau "top" (Terpopuler/Default)
     "goto_timeout_ms"   : 60_000,           # Timeout navigasi halaman (ms)
     "delay_range"       : (2.0, 4.0),       # Range random delay antar aksi (detik)

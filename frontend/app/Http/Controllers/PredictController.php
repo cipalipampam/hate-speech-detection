@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Prediction\SinglePredictRequest;
 use App\Services\SinglePredictService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PredictController extends Controller
@@ -21,13 +21,9 @@ class PredictController extends Controller
     /**
      * Endpoint JSON untuk Live Text Classifier (Alpine.js fetch).
      */
-    public function classify(Request $request): JsonResponse
+    public function classify(SinglePredictRequest $request): JsonResponse
     {
-        $request->validate([
-            'text' => ['required', 'string', 'min:5', 'max:2000'],
-        ]);
-
-        $result = $this->predictService->predict($request->input('text'));
+        $result = $this->predictService->predict($request->validated('text'));
 
         if (!$result['success']) {
             return response()->json([

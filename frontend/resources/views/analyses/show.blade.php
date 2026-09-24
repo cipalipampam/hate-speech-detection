@@ -20,9 +20,11 @@
         'exportUrl'       => route('analyses.export', $analysis->id),
         'execTime'        => $analysis->execution_time_seconds,
         'pipelineStep'    => $analysis->status === 'completed' ? 4 : ($analysis->pipeline_step ?? 1),
-        'pipelineMessage' => ($analysis->pipeline_message && stripos($analysis->pipeline_message, 'polling') === false && stripos($analysis->pipeline_message, 'asinkron') === false)
-            ? $analysis->pipeline_message
-            : ($analysis->status === 'completed' ? 'Seluruh sekuensial pipeline AI telah selesai dieksekusi.' : 'Menghubungkan ke antrean worker pemrosesan...'),
+        'pipelineMessage' => $analysis->status === 'failed'
+            ? ($analysis->error_message ?? 'Pipeline AI gagal dieksekusi. Silakan periksa log server AI.')
+            : (($analysis->pipeline_message && stripos($analysis->pipeline_message, 'polling') === false && stripos($analysis->pipeline_message, 'asinkron') === false)
+                ? $analysis->pipeline_message
+                : ($analysis->status === 'completed' ? 'Seluruh sekuensial pipeline AI telah selesai dieksekusi.' : 'Menghubungkan ke antrean worker pemrosesan...')),
         'posts'           => $posts->items(),
         'selectedPost'    => $posts->items()[0] ?? null,
         'pagination'      => [
@@ -167,6 +169,9 @@ function analysisDetail() {
                                 clearInterval(this.pollTimer);
                                 this.pollTimer = null;
                             }
+                            // Kolom pesan pada kartu pipeline menjadi satu-satunya tempat
+                            // alasan kegagalan ditampilkan (banner error sudah dihapus).
+                            this.pipelineMessage = data.analysis.error_message || this.pipelineMessage;
                         }
                     }
                 } catch (e) {
@@ -428,15 +433,6 @@ function analysisDetail() {
         </div>
     </div>
 
-    {{-- Error Banner --}}
-    @if($analysis->status === 'failed')
-    <div style="background:var(--color-danger);border:2px solid #0A0A0A;box-shadow:4px 4px 0 #0A0A0A;padding:1rem;margin-bottom:1.5rem;">
-        <p style="font-family:var(--font-mono);font-size:0.75rem;font-weight:800;color:#0A0A0A;margin:0 0 0.25rem;">ERROR: PIPELINE GAGAL</p>
-        <p style="font-size:0.875rem;font-weight:600;color:#0A0A0A;margin:0;">
-            {{ $analysis->error_message ?? 'Koneksi ke backend FastAPI terputus atau Playwright mengalami kegagalan sesi. Periksa log server.' }}
-        </p>
-    </div>
-    @endif
 
     {{-- ════════════════════════════════════════════════════════════════════
          STATE 1: PIPELINE PROGRESS & SUMMARY (Swiss Monograph Stepper)
@@ -451,7 +447,7 @@ function analysisDetail() {
                     </div>
                     <div>
                         <h2 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0;"
-                            x-text="status === 'completed' ? 'Pipeline AI Berhasil Diselesaikan' : 'Pipeline AI Sedang Berjalan'"></h2>
+                            x-text="status === 'completed' ? 'Pipeline AI Berhasil Diselesaikan' : (status === 'failed' ? 'Pipeline AI Gagal Dieksekusi' : 'Pipeline AI Sedang Berjalan')"></h2>
                         <p style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);margin:2px 0 0;" x-text="pipelineMessage"></p>
                     </div>
                 </div>
@@ -464,6 +460,9 @@ function analysisDetail() {
                     </template>
                     <template x-if="status === 'queued'">
                         <span class="badge badge-mono">DALAM ANTREAN</span>
+                    </template>
+                    <template x-if="status === 'failed'">
+                        <span class="badge" style="background:#FEE2E2;color:#991B1B;border-color:#991B1B;">GAGAL DIEKSEKUSI</span>
                     </template>
                 </div>
             </div>

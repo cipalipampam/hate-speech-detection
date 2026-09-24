@@ -12,7 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Membandingkan hash password di session dengan password user saat ini pada
+        // setiap request. Efeknya: begitu password diganti (sendiri lewat Profil atau
+        // di-reset admin), sesi di perangkat/peramban lain otomatis logout.
+        // Sesi yang sedang dipakai tetap valid karena hash baru disimpan setelah response.
+        $middleware->web(append: [
+            \Illuminate\Session\Middleware\AuthenticateSession::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -1,35 +1,15 @@
-"""
-Router API End-to-End Pipeline (/api/v1/pipeline).
-
-Endpoints:
-    POST /api/v1/pipeline/run
-         Menjalankan alur analisis lengkap (Scrape -> Preprocess -> Classify -> Export CSV).
-         Langsung kembalikan job_id (202 Accepted) — pipeline berjalan di background.
-
-    GET  /api/v1/pipeline/status/{job_id}
-         Polling status pipeline: queued -> running -> success / error.
-
-    GET  /api/v1/pipeline/exports
-         Mendaftarkan semua file CSV hasil analisis di storage/exports/.
-
-    GET  /api/v1/pipeline/exports/{filename}
-         Mendownload satu file CSV hasil analisis secara aman.
-"""
-
-import logging
+"""Router API pipeline: jalankan analisis, polling status, unduh berkas CSV hasil."""
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import FileResponse
 
 from app.schemas.classification_schema import (
-    ExportListResponse,
     PipelineJobResponse,
     PipelineJobStatusResponse,
     PipelineRunRequest,
 )
 from app.services.pipeline_service import pipeline_service
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/pipeline", tags=["End-to-End Analysis Pipeline"])
 
 
@@ -81,20 +61,6 @@ def get_pipeline_status(job_id: str) -> PipelineJobStatusResponse:
         )
 
     return job_status
-
-
-@router.get(
-    "/exports",
-    response_model=ExportListResponse,
-    summary="Daftar File Hasil Ekspor",
-    description=(
-        "Mengembalikan daftar semua file CSV hasil analisis yang tersimpan di direktori storage/exports/. "
-        "Setiap item berisi nama file, ukuran, waktu pembuatan, dan URL download."
-    ),
-)
-def list_exports(request: Request) -> ExportListResponse:
-    """Daftar semua file CSV di storage/exports/ via PipelineService."""
-    return pipeline_service.list_exports(str(request.base_url))
 
 
 @router.get(

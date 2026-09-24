@@ -22,6 +22,7 @@ from src.utils.async_compat import ensure_proactor_loop
 from src.scraping.base_scraper import (
     create_browser, random_delay, scroll_page,
     results_to_dataframe, save_dataframe, append_checkpoint, check_profile_exists,
+    keyword_matches_text, is_system_text as _system_text_matches,
 )
 
 logger = logging.getLogger("x_scraper")
@@ -70,7 +71,8 @@ NOISE_EXACT = {
 
 
 def is_system_text(content: str) -> bool:
-    return content.strip().lower() in SYSTEM_EXACT_PHRASES
+    """Filter teks antarmuka sistem X memakai implementasi bersama di base_scraper."""
+    return _system_text_matches(content, SYSTEM_EXACT_PHRASES)
 
 
 # ---------------------------------------------------------------------------
@@ -301,11 +303,7 @@ async def _collect_js_items(page: Page, source_link: str, collected: dict) -> in
 # ---------------------------------------------------------------------------
 
 async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfig) -> list[dict]:
-    """
-    Mengekstrak konten tweet + semua reply dari halaman postingan X yang sudah dibuka.
-    Menggunakan micro-step scroll ke bawah (forward scan) + sweep ke atas (reverse scan)
-    untuk memastikan semua tweet/reply ter-render dan ter-ekstrasi.
-    """
+    """Ekstrak tweet + seluruh reply via micro-step forward scan + reverse sweep."""
     CONFIRM_ROUNDS  = 5
     LOG_EVERY       = 20
     EXPAND_EVERY    = 2
@@ -492,24 +490,8 @@ def _parse_post_page_html(html: str, source_link: str) -> list[dict]:
 # Utilitas Keyword Matching
 # ---------------------------------------------------------------------------
 
-def _keyword_matches_text(text: str, keywords: list[str]) -> bool:
-    """Cek apakah teks mengandung salah satu keyword (case-insensitive, ignore spasi)."""
-    # Jika teks kosong atau media, anggap valid karena sudah berasal dari search resmi X
-    if not text or not text.strip():
-        return True
-
-    text_lower    = text.lower()
-    text_no_space = text_lower.replace(" ", "")
-    for kw in keywords:
-        clean          = kw.lstrip('#').lower()
-        clean_no_space = clean.replace(" ", "")
-        if clean in text_lower or (clean_no_space and clean_no_space in text_no_space):
-            return True
-        # Dukungan kecocokan kata individual untuk query majemuk
-        words = [w for w in clean.split() if len(w) > 2]
-        if words and any(w in text_lower for w in words):
-            return True
-    return False
+# Keyword matching dipindah ke base_scraper.keyword_matches_text() (satu
+# implementasi bersama dengan Threads) — lihat blok import di atas.
 
 
 # ---------------------------------------------------------------------------
@@ -522,22 +504,8 @@ async def collect_post_urls(
     config: XScrapeConfig,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[str]:
-    """
-    Stage 1 — Search Discovery:
-    Membuka halaman pencarian X dan mengumpulkan URL postingan yang relevan
-    dengan keyword menggunakan smart scroll dan pre-filtering.
-
-    Args:
-        page           : Halaman Playwright yang sudah aktif.
-        keyword        : Kata kunci utama pencarian.
-        config         : Konfigurasi scraper.
-        status_callback: Callback pelaporan progress real-time (opsional).
-
-    Returns:
-        list[str]: URL-URL postingan yang relevan (sudah di-deduplikasi).
-    """
-    # Kuota discovery berlaku per keyword; relevansi juga harus diuji terhadap
-    # keyword pencarian yang sedang diproses, bukan keyword lain dalam job.
+    """Stage 1: kumpulkan URL tweet relevan dari halaman pencarian X."""
+    # Kuota discovery & uji relevansi berlaku per keyword yang sedang diproses.
     match_keywords = [keyword]
     encoded_query  = urllib.parse.quote(keyword)
 
@@ -576,7 +544,7 @@ async def collect_post_urls(
                 if url in seen_urls:
                     continue
                 seen_urls.add(url)
-                if _keyword_matches_text(card["text"], match_keywords):
+                if keyword_matches_text(card["text"], match_keywords):
                     ordered_urls.append(url)
                     new_kept += 1
                 else:
@@ -627,21 +595,7 @@ async def deep_crawl_post(
     max_retries: int = 2,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> list[dict]:
-    """
-    Stage 2 — Deep Crawl:
-    Buka satu URL postingan X dan ekstrak konten tweet asli + semua reply
-    menggunakan slow scan.
-
-    Args:
-        page           : Halaman Playwright yang sudah aktif.
-        link           : URL postingan X yang akan di-crawl.
-        config         : Konfigurasi scraper.
-        max_retries    : Jumlah retry jika terjadi error.
-        status_callback: Callback pelaporan status (opsional).
-
-    Returns:
-        list[dict]: Data postingan dan reply.
-    """
+    """Stage 2: crawl satu URL tweet + seluruh reply; kembalikan list dict (kosong bila gagal)."""
     logger.info(f"Deep Crawling : {link}")
     for attempt in range(1, max_retries + 2):
         try:
@@ -678,23 +632,8 @@ async def run_x_scraper(
     final_path     : str = DEFAULT_OUTPUT,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> "pd.DataFrame":
-    """
-    Pipeline scraping X (Twitter) lengkap:
-      Stage 1: Kumpulkan URL dari pencarian X berdasarkan keyword.
-      Stage 2: Deep crawl setiap URL untuk ekstraksi tweet + reply.
-
-    Args:
-        keywords       : List keyword pencarian (bisa None jika hanya pakai direct_urls).
-        direct_urls    : List URL postingan langsung (bisa None jika hanya pakai keywords).
-        config         : Konfigurasi scraper (default: XScrapeConfig()).
-        checkpoint_path: Path file CSV checkpoint inkremental.
-        final_path     : Path file CSV hasil akhir.
-        status_callback: Callback pelaporan progress real-time (opsional).
-
-    Returns:
-        pd.DataFrame: Seluruh data yang terkumpul (baris = 1 tweet/reply).
-    """
-    import pandas as pd  # import lokal agar aman
+    """Pipeline lengkap X (Twitter): Stage 1 cari URL → Stage 2 deep crawl → DataFrame."""
+    import pandas as pd
 
     config      = config or XScrapeConfig()
     keywords    = keywords or []
@@ -720,7 +659,6 @@ async def run_x_scraper(
 
         try:
             # Validasi sesi aktif di browser
-            from src.auth.login_x import LOGGED_IN_SELECTORS
             cookies     = await context.cookies()
             has_auth    = any(c.get("name") == "auth_token" and bool(c.get("value")) for c in cookies)
             has_twid    = any(c.get("name") == "twid"       and bool(c.get("value")) for c in cookies)

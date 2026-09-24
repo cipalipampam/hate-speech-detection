@@ -293,8 +293,6 @@ def get_all_sessions_status() -> dict:
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import json
-
     print("\n=== CEK STATUS SESI LOGIN ===\n")
     status = get_all_sessions_status()
 

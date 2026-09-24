@@ -237,20 +237,6 @@
                             <span class="preset-action" style="font-family:var(--font-mono);font-size:0.625rem;font-weight:700;color:var(--color-primary);">[GUNAKAN]</span>
                         </button>
 
-                        {{-- Viewer Demo Preset --}}
-                        <button type="button"
-                                onclick="selectDemoAccount('viewer@hatespeech.test', 'password', this)"
-                                class="demo-preset-btn"
-                                style="width:100%;text-align:left;background:var(--color-surface-2);border:1px solid var(--color-border);padding:0.45rem 0.65rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all 0.12s ease;border-radius:0;">
-                            <div style="display:flex;align-items:center;gap:0.65rem;">
-                                <span class="badge badge-mono" style="font-size:0.5938rem;min-width:58px;justify-content:center;padding:1px 4px;">VIEWER</span>
-                                <div>
-                                    <span style="font-family:var(--font-mono);font-size:0.7188rem;font-weight:700;color:#0A0A0A;display:block;line-height:1.2;">viewer@hatespeech.test</span>
-                                    <span style="font-family:var(--font-mono);font-size:0.5938rem;color:var(--color-text-muted);">Lihat Analisis & Ekspor Data</span>
-                                </div>
-                            </div>
-                            <span class="preset-action" style="font-family:var(--font-mono);font-size:0.625rem;font-weight:700;color:var(--color-primary);">[GUNAKAN]</span>
-                        </button>
                     </div>
                 </div>
 

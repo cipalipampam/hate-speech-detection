@@ -48,12 +48,9 @@ class RoleAndPermissionSeeder extends Seeder
             'export-reports',
         ]);
 
-        // Role Viewer: hanya melihat dashboard & export laporan
-        $viewerRole = Role::firstOrCreate(['name' => 'viewer', 'guard_name' => 'web']);
-        $viewerRole->syncPermissions([
-            'view-dashboard',
-            'export-reports',
-        ]);
+        // CATATAN: role `viewer` sudah DIHAPUS (keputusan 2026-09-24) — sistem hanya
+        // mengenal `admin` dan `analyst`. Akun lama ber-role viewer dipindahkan ke
+        // analyst oleh migrasi 2026_09_24_000001_reassign_viewer_role_to_analyst.
 
         // 3. Buat Akun Demo Default
         // Akun Admin
@@ -77,16 +74,5 @@ class RoleAndPermissionSeeder extends Seeder
             ]
         );
         $analyst->syncRoles([$analystRole]);
-
-        // Akun Viewer (Pimpinan)
-        $viewer = User::firstOrCreate(
-            ['email' => 'viewer@hatespeech.test'],
-            [
-                'name' => 'Pimpinan / Pengamat',
-                'password' => Hash::make('password'),
-                'is_active' => true,
-            ]
-        );
-        $viewer->syncRoles([$viewerRole]);
     }
 }
