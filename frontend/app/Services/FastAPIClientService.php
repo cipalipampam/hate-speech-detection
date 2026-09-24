@@ -127,14 +127,7 @@ class FastAPIClientService
     }
 
     /**
-     * Membersihkan data sesi dari informasi path sistem yang sensitif.
-     *
-     * Bertindak sebagai lapisan pertahanan berlapis (defense-in-depth) di frontend:
-     * menghapus path absolut filesystem agar tidak pernah bocor ke UI
-     * meskipun backend secara tidak sengaja mengirimkannya.
-     *
-     * @param  array<string, mixed>|null $sessionData
-     * @return array<string, mixed>|null
+     * Hapus path absolut filesystem dari data sesi (defense-in-depth agar tidak bocor ke UI).
      */
     private function sanitizeSessionData(?array $sessionData): ?array
     {
@@ -207,8 +200,7 @@ class FastAPIClientService
     // ──────────────────────────────────────────────────────────────────────────
 
     /**
-     * Melakukan klasifikasi satu teks kalimat.
-     * Timeout lebih besar (60s) untuk menangani cold-start model IndoBERT.
+     * Klasifikasi satu teks; timeout 60s untuk mengakomodasi cold-start model IndoBERT.
      */
     public function classifySingle(string $text, bool $preprocess = true): array
     {
@@ -280,9 +272,7 @@ class FastAPIClientService
     }
 
     /**
-     * Mengambil status progress dan statistik dari pipeline job.
-     * Return includes 'http_status' sehingga caller bisa bedakan
-     * 404 (job hilang karena server restart) vs error jaringan.
+     * Ambil status pipeline job; hasil menyertakan 'http_status' (pembeda 404 vs error jaringan).
      */
     public function getPipelineStatus(string $jobId): array
     {
@@ -311,14 +301,7 @@ class FastAPIClientService
     }
 
     /**
-     * Mengunduh file CSV ekspor dan menuliskannya LANGSUNG ke stream tujuan.
-     *
-     * Memakai opsi `sink` Guzzle agar isi file tidak ditampung utuh di memori PHP
-     * (ekspor bisa puluhan MB). Nama file dibersihkan dengan basename() sebagai
-     * pertahanan berlapis — backend juga memvalidasi path traversal.
-     *
-     * @param  resource  $sink  Stream tujuan, mis. fopen('php://temp', 'r+')
-     * @return bool  true bila file berhasil ditulis ke $sink.
+     * Unduh CSV ekspor streaming ke $sink (opsi `sink` Guzzle, hemat memori); filename di-basename().
      */
     public function downloadExportToStream(string $filename, $sink): bool
     {

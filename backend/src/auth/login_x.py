@@ -1,31 +1,4 @@
-"""
-Login X (Twitter) Handler.
-
-Membuka browser visual Playwright dengan Persistent Context pada direktori profil
-`storage/sessions/x_profile/`, memfasilitasi user login manual ke akun X (Twitter),
-melakukan polling verifikasi otomatis, lalu menyimpan seluruh state sesi secara
-permanen ke disk.
-
-Alur Kerja:
-    1. Buka browser Chrome/Edge asli (GUI, headless=False) dengan Persistent Context.
-    2. Arahkan ke halaman login X: https://x.com/i/flow/login
-    3. Tampilkan instruksi di terminal untuk user melakukan login manual.
-    4. Polling setiap 5 detik (maks 10 menit) hingga login terdeteksi via:
-       - Cookie auth_token / twid terdeteksi, DAN URL sudah bukan /i/flow/login.
-       - ATAU elemen DOM antarmuka akun terotentikasi terdeteksi.
-    5. Tunggu 3 detik, tutup context, sesi tersimpan permanen ke disk.
-
-Cara Menjalankan:
-    cd apps/backend
-    python -m src.auth.login_x
-    # atau
-    python src/auth/login_x.py
-
-Catatan:
-    - Setelah login berhasil, scraper X dapat langsung dijalankan.
-    - Jika sesi sudah ada dan belum expired, login tidak perlu diulang.
-    - Gunakan `python -m src.auth.session_manager` untuk cek status sesi.
-"""
+"""Login X (Twitter) interaktif: buka browser GUI, polling login, sesi tersimpan permanen ke disk."""
 
 import asyncio
 import logging
@@ -73,17 +46,9 @@ LOGGED_IN_SELECTORS = [
 
 @ensure_proactor_loop
 async def setup_x_login(profile_dir: str = None) -> bool:
-    """
-    Menjalankan alur setup login X (Twitter) secara interaktif.
+    """Buka browser GUI, polling login maks 10 menit, simpan sesi permanen.
 
-    Membuka browser GUI, mengarahkan user ke halaman login, melakukan polling
-    verifikasi sesi, lalu menyimpan sesi ke disk secara permanen.
-
-    Args:
-        profile_dir (str | None): Path direktori profil. Default: X_PROFILE_DIR dari config.
-
-    Returns:
-        bool: True jika login berhasil terdeteksi, False jika timeout/gagal.
+    Kembalikan True bila login terdeteksi, False bila timeout/gagal.
     """
     if profile_dir is None:
         profile_dir = str(X_PROFILE_DIR)

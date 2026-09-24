@@ -16,8 +16,6 @@ class FilterAnalysisRequest extends FormRequest
 
     /**
      * Aturan validasi query string filter daftar sesi analisis.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

@@ -164,8 +164,7 @@ class AnalysisService
     }
 
     /**
-     * Memeriksa dan menyinkronkan seluruh analisis yang masih berstatus running atau queued dengan server AI.
-     * Mengembalikan jumlah analisis yang statusnya berhasil diperbarui.
+     * Sinkronkan analisis berstatus running/queued dengan server AI; kembalikan jumlah yang diperbarui.
      */
     public function syncRunningAnalyses(?int $userId = null): int
     {
@@ -272,8 +271,7 @@ class AnalysisService
     }
 
     /**
-     * Menghasilkan StreamedResponse untuk ekspor dataset analisis ke format CSV
-     * dengan mitigasi CSV/Formula Injection (=, +, -, @) dan chunking hemat memori.
+     * Stream ekspor CSV analisis (chunking hemat memori + mitigasi formula injection).
      */
     public function streamExportCsv(Analysis $analysis): StreamedResponse
     {
@@ -338,8 +336,7 @@ class AnalysisService
     }
 
     /**
-     * Sanitasi nilai string untuk mencegah CSV / Formula Injection (=, +, -, @)
-     * saat file dibuka di Microsoft Excel atau LibreOffice Calc.
+     * Awali nilai berbahaya (=, +, -, @) dengan apostrof agar Excel tidak mengeksekusinya.
      */
     protected function sanitizeCsvCell(mixed $value): mixed
     {

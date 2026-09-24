@@ -6,18 +6,7 @@ use App\Models\Analysis;
 use App\Models\User;
 
 /**
- * Policy: Analysis
- *
- * Menutup celah IDOR: halaman detail & unduhan CSV sebelumnya hanya dijaga
- * middleware `auth`, sehingga siapa pun yang login bisa membaca data analisis
- * milik pengguna lain hanya dengan menebak ID pada URL.
- *
- * Aturan:
- *   - admin   → boleh mengakses semua sesi analisis.
- *   - lainnya → hanya sesi analisis miliknya sendiri.
- *   - export  → sama seperti view, TETAPI wajib punya permission `export-reports`.
- *
- * Policy ini ditemukan otomatis oleh Laravel (App\Policies\AnalysisPolicy → App\Models\Analysis).
+ * Otorisasi akses Analysis (menutup celah IDOR): admin bebas, selain admin hanya miliknya sendiri.
  */
 class AnalysisPolicy
 {

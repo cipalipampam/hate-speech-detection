@@ -1,26 +1,4 @@
-"""
-End-to-End Analysis Pipeline Orchestrator — Modul 5.
-
-Deskripsi:
-    Modul orkestrator terpadu yang mengeksekusi seluruh rantai proses secara otomatis:
-    
-    1. Validasi Sesi Autentikasi (X / Threads / Both)
-         ↓
-    2. Eksekusi Mesin Scraping 2-Stage (Search Discovery + Deep Crawl)
-         ↓
-    3. Eksekusi Preprocessing Pipeline (Regex Cleaning, Case Folding, Kamusalay Normalization)
-         ↓
-    4. Eksekusi Inferensi Model IndoBERT (Hierarchical Level 1 & Level 2 Prediction)
-         ↓
-    5. Agregasi Statistik & Rekapitulasi Metrik Sentimen
-         ↓
-    6. Ekspor Hasil Analisis Final ke CSV di `storage/exports/`
-
-Fungsi Publik:
-    - run_end_to_end_pipeline()  : Fungsi orkestrator asinkron (async).
-    - run_pipeline_sync()        : Wrapper sinkron (sync) untuk CLI atau skrip reguler.
-    - EndToEndPipeline           : Kelas orkestrator berorientasi objek.
-"""
+"""Orkestrator end-to-end: validasi sesi → scraping → preprocessing → klasifikasi → statistik → CSV."""
 
 import asyncio
 import logging
@@ -56,29 +34,17 @@ def _create_filename_slug(keywords: List[str] = None, platform: str = "both") ->
 
 
 def resolve_text_column(df: pd.DataFrame) -> str:
-    """
-    Tentukan kolom teks yang dipakai untuk inferensi.
+    """Pilih kolom teks untuk inferensi: 'clean_text' bila ada, jika tidak 'content'.
 
-    Prioritas `clean_text` (hasil pembersihan & normalisasi) dengan fallback `content`
-    untuk DataFrame lama/pra-refactor. Fungsi ini dipakai BERSAMA oleh pipeline API dan
-    menu klasifikasi CLI — sebelumnya CLI memilih `content` (teks mentah) sehingga file
-    yang sama bisa menghasilkan label/confidence berbeda dari jalur API.
+    Dipakai bersama oleh pipeline API dan menu klasifikasi CLI agar label/confidence keduanya identik.
     """
     return "clean_text" if "clean_text" in df.columns else "content"
 
 
 def validate_platform_sessions(platform: str) -> Tuple[bool, List[str]]:
-    """
-    Periksa keabsahan sesi login untuk platform yang diminta — SATU sumber kebijakan.
+    """Satu-satunya sumber kebijakan validasi sesi per platform ('x' / 'threads' / 'both').
 
-    Dipakai jalur pipeline (`EndToEndPipeline.validate_sessions()`). Sebelumnya aturan yang
-    sama disalin juga di `ScraperService` untuk endpoint `/api/v1/scrape/run`; salinan itu
-    ikut terhapus bersama endpoint-nya pada 2026-09-25 sehingga kini tunggal.
-
-    Pesan error sengaja menyebut endpoint `login-trigger` karena tampil di UI.
-
-    Returns:
-        tuple[bool, list[str]]: (valid, daftar error yang bisa langsung ditampilkan)
+    Kembalikan (valid, errors); pesan error menyebut endpoint `login-trigger` karena tampil di UI.
     """
     plat = platform.lower().strip()
     errors: List[str] = []
@@ -105,9 +71,7 @@ def validate_platform_sessions(platform: str) -> Tuple[bool, List[str]]:
 # ---------------------------------------------------------------------------
 
 class EndToEndPipeline:
-    """
-    Kelas Orchestrator untuk menjalankan alur analisis end-to-end secara utuh.
-    """
+    """Orchestrator alur analisis end-to-end (async)."""
 
     def __init__(self, predictor: Optional[HateSpeechPredictor] = None):
         self.prep_pipeline = PreprocessingPipeline()
@@ -135,18 +99,7 @@ class EndToEndPipeline:
     # ── Tahap 1: Validasi Sesi ────────────────────────────────────────────
 
     def validate_sessions(self, platform: str) -> Dict[str, Any]:
-        """
-        Memeriksa ketersediaan dan keabsahan sesi login media sosial.
-
-        Delegasi ke `validate_platform_sessions()` agar aturan & pesannya identik dengan
-        endpoint `/api/v1/scrape/run` (satu sumber kebijakan sesi).
-
-        Args:
-            platform (str): 'x', 'threads', atau 'both'.
-
-        Returns:
-            dict: {"valid": bool, "errors": list[str]}
-        """
+        """Delegasi ke validate_platform_sessions(); kembalikan {"valid": bool, "errors": list[str]}."""
         valid, errors = validate_platform_sessions(platform)
         return {"valid": valid, "errors": errors}
 
@@ -163,12 +116,7 @@ class EndToEndPipeline:
         headless: bool = False,
         status_callback: Optional[Callable[[str], None]] = None,
     ) -> pd.DataFrame:
-        """
-        Menjalankan scraper sesuai platform yang dipilih.
-
-        Returns:
-            pd.DataFrame: DataFrame mentah berkolom [platform, source, user_id, type, date, content].
-        """
+        """Jalankan scraper sesuai platform; kembalikan DataFrame mentah gabungan yang sudah dideduplikasi."""
         platform = platform.lower().strip()
         frames = []
         self.scraping_errors = []
@@ -245,14 +193,9 @@ class EndToEndPipeline:
         df: pd.DataFrame,
         status_callback: Optional[Callable[[str], None]] = None,
     ) -> pd.DataFrame:
-        """
-        Menambahkan kolom 'clean_text' hasil pembersihan & normalisasi TANPA menimpa
-        kolom 'content' (teks mentah).
+        """Tambah kolom 'clean_text' TANPA menimpa kolom 'content' (teks mentah).
 
-        Penting: teks mentah harus tetap ikut ke file ekspor CSV dan ke database
-        (`analysis_classifications.raw_content`) agar hasil analisis dapat diaudit.
-        Sebelumnya kolom 'content' ditimpa di tempat sehingga teks mentah hilang dan
-        frontend menyimpan teks bersih pada kolom 'raw_content'.
+        Teks mentah wajib ikut ke file CSV & kolom `analysis_classifications.raw_content` agar auditabel.
         """
         if df.empty:
             return df
@@ -276,9 +219,7 @@ class EndToEndPipeline:
         batch_size: int = 32,
         status_callback: Optional[Callable[[str], None]] = None,
     ) -> pd.DataFrame:
-        """
-        Menjalankan inferensi model IndoBERT (Level 1 & Level 2).
-        """
+        """Jalankan inferensi IndoBERT (Level 1 & Level 2) pada kolom hasil resolve_text_column()."""
         if df.empty:
             return df
 
@@ -300,9 +241,7 @@ class EndToEndPipeline:
     # ── Tahap 5: Perhitungan Statistik ───────────────────────────────────
 
     def compute_statistics(self, df: pd.DataFrame) -> Dict[str, Any]:
-        """
-        Menghitung ringkasan statistik lengkap untuk dashboard dan laporan skripsi.
-        """
+        """Hitung ringkasan statistik: total, hate/non-hate, breakdown Level 2 & platform, rata-rata confidence."""
         if df.empty or "label_lvl1" not in df.columns:
             return {
                 "total_data": 0,
@@ -366,9 +305,7 @@ class EndToEndPipeline:
         keywords: Optional[List[str]] = None,
         platform: str = "both",
     ) -> Path:
-        """
-        Menyimpan DataFrame hasil analisis ke file CSV di storage/exports/.
-        """
+        """Simpan DataFrame hasil analisis ke CSV (utf-8-sig) di storage/exports/."""
         if filename is None:
             filename = f"{_create_filename_slug(keywords, platform)}.csv"
         elif not filename.endswith(".csv"):
@@ -394,9 +331,7 @@ class EndToEndPipeline:
         output_filename: Optional[str] = None,
         status_callback: Optional[Callable[[str], None]] = None,
     ) -> Dict[str, Any]:
-        """
-        Menjalankan seluruh alur end-to-end secara asinkron.
-        """
+        """Jalankan seluruh alur end-to-end; kembalikan dict status + statistik + path ekspor."""
         t_start = datetime.now()
 
         # 1. Validasi Sesi
@@ -509,9 +444,7 @@ async def run_end_to_end_pipeline(
     output_filename: Optional[str] = None,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> Dict[str, Any]:
-    """
-    Fungsi utilitas pembungkus untuk menjalankan pipeline end-to-end (async).
-    """
+    """Pembungkus async: buat EndToEndPipeline lalu jalankan run()."""
     pipeline = EndToEndPipeline()
     return await pipeline.run(
         keywords=keywords,
@@ -539,10 +472,7 @@ def run_pipeline_sync(
     output_filename: Optional[str] = None,
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> Dict[str, Any]:
-    """
-    Fungsi utilitas pembungkus untuk menjalankan pipeline end-to-end secara sinkron (sync).
-    Cocok untuk CLI runner atau script standar.
-    """
+    """Pembungkus sinkron untuk CLI: asyncio.run(run_end_to_end_pipeline(...))."""
     return asyncio.run(
         run_end_to_end_pipeline(
             keywords=keywords,

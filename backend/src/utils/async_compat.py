@@ -1,16 +1,7 @@
-"""
-Helper kompatibilitas Asyncio & Playwright untuk Windows.
+"""Helper kompatibilitas asyncio & Playwright di Windows: SelectorEventLoop → ProactorEventLoop."""
 
-Deskripsi:
-    Di Windows, Playwright membutuhkan event loop yang mendukung subprocess
-    (asyncio.ProactorEventLoop). Namun Uvicorn dengan flag --reload secara internal
-    memaksa penggunaan SelectorEventLoop pada worker, yang menyebabkan
-    NotImplementedError saat Playwright memanggil asyncio.create_subprocess_exec().
-
-    Decorator `@ensure_proactor_loop` secara transparan mendeteksi jika loop aktif
-    saat ini adalah SelectorEventLoop, dan menjalankan coroutine Playwright di dalam
-    worker thread khusus yang memiliki ProactorEventLoop tersendiri.
-"""
+# Uvicorn `--reload` memaksa SelectorEventLoop, padahal Playwright butuh ProactorEventLoop
+# untuk `create_subprocess_exec()` — tanpa helper ini muncul NotImplementedError.
 
 import asyncio
 import functools
@@ -19,14 +10,7 @@ from typing import Any, Callable, Coroutine
 
 
 def ensure_proactor_loop(async_fn: Callable[..., Coroutine[Any, Any, Any]]) -> Callable[..., Coroutine[Any, Any, Any]]:
-    """
-    Decorator untuk memastikan fungsi async yang menggunakan Playwright
-    berjalan pada ProactorEventLoop di sistem operasi Windows.
-
-    Jika event loop saat ini adalah SelectorEventLoop (misal akibat Uvicorn --reload),
-    fungsi akan dieksekusi di thread terpisah dengan ProactorEventLoop.
-    Jika sudah di ProactorEventLoop atau non-Windows, fungsi dieksekusi langsung.
-    """
+    """Jalankan fungsi async di thread ProactorEventLoop bila loop aktif hanyalah SelectorEventLoop."""
     @functools.wraps(async_fn)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         if sys.platform == "win32":

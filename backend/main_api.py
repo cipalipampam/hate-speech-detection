@@ -1,27 +1,4 @@
-"""
-FastAPI Server Entrypoint — Sistem Analisis Ujaran Kebencian.
-
-Deskripsi:
-    Server REST API untuk sistem deteksi hate speech menggunakan IndoBERT.
-    Membungkus seluruh logika backend (auth, scraping, preprocessing, klasifikasi,
-    dan pipeline end-to-end) sebagai HTTP endpoints yang dapat diakses oleh
-    Frontend Laravel atau klien HTTP lainnya.
-
-Fitur:
-    - Lifespan Event: Model IndoBERT (~490 MB) dimuat 1x saat startup ke app.state
-    - CORS Middleware: Mengizinkan semua origin (cocok untuk dev + Laravel frontend)
-    - Swagger UI Otomatis: http://localhost:8080/docs
-    - ReDoc Otomatis   : http://localhost:8080/redoc
-
-Struktur Endpoint:
-    /api/v1/auth/         → Autentikasi & sesi browser (X & Threads)
-    /api/v1/classify/     → Inferensi IndoBERT 1 teks (hate speech detection)
-    /api/v1/pipeline/     → Analisis lengkap end-to-end + download hasil CSV
-
-Cara Menjalankan:
-    cd d:/skripsi/Project/hate-speech-detection/backend
-    uvicorn main_api:app --reload --host 0.0.0.0 --port 8080
-"""
+"""Entrypoint FastAPI: REST API analisis ujaran kebencian berbasis IndoBERT (port 8080)."""
 
 import asyncio
 import logging
@@ -65,17 +42,7 @@ logger = logging.getLogger("main_api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Context manager untuk Lifespan Event FastAPI.
-
-    Startup:
-        Memuat model IndoBERT (~490 MB) ke memori GPU/CPU satu kali.
-        Instance disimpan di app.state.predictor agar bisa diakses oleh semua router
-        tanpa re-load berulang yang memakan waktu dan RAM.
-
-    Shutdown:
-        Membersihkan resource (opsional — Python GC menangani dealokasi memori).
-    """
+    """Startup: muat model IndoBERT (~490 MB) sekali ke `app.state.predictor`. Shutdown: dibebaskan GC."""
     # ── STARTUP ──────────────────────────────────────────────────────────────
     logger.info("=" * 60)
     logger.info("Memulai FastAPI Server — Sistem Analisis Ujaran Kebencian")
@@ -191,10 +158,7 @@ def health_check():
 
 @app.get("/", tags=["Health Check"], summary="Health Check & Info Server")
 def root():
-    """
-    Endpoint root untuk health check.
-    Mengembalikan status server dan link ke dokumentasi API.
-    """
+    """Health check: status server + link dokumentasi API (dipakai healthcheck docker-compose)."""
     predictor = getattr(app.state, "predictor", None)
     model_loaded = (
         predictor is not None

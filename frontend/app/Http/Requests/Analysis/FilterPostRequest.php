@@ -5,11 +5,7 @@ namespace App\Http\Requests\Analysis;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Validasi query string filter POSTINGAN pada halaman detail analisis (`analyses.show`).
- *
- * Berbeda dari `FilterAnalysisRequest` yang menyaring daftar SESI analisis di halaman index.
- * Nama lama (`FilterAnalysisPostRequest`) membingungkan karena route-nya memakai method GET,
- * sehingga menyiratkan "POST request" — padahal yang dimaksud adalah "postingan".
+ * Filter POSTINGAN pada halaman detail analisis (`analyses.show`) — beda dari `FilterAnalysisRequest`.
  */
 class FilterPostRequest extends FormRequest
 {
@@ -23,8 +19,6 @@ class FilterPostRequest extends FormRequest
 
     /**
      * Aturan validasi query string filter postingan.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

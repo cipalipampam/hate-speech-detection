@@ -1,18 +1,4 @@
-"""
-CLI Entrypoint (Terminal Interactive Runner).
-
-Program terminal interaktif modular untuk menjalankan dan menguji
-seluruh komponen backend:
-  1. Manajemen Autentikasi & Sesi (X & Threads)
-  2. Scraping Data (X & Threads)
-  3. Preprocessing & Normalisasi Teks
-  4. Inferensi Sentimen IndoBERT
-  5. End-to-End Analysis Pipeline
-
-Penggunaan:
-    cd apps/backend
-    python main_cli.py
-"""
+"""Entrypoint CLI: terminal interaktif untuk auth, scraping, preprocessing, klasifikasi, dan pipeline."""
 
 import asyncio
 import os
@@ -125,13 +111,7 @@ def print_error(msg: str):
 
 
 def print_scraper_failure(platform_label: str, error: Exception):
-    """
-    Tampilkan kegagalan scraper beserta detail actionable.
-
-    Exception terklasifikasi (punya atribut `reason`/`detail`, mis. ThreadsScrapeAborted)
-    pesannya sudah menjelaskan penyebab dan tindakan perbaikan, jadi ditampilkan utuh
-    alih-alih hanya sebagai traceback.
-    """
+    """Tampilkan kegagalan scraper utuh (reason/detail sudah actionable), bukan traceback."""
     reason = getattr(error, "reason", None)
     detail = getattr(error, "detail", "")
     print_error(f"Scraping {platform_label} gagal: {reason or error}")
@@ -238,13 +218,7 @@ def handle_auth_menu():
 # ---------------------------------------------------------------------------
 
 def _input_keywords_and_urls() -> tuple[list[str], list[str]]:
-    """
-    Helper untuk meminta input keyword dan/atau URL dari user secara interaktif.
-    Mendukung input multi-nilai dipisah koma.
-
-    Returns:
-        tuple: (keywords: list[str], direct_urls: list[str])
-    """
+    """Minta keyword dan/atau URL dari user; multi-nilai dipisah koma. Kembalikan (keywords, direct_urls)."""
     if HAS_RICH:
         console.print("\n[dim]Ketik keyword atau URL. Pisahkan dengan koma untuk beberapa nilai.[/dim]")
         console.print("[dim]Contoh keyword : RKUHAP, #TolakRKUHAP[/dim]")

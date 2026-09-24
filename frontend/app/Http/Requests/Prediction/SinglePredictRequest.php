@@ -16,8 +16,6 @@ class SinglePredictRequest extends FormRequest
 
     /**
      * Aturan validasi teks opini.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

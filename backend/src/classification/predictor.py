@@ -1,40 +1,4 @@
-"""
-Hate Speech Predictor Service — Modul 4: Klasifikasi IndoBERT.
-
-Deskripsi:
-    Modul inferensi (prediksi) menggunakan model IndoBERT Hierarchical Classifier
-    yang sudah di-fine-tune di Google Colab.
-
-    Mendukung 2 mode prediksi:
-        1. predict_text(text)           → Prediksi 1 kalimat interaktif.
-        2. predict_dataframe(df)        → Prediksi batch DataFrame (ribuan baris).
-
-    Setiap prediksi menghasilkan:
-        - label_lvl1       : "hate_speech" atau "non_hate_speech"
-        - label_lvl2       : Salah satu dari 6 sub-kategori
-        - confidence_lvl1  : Skor probabilitas Level 1 (0.0 – 1.0)
-        - confidence_lvl2  : Skor probabilitas Level 2 (0.0 – 1.0)
-
-Alur Inferensi:
-    Teks bersih (content)
-      ↓ AutoTokenizer (max_length=128, padding, truncation)
-      ↓ IndoBERTHierarchicalClassifier.forward()
-      ↓ Softmax → Probabilitas per kelas
-      ↓ argmax → Label prediksi + confidence score
-    Output: dict / DataFrame dengan kolom label & confidence
-
-Kolom DataFrame Standar:
-    Input  : ['platform', 'source', 'user_id', 'type', 'date', 'content']
-    Output : ['platform', 'source', 'user_id', 'type', 'date', 'content',
-              'label_lvl1', 'label_lvl2', 'confidence_lvl1', 'confidence_lvl2']
-
-Class:
-    - HateSpeechPredictor
-        __init__(model_dir=None)
-        predict_text(text: str) -> dict
-        predict_batch(texts: list[str], batch_size: int = 32) -> list[dict]
-        predict_dataframe(df, text_column, batch_size, show_progress) -> pd.DataFrame
-"""
+"""Predictor IndoBERT: inferensi hierarkis satu teks (predict_text) dan batch DataFrame."""
 
 import logging
 import math
@@ -54,27 +18,10 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 class HateSpeechPredictor:
-    """
-    Mesin prediksi ujaran kebencian hierarkis menggunakan IndoBERT.
-
-    Menggunakan ModelLoader (singleton) untuk mengakses model & tokenizer
-    yang sudah dimuat ke memori — sehingga tidak ada overhead re-load.
-
-    Attributes:
-        loader    (ModelLoader)   : Instance singleton model loader.
-        model     (nn.Module)     : Model PyTorch dalam mode eval.
-        tokenizer (AutoTokenizer) : Tokenizer IndoBERT.
-        device    (str)           : 'cuda' atau 'cpu'.
-    """
+    """Mesin prediksi hierarkis: memakai ModelLoader singleton agar tidak ada re-load model."""
 
     def __init__(self, model_dir=None):
-        """
-        Inisialisasi predictor.
-
-        Args:
-            model_dir: Path ke folder saved_models/indobert_sentiment/.
-                       Jika None, menggunakan path dari configs/config.py.
-        """
+        """Inisialisasi predictor; model_dir None memakai path dari configs/config.py."""
         logger.info("Menginisialisasi HateSpeechPredictor...")
         self.loader    = ModelLoader(model_dir=model_dir)
         self.model     = self.loader.get_model()
@@ -95,36 +42,14 @@ class HateSpeechPredictor:
     # ── Prediksi Teks Tunggal ─────────────────────────────────────────────
 
     def predict_text(self, text: str) -> dict:
-        """
-        Melakukan prediksi untuk satu kalimat teks.
-
-        Args:
-            text (str): Teks bersih hasil preprocessing.
-
-        Returns:
-            dict: {
-                "text": str,
-                "level1": {"label": str, "confidence": float, "probabilities": dict},
-                "level2": {"label": str, "confidence": float, "probabilities": dict},
-                "is_hate_speech": bool,
-            }
-        """
+        """Prediksi satu teks; kembalikan {text, level1, level2, is_hate_speech}."""
         results = self.predict_batch([text])
         return results[0] if results else {}
 
     # ── Prediksi Batch (List of Strings) ──────────────────────────────────
 
     def predict_batch(self, texts: list, batch_size: int = 32) -> list:
-        """
-        Melakukan prediksi untuk kumpulan kalimat teks secara batch.
-
-        Args:
-            texts      (list[str]): Daftar teks bersih.
-            batch_size (int)      : Jumlah sampel per batch. Default: 32.
-
-        Returns:
-            list[dict]: Daftar hasil prediksi per teks.
-        """
+        """Prediksi banyak teks per batch; hasil berurutan sesuai input."""
         if not texts:
             return []
 
@@ -239,24 +164,7 @@ class HateSpeechPredictor:
         batch_size: int = 32,
         show_progress: bool = True,
     ) -> pd.DataFrame:
-        """
-        Melakukan prediksi pada seluruh DataFrame hasil preprocessing.
-
-        Menambahkan 4 kolom baru:
-            - label_lvl1       : Label prediksi Level 1 (hate_speech / non_hate_speech)
-            - label_lvl2       : Label prediksi Level 2 (6 sub-kategori)
-            - confidence_lvl1  : Skor keyakinan Level 1 (0.0 – 1.0)
-            - confidence_lvl2  : Skor keyakinan Level 2 (0.0 – 1.0)
-
-        Args:
-            df            (pd.DataFrame): DataFrame hasil preprocessing.
-            text_column   (str)         : Nama kolom teks. Default: 'content'.
-            batch_size    (int)         : Jumlah sampel per batch. Default: 32.
-            show_progress (bool)        : Tampilkan progress bar. Default: True.
-
-        Returns:
-            pd.DataFrame: DataFrame dengan 4 kolom klasifikasi tambahan.
-        """
+        """Prediksi seluruh DataFrame; tambah kolom label_lvl1, label_lvl2, confidence_lvl1, confidence_lvl2."""
         if df.empty:
             logger.warning("predict_dataframe: DataFrame kosong.")
             return df

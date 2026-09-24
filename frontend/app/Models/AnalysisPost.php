@@ -8,14 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * Model: AnalysisPost
- *
- * Tanggung Jawab: Metadata postingan media sosial (statis, ringan).
- * Tidak menyimpan konten teks — ada di AnalysisClassification (one-to-one).
- *
- * Digunakan saat:
- * - Menampilkan tabel daftar postingan (platform, author, URL, tipe, tanggal).
- * - Filter berdasarkan platform atau author_username.
+ * Metadata postingan medsos (platform, author, URL, tanggal); konten teks ada di AnalysisClassification.
  */
 class AnalysisPost extends Model
 {

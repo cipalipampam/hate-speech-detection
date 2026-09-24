@@ -8,11 +8,7 @@ use Illuminate\Support\Facades\Hash;
 class ProfileService
 {
     /**
-     * Memperbarui informasi nama dan email pengguna.
-     *
-     * @param  User  $user
-     * @param  array{name: string, email: string}  $data
-     * @return bool
+     * Perbarui nama dan email pengguna.
      */
     public function updateProfileInfo(User $user, array $data): bool
     {
@@ -23,11 +19,7 @@ class ProfileService
     }
 
     /**
-     * Memperbarui kata sandi pengguna dengan hashing bcrypt aman.
-     *
-     * @param  User  $user
-     * @param  string  $newPassword
-     * @return bool
+     * Perbarui kata sandi pengguna (di-hash bcrypt).
      */
     public function updatePassword(User $user, string $newPassword): bool
     {

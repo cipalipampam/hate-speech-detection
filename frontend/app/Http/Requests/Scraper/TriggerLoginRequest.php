@@ -26,9 +26,7 @@ class TriggerLoginRequest extends FormRequest
     }
 
     /**
-     * Pastikan parameter route 'platform' masuk ke dalam data validasi.
-     *
-     * @return array<string, mixed>
+     * Sertakan parameter route 'platform' ke dalam data validasi.
      */
     public function validationData(): array
     {
@@ -39,8 +37,6 @@ class TriggerLoginRequest extends FormRequest
 
     /**
      * Aturan validasi request login scraper.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -51,8 +47,6 @@ class TriggerLoginRequest extends FormRequest
 
     /**
      * Pesan kesalahan validasi kustom.
-     *
-     * @return array<string, string>
      */
     public function messages(): array
     {

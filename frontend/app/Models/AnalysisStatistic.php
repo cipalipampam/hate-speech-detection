@@ -7,11 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Model: AnalysisStatistic
- *
- * Tanggung Jawab: Ringkasan metrik agregasi sentimen per sesi analisis.
- * Satu baris per satu sesi analisis (one-to-one dengan analyses).
- * Di-insert hanya sekali saat analisis selesai (status: completed).
+ * Ringkasan metrik agregasi sentimen per analisis (one-to-one); di-insert saat status completed.
  */
 class AnalysisStatistic extends Model
 {

@@ -1,21 +1,4 @@
-"""
-Session Manager Service.
-
-Bertanggung jawab memeriksa ketersediaan dan validitas sesi login browser
-untuk platform X (Twitter) dan Threads / Instagram — TANPA membuka browser penuh.
-
-Fungsi Utama:
-    - check_profile_exists(platform)   -> bool  : Cek apakah folder profil ada dan berisi data.
-    - is_session_valid(platform)       -> bool  : Validasi apakah sesi masih aktif berdasarkan
-                                                  keberadaan & isi folder profil.
-    - get_all_sessions_status()        -> dict  : Ringkasan status kedua platform sekaligus.
-
-Prinsip:
-    Modul ini hanya memeriksa filesystem — tidak pernah membuka browser,
-    tidak pernah membuat folder baru, dan tidak pernah melakukan login otomatis.
-    Jika sesi tidak ditemukan / tidak valid, modul memberikan status + pesan
-    instruksi agar user menjalankan login_x.py atau login_threads.py.
-"""
+"""Session Manager: cek profil & cookie autentikasi di filesystem tanpa membuka browser."""
 
 import logging
 import os
@@ -75,16 +58,7 @@ CHROMIUM_EPOCH_OFFSET = 11644473600
 # ---------------------------------------------------------------------------
 
 def check_profile_exists(platform: str) -> bool:
-    """
-    Memeriksa apakah direktori persistent profile browser untuk platform
-    tertentu sudah ada dan berisi data (tidak kosong).
-
-    Args:
-        platform (str): "x" atau "threads" (case-insensitive).
-
-    Returns:
-        bool: True jika folder profil ada dan memiliki isi, False jika belum ada / kosong.
-    """
+    """True bila folder profil platform ada dan berisi data."""
     key = platform.lower().strip()
     profile_path = PLATFORM_PROFILES.get(key)
     if not profile_path:
@@ -102,20 +76,9 @@ def check_profile_exists(platform: str) -> bool:
 
 
 def _has_auth_cookies(profile_path: Path, platform: str) -> dict:
-    """
-    Periksa cookie autentikasi Chromium tanpa membuka browser.
+    """Cek cookie auth Chromium (nama, masa berlaku, host sah) tanpa membuka browser.
 
-    Selain nama + masa berlaku, cookie juga harus berlaku untuk host domain yang
-    sah bagi platform (`AUTH_COOKIE_HOSTS`). Pemeriksaan host ini penting karena
-    profil bisa saja punya `sessionid` untuk domain lain yang tidak dipakai scraper.
-
-    Returns:
-        dict: {
-            "valid"        : bool,
-            "matched_names": set[str],  # nama cookie yang lolos semua syarat
-            "matched_hosts": set[str],  # host_key yang lolos
-            "seen_hosts"   : set[str],  # semua host_key dari cookie auth apa pun
-        }
+    Kembalikan dict {"valid", "matched_names", "matched_hosts", "seen_hosts"}.
     """
     required_names = set(AUTH_COOKIE_NAMES[platform])
     allowed_hosts  = AUTH_COOKIE_HOSTS.get(platform, ())
@@ -178,29 +141,10 @@ def _has_auth_cookies(profile_path: Path, platform: str) -> dict:
     return result
 
 def is_session_valid(platform: str) -> dict:
-    """
-    Memeriksa validitas sesi login untuk platform tertentu berdasarkan
-    keberadaan dan isi folder persistent profile browser.
+    """Validasi sesi platform: folder profil harus berisi DAN cookie auth wajib harus ada & host-nya sah.
 
-    Validasi ini memeriksa keberadaan cookie autentikasi wajib di database
-    Chromium. Keberadaan folder saja tidak cukup karena Chromium membuat
-    artefak profil sebelum user berhasil login.
-
-    Catatan: Validasi mendalam (apakah cookie belum expired di server)
-    hanya bisa dilakukan saat browser dibuka oleh scraper via is_logged_in().
-
-    Args:
-        platform (str): "x" atau "threads".
-
-    Returns:
-        dict: {
-            "platform": str,
-            "profile_dir": str,
-            "exists": bool,
-            "is_valid": bool,
-            "last_modified": str | None,
-            "message": str,
-        }
+    Kembalikan {"platform", "profile_dir", "exists", "is_valid", "last_modified", "message",
+    "auth_hosts", "warning_hosts"}. Validasi ke server hanya bisa lewat is_logged_in() saat browser dibuka.
     """
     key = platform.lower().strip()
     profile_path = PLATFORM_PROFILES.get(key)
@@ -273,15 +217,7 @@ def is_session_valid(platform: str) -> dict:
 
 
 def get_all_sessions_status() -> dict:
-    """
-    Mengembalikan status sesi untuk semua platform (X dan Threads) sekaligus.
-
-    Returns:
-        dict: {
-            "x"       : { ... is_session_valid result ... },
-            "threads" : { ... is_session_valid result ... },
-        }
-    """
+    """Kembalikan {"x": ..., "threads": ...} hasil is_session_valid untuk kedua platform."""
     return {
         "x"       : is_session_valid("x"),
         "threads" : is_session_valid("threads"),

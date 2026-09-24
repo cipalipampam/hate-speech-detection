@@ -7,9 +7,7 @@ use Exception;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Service: SinglePredictService
- *
- * Tanggung Jawab: Inferensi teks tunggal via FastAPI & pencatatan ke database.
+ * Inferensi teks tunggal via FastAPI beserta pencatatan hasilnya ke database.
  */
 class SinglePredictService
 {

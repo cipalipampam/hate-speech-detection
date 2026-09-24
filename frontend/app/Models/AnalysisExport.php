@@ -7,14 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Model: AnalysisExport
- *
- * Tanggung Jawab: Metadata file hasil ekspor (CSV/Excel/PDF) per sesi analisis.
- * Satu analisis bisa memiliki lebih dari satu file ekspor.
- *
- * Digunakan saat:
- * - Menampilkan daftar file yang tersedia untuk diunduh.
- * - Manajemen file (hapus, regenerasi) tanpa menyentuh tabel analyses.
+ * Metadata file ekspor (CSV/Excel/PDF) per sesi analisis; satu analisis bisa punya banyak file.
  */
 class AnalysisExport extends Model
 {

@@ -1,40 +1,4 @@
-"""
-Model Loader Service — Modul 4: Klasifikasi IndoBERT.
-
-Deskripsi:
-    Modul khusus untuk memuat arsitektur IndoBERT Multi-Head Hierarchical Classifier,
-    tokenizer, dan bobot (weights) hasil fine-tuning dari Google Colab.
-
-    Arsitektur model (berasal dari core/model.py):
-        IndoBERT (indobenchmark/indobert-base-p1) → [CLS] → Dropout
-            ├── Head Level 1 → 2 kelas (hate_speech, non_hate_speech)
-            └── Head Level 2 → 6 kelas sub-kategori
-
-    File artefak yang dibutuhkan di `saved_models/indobert_sentiment/`:
-        - best_model.pt        : Bobot (weights) model PyTorch hasil fine-tuning (~490 MB).
-        - label_mapping.json   : Pemetaan indeks → nama label Level 1 & Level 2.
-        - model_config.json    : Metadata arsitektur (pretrained_model, max_length, num_classes, dll).
-
-Strategi:
-    - Singleton Pattern: Model PyTorch hanya di-load 1× ke memori (RAM / VRAM GPU).
-    - Device Auto-Detect: CUDA (NVIDIA GPU) → CPU.
-    - Model diset ke mode evaluasi (`model.eval()`), gradien dinonaktifkan.
-
-Class:
-    - ClassificationHead(nn.Module)
-        Head klasifikasi: Linear → LayerNorm → GELU → Dropout → Linear.
-
-    - IndoBERTHierarchicalClassifier(nn.Module)
-        Model utama Multi-Task dengan 2 head (Level 1 & Level 2).
-
-    - ModelLoader
-        Singleton loader untuk memuat model + tokenizer + label mapping.
-        __init__(model_dir) → load semua artefak.
-        get_model()         → Instance model PyTorch (sudah .eval()).
-        get_tokenizer()     → Instance AutoTokenizer.
-        get_label_mapping() → Dict mapping indeks → nama label.
-        get_device()        → String device ('cuda' / 'cpu').
-"""
+"""Model Loader: muat arsitektur IndoBERT hierarkis + tokenizer + bobot (singleton)."""
 
 import json
 import logging
@@ -72,12 +36,7 @@ _DEFAULT_DROPOUT_RATE     = 0.3
 # ---------------------------------------------------------------------------
 
 class ClassificationHead(nn.Module):
-    """
-    Classification Head: Linear → LayerNorm → GELU → Dropout → Linear.
-
-    Digunakan sebagai head klasifikasi di atas representasi [CLS] IndoBERT.
-    Terdapat 2 instance: satu untuk Level 1 (2 kelas), satu untuk Level 2 (6 kelas).
-    """
+    """Head klasifikasi: Linear → LayerNorm → GELU → Dropout → Linear."""
 
     def __init__(
         self,
@@ -100,14 +59,7 @@ class ClassificationHead(nn.Module):
 
 
 class IndoBERTHierarchicalClassifier(nn.Module):
-    """
-    Arsitektur Multi-Task IndoBERT untuk Klasifikasi Ujaran Kebencian Hierarkis.
-
-    Forward Pass:
-        Text → IndoBERT → [CLS] token → Dropout
-                                         ├── Head Lvl1 → Logits Level 1 (2 kelas)
-                                         └── Head Lvl2 → Logits Level 2 (6 kelas)
-    """
+    """IndoBERT multi-task: backbone → Dropout → Head Level 1 (2 kelas) + Head Level 2 (6 kelas)."""
 
     def __init__(
         self,
@@ -148,11 +100,7 @@ class IndoBERTHierarchicalClassifier(nn.Module):
         input_ids     : torch.Tensor,
         attention_mask: torch.Tensor,
     ):
-        """
-        Returns:
-            logits_lvl1 : Tensor (batch_size, num_classes_lvl1)
-            logits_lvl2 : Tensor (batch_size, num_classes_lvl2)
-        """
+        """Kembalikan (logits_lvl1, logits_lvl2) dari representasi token [CLS]."""
         outputs = self.bert(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -173,24 +121,7 @@ class IndoBERTHierarchicalClassifier(nn.Module):
 # ---------------------------------------------------------------------------
 
 class ModelLoader:
-    """
-    Singleton loader untuk memuat model IndoBERT + Tokenizer + Label Mapping.
-
-    Model hanya dimuat 1 kali ke memori. Pemanggilan berulang mengembalikan
-    instance yang sama tanpa re-loading file ~490 MB.
-
-    Args:
-        model_dir: Path ke folder yang berisi best_model.pt, label_mapping.json,
-                   dan model_config.json. Default: configs.config.MODEL_DIR.
-
-    Attributes:
-        model      (IndoBERTHierarchicalClassifier): Model PyTorch dalam mode eval.
-        tokenizer  (AutoTokenizer)                 : Tokenizer IndoBERT.
-        device     (str)                           : 'cuda' atau 'cpu'.
-        classes_lvl1 (list[str])                   : Nama label Level 1.
-        classes_lvl2 (list[str])                   : Nama label Level 2.
-        max_length   (int)                         : Panjang token maksimum.
-    """
+    """Singleton loader: model + tokenizer + label mapping dimuat 1× ke memori (tanpa re-load 490 MB)."""
 
     _instance = None
 

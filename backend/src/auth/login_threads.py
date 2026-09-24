@@ -1,34 +1,4 @@
-"""
-Login Threads Handler.
-
-Membuka browser visual Playwright dengan Persistent Context pada direktori profil
-`storage/sessions/threads_profile/`, memfasilitasi user login manual ke akun
-Threads / Instagram, melakukan polling verifikasi otomatis, lalu menyimpan
-seluruh state sesi secara permanen ke disk.
-
-Alur Kerja:
-    1. Buka browser Chrome/Edge asli (GUI, headless=False) dengan Persistent Context.
-    2. Arahkan ke halaman login Threads: https://www.threads.com/login
-       (host `threads.com` sengaja dipakai karena itulah host yang dibuka scraper —
-       login di `threads.net` menghasilkan cookie yang tidak berlaku di `threads.com`).
-    3. Tampilkan instruksi di terminal untuk user melakukan login manual.
-    4. Polling setiap 5 detik (maks 10 menit) hingga login terdeteksi via:
-       - Cookie sessionid & ds_user_id terdeteksi DAN berlaku untuk host threads.com,
-         DAN beranda threads.com menampilkan elemen navigasi terautentikasi.
-       - ATAU elemen DOM navigasi terotentikasi (ikon Create/Activity/Profile) terdeteksi.
-    5. Tunggu 3 detik, tutup context, sesi tersimpan permanen ke disk.
-
-Cara Menjalankan:
-    cd apps/backend
-    python -m src.auth.login_threads
-    # atau
-    python src/auth/login_threads.py
-
-Catatan:
-    - Setelah login berhasil, scraper Threads dapat langsung dijalankan.
-    - Jika sesi sudah ada dan belum expired, login tidak perlu diulang.
-    - Gunakan `python -m src.auth.session_manager` untuk cek status sesi.
-"""
+"""Login Threads interaktif pada host threads.com (cookie threads.net/.instagram.com tidak berlaku di sana)."""
 
 import asyncio
 import logging
@@ -91,13 +61,7 @@ def _host_is_allowed(hosts: list[str]) -> bool:
 
 
 async def _verify_login_on_threads(page) -> bool:
-    """
-    Verifikasi status login langsung pada host `threads.com`.
-
-    Bukan sekadar cek NAMA cookie: membuka beranda threads.com dan memastikan
-    elemen navigasi terautentikasi benar-benar muncul, sehingga sesi yang tidak
-    berlaku untuk host tersebut tidak dianggap berhasil.
-    """
+    """Verifikasi login di host threads.com lewat elemen navigasi, bukan sekadar nama cookie."""
     try:
         if "threads.com" not in (page.url or "").lower():
             await page.goto(VERIFY_URL, wait_until="domcontentloaded", timeout=60_000)
@@ -122,17 +86,9 @@ async def _verify_login_on_threads(page) -> bool:
 
 @ensure_proactor_loop
 async def setup_threads_login(profile_dir: str = None) -> bool:
-    """
-    Menjalankan alur setup login Threads / Instagram secara interaktif.
+    """Buka browser GUI, polling login maks 10 menit, simpan sesi permanen.
 
-    Membuka browser GUI, mengarahkan user ke halaman login, melakukan polling
-    verifikasi sesi, lalu menyimpan sesi ke disk secara permanen.
-
-    Args:
-        profile_dir (str | None): Path direktori profil. Default: THREADS_PROFILE_DIR dari config.
-
-    Returns:
-        bool: True jika login berhasil terdeteksi, False jika timeout/gagal.
+    Kembalikan True bila login terverifikasi di threads.com, False bila timeout/gagal.
     """
     if profile_dir is None:
         profile_dir = str(THREADS_PROFILE_DIR)

@@ -1,43 +1,4 @@
-"""
-Preprocessing Pipeline Orchestrator — Modul 3: Preprocessing & Normalisasi Teks.
-
-Deskripsi:
-    Menggabungkan seluruh proses preprocessing (Cleaning + Case Folding +
-    Normalisasi Slang) menjadi satu antarmuka yang siap digunakan oleh
-    service lain, main_cli, atau proses batch DataFrame.
-
-Alur Pipeline (per teks):
-    RAW TEXT
-      ↓ clean_text()        — Hapus URL, @mention, #symbol, RT, emoji, non-ASCII
-      ↓ case_folding()      — Huruf kecil semua
-      ↓ normalizer.normalize() — Ganti kata slang → kata baku (kamusalay)
-    CLEAN TEXT (siap untuk IndoBERT Tokenizer)
-
-Kolom DataFrame Standar:
-    Input  : ['platform', 'source', 'user_id', 'type', 'date', 'content']
-    Output : ['platform', 'source', 'user_id', 'type', 'date', 'content'] (content berisi teks bersih hasil preprocessing)
-
-Fungsi / Class:
-    - preprocess_text(text: str, normalizer: SlangNormalizer) -> str
-        Preprocess satu kalimat.
-
-    - class PreprocessingPipeline
-        - __init__(dictionary_path = None)
-            Inisialisasi dengan memuat SlangNormalizer ke memori.
-        - transform_text(text: str) -> str
-            Preprocess satu teks.
-        - transform_dataframe(df: pd.DataFrame, text_column: str = 'content') -> pd.DataFrame
-            Preprocess seluruh DataFrame hasil scraping.
-            Melakukan deduplikasi, lalu tambahkan kolom 'clean_text'.
-        - transform_batch(texts: list) -> list
-            Preprocess daftar teks secara batch.
-
-Input:
-    - Raw text (Teks kotor dari hasil scraping atau input user).
-
-Output:
-    - Clean text terstandarisasi siap dikonsumsi IndoBERT Tokenizer.
-"""
+"""Preprocessing Pipeline: clean_text → case_folding → normalisasi slang (single, batch, DataFrame)."""
 
 import logging
 import pandas as pd
@@ -54,19 +15,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 def preprocess_text(text: str, normalizer: SlangNormalizer) -> str:
-    """
-    Menjalankan pipeline preprocessing lengkap pada satu string teks.
-
-    Alur:
-        clean_text → case_folding → normalizer.normalize
-
-    Args:
-        text       (str)            : Teks mentah dari scraper.
-        normalizer (SlangNormalizer): Instance normalizer yang sudah dimuat.
-
-    Returns:
-        str: Teks bersih siap untuk tokenisasi IndoBERT.
-    """
+    """Jalankan clean_text → case_folding → normalize untuk satu teks."""
     text = clean_text(text)
     text = case_folding(text)
     text = normalizer.normalize(text)
@@ -78,25 +27,10 @@ def preprocess_text(text: str, normalizer: SlangNormalizer) -> str:
 # ---------------------------------------------------------------------------
 
 class PreprocessingPipeline:
-    """
-    Orchestrator pipeline preprocessing teks media sosial (X & Threads).
-
-    Mengelola lifecycle SlangNormalizer (lazy load sekali saat inisialisasi)
-    dan menyediakan antarmuka terpadu untuk preprocessing single, batch,
-    maupun DataFrame.
-
-    Attributes:
-        normalizer (SlangNormalizer): Instance normalizer yang sudah dimuat.
-    """
+    """Orchestrator preprocessing terpadu: teks tunggal, batch, dan DataFrame."""
 
     def __init__(self, dictionary_path=None):
-        """
-        Inisialisasi pipeline & muat kamus slang ke memori.
-
-        Args:
-            dictionary_path: Path ke kamusalay.csv.
-                             Jika None, menggunakan path dari configs/config.py.
-        """
+        """Muat kamus slang ke memori saat inisialisasi."""
         logger.info("Menginisialisasi PreprocessingPipeline...")
         self.normalizer = SlangNormalizer(dictionary_path=dictionary_path)
         logger.info(
@@ -105,27 +39,11 @@ class PreprocessingPipeline:
         )
 
     def transform_text(self, text: str) -> str:
-        """
-        Preprocess satu string teks.
-
-        Args:
-            text (str): Teks mentah.
-
-        Returns:
-            str: Teks bersih.
-        """
+        """Preprocess satu teks mentah."""
         return preprocess_text(text, self.normalizer)
 
     def transform_batch(self, texts: list) -> list:
-        """
-        Preprocess daftar teks secara batch.
-
-        Args:
-            texts (list[str]): Daftar teks mentah.
-
-        Returns:
-            list[str]: Daftar teks bersih dengan urutan yang sama.
-        """
+        """Preprocess daftar teks; urutan hasil sama dengan urutan input."""
         return [self.transform_text(t) for t in texts]
 
     def transform_dataframe(
@@ -135,30 +53,7 @@ class PreprocessingPipeline:
         overwrite_content: bool = True,
         show_progress: bool = True,
     ) -> pd.DataFrame:
-        """
-        Preprocess seluruh DataFrame hasil scraping.
-
-        Tahapan:
-            1. Salin DataFrame (tidak memodifikasi original in-place).
-            2. Deduplikasi berdasarkan ['user_id', 'content'].
-            3. Apply pipeline preprocessing ke kolom `text_column`.
-            4. Jika `overwrite_content=True` (default):
-               - Kolom `content` langsung diganti dengan teks hasil preprocessing.
-               - Struktur kolom tetap sama persis: [platform, source/source_thread, user_id, type, date, content].
-               Jika `overwrite_content=False`:
-               - Teks bersih disimpan di kolom baru 'clean_text'.
-            5. Hapus baris yang menghasilkan teks kosong setelah preprocessing.
-
-        Args:
-            df                (pd.DataFrame): DataFrame hasil scraping.
-            text_column       (str)         : Nama kolom teks mentah. Default: 'content'.
-            overwrite_content (bool)        : Jika True, timpa kolom `text_column` dengan hasil preprocessing.
-                                              Jika False, buat kolom baru 'clean_text'. Default: True.
-            show_progress     (bool)        : Tampilkan progress bar tqdm. Default: True.
-
-        Returns:
-            pd.DataFrame: DataFrame dengan teks yang telah dibersihkan & dinormalisasi.
-        """
+        """Preprocess seluruh DataFrame; `overwrite_content=False` menyimpan hasil di kolom 'clean_text'."""
         if df.empty:
             logger.warning("transform_dataframe: DataFrame kosong, tidak ada yang diproses.")
             return df

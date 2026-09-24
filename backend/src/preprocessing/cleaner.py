@@ -1,31 +1,4 @@
-"""
-Text Cleaner Service — Modul 3: Preprocessing & Normalisasi Teks.
-
-Deskripsi:
-    Modul untuk membersihkan noise dari teks media sosial (X / Threads)
-    menggunakan Regex & String sanitization agar siap diproses oleh
-    IndoBERT Tokenizer.
-
-Tahapan Pembersihan (dieksekusi berurutan di dalam `clean_text`):
-    1. Hapus URL         : Menghapus tautan web (http/https/t.co/www).
-    2. Hapus Mention     : Menghapus tanda '@' SAJA, kata di belakangnya dipertahankan.
-    3. Hapus Hashtag     : Menghapus tanda '#' SAJA, kata di belakangnya dipertahankan.
-    4. Hapus Karakter RT : Menghapus prefix "RT" retweet di awal teks.
-    5. Hapus Non-ASCII   : Menghapus emoji, simbol, dan karakter unicode tidak standar
-                           kecuali huruf (a-z A-Z), angka (0-9), dan spasi.
-    6. Normalisasi Spasi : Memampatkan spasi berulang menjadi satu spasi & strip ujung.
-
-Fungsi Publik:
-    - clean_text(text: str) -> str
-        Membersihkan satu string teks mentah.
-
-    - case_folding(text: str) -> str
-        Mengubah seluruh huruf menjadi huruf kecil (lowercase).
-
-    - remove_duplicates(df: pd.DataFrame, subset: list | None = None) -> pd.DataFrame
-        Menghapus baris duplikat dari DataFrame berdasarkan kolom yang ditentukan.
-        Default subset: ['user_id', 'content'].
-"""
+"""Text Cleaner: bersihkan URL, @mention, #hashtag, prefix RT, emoji/non-ASCII dari teks medsos."""
 
 import re
 import logging
@@ -65,23 +38,7 @@ _RE_MULTI_SPACE = re.compile(r"\s+")
 # ---------------------------------------------------------------------------
 
 def clean_text(text: str) -> str:
-    """
-    Membersihkan satu string teks mentah media sosial.
-
-    Tahapan:
-        1. Hapus URL
-        2. Hapus simbol @ dari mention
-        3. Hapus simbol # dari hashtag
-        4. Hapus prefix RT
-        5. Hapus karakter non-alfanumerik (emoji, simbol, tanda baca)
-        6. Normalisasi spasi berlebih & strip
-
-    Args:
-        text (str): Teks mentah dari hasil scraping.
-
-    Returns:
-        str: Teks yang telah dibersihkan.
-    """
+    """Bersihkan satu teks mentah media sosial sesuai 6 tahap di bawah."""
     if not isinstance(text, str):
         return ""
 
@@ -107,37 +64,14 @@ def clean_text(text: str) -> str:
 
 
 def case_folding(text: str) -> str:
-    """
-    Mengubah seluruh huruf menjadi huruf kecil (lowercase / case folding).
-
-    Args:
-        text (str): Teks yang sudah dibersihkan.
-
-    Returns:
-        str: Teks dalam huruf kecil semua.
-    """
+    """Ubah seluruh huruf menjadi lowercase (case folding)."""
     if not isinstance(text, str):
         return ""
     return text.lower()
 
 
 def remove_duplicates(df: pd.DataFrame, subset=None) -> pd.DataFrame:
-    """
-    Menghapus baris duplikat dari DataFrame scraping.
-
-    Strategi:
-        - Memeriksa kombinasi kolom `subset` (default: ['user_id', 'content']).
-        - Mempertahankan kemunculan pertama (keep='first').
-        - Me-reset index agar berurutan kembali.
-
-    Args:
-        df     (pd.DataFrame): DataFrame hasil scraping mentah.
-        subset (list)        : Daftar nama kolom untuk cek duplikat.
-                               Default: ['user_id', 'content'].
-
-    Returns:
-        pd.DataFrame: DataFrame tanpa duplikat.
-    """
+    """Hapus baris duplikat pada kolom `subset` (default ['user_id', 'content']), keep='first'."""
     if df.empty:
         return df
 

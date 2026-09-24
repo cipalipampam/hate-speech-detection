@@ -15,9 +15,7 @@ class StoreAnalysisRequest extends FormRequest
     }
 
     /**
-     * Normalisasi input sebelum validasi dijalankan.
-     * - Checkbox headless dari HTML form dikirim sebagai string "1" / null → convert ke bool
-     * - Trim & deduplikasi keywords
+     * Normalisasi input sebelum validasi: checkbox headless → bool, keywords di-trim & dideduplikasi.
      */
     protected function prepareForValidation(): void
     {
@@ -46,8 +44,6 @@ class StoreAnalysisRequest extends FormRequest
 
     /**
      * Aturan validasi form pembuatan analisis baru.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {

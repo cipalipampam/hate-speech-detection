@@ -7,10 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Model: SinglePrediction
- *
- * Tanggung Jawab: Riwayat pengujian kalimat teks tunggal oleh pengguna.
- * Mandiri, tidak bergantung pada sesi analisis penuh.
+ * Riwayat pengujian kalimat tunggal oleh pengguna; mandiri, tanpa sesi analisis penuh.
  */
 class SinglePrediction extends Model
 {

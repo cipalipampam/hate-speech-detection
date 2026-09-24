@@ -7,10 +7,6 @@ use Illuminate\Validation\Rule;
 
 /**
  * Validasi filter daftar pengguna pada halaman Kelola Pengguna.
- *
- * Sebelumnya `UserManagementService` membaca objek Request HTTP secara langsung
- * (satu-satunya filter yang belum divalidasi). Sekarang filter divalidasi di sini
- * dan service hanya menerima data bersih.
  */
 class FilterUserRequest extends FormRequest
 {

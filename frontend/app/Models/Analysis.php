@@ -9,12 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
- * Model: Analysis
- *
- * Tanggung Jawab: Konfigurasi & status job saja.
- * Baca agregasi metrik → via $analysis->statistic
- * Baca postingan detail → via $analysis->posts
- * Baca file ekspor      → via $analysis->exports
+ * Konfigurasi & status job analisis; metrik/postingan/ekspor diakses lewat relasi.
  */
 class Analysis extends Model
 {

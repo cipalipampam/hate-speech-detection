@@ -75,10 +75,7 @@ class AnalysisImportService
     }
 
     /**
-     * Membaca file CSV ekspor dan memasukkan ke analysis_posts + analysis_classifications
-     * dengan aman menggunakan Database Transaction per chunk.
-     * Sumber data: HTTP endpoint FastAPI (GET /api/v1/pipeline/exports/{filename}) — sama
-     * untuk lingkungan lokal maupun Docker (tanpa akses path filesystem backend).
+     * Impor CSV ekspor ke analysis_posts + analysis_classifications (satu transaksi per chunk).
      */
     public function importPostsFromCsv(Analysis $analysis, string $filename): int
     {

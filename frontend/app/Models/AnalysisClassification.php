@@ -7,15 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Model: AnalysisClassification
- *
- * Tanggung Jawab: Konten teks (raw & clean) dan hasil inferensi IndoBERT.
- * One-to-one dengan AnalysisPost.
- *
- * Digunakan saat:
- * - Menampilkan konten teks lengkap dari postingan.
- * - Filter berdasarkan label sentimen (hate/non-hate, sub-kategori Level 2).
- * - Menampilkan confidence score dan distribusi probabilitas.
+ * Konten teks (raw & clean) + hasil inferensi IndoBERT; one-to-one dengan AnalysisPost.
  */
 class AnalysisClassification extends Model
 {

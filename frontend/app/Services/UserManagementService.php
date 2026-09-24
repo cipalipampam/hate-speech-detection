@@ -10,11 +10,7 @@ use Spatie\Permission\Models\Role;
 class UserManagementService
 {
     /**
-     * Mengambil daftar pengguna dengan filter pencarian, role, status, dan pagination.
-     *
-     * @param  array{search?: string|null, role?: string|null, status?: string|null}  $filters
-     *         Data yang SUDAH tervalidasi (FilterUserRequest) — service tidak lagi
-     *         menyentuh objek Request HTTP.
+     * Daftar pengguna terpaginasi dengan filter pencarian/role/status (data sudah tervalidasi).
      */
     public function getFilteredUsers(array $filters, int $perPage = 15): LengthAwarePaginator
     {
@@ -46,9 +42,7 @@ class UserManagementService
     }
 
     /**
-     * Menghitung metrik jumlah pengguna per role dan total pengguna aktif.
-     *
-     * @return array{roleCounts: array<string, int>, activeCount: int}
+     * Hitung jumlah pengguna per role dan total pengguna aktif.
      */
     public function getUserMetrics(): array
     {
@@ -65,10 +59,7 @@ class UserManagementService
     }
 
     /**
-     * Daftar role yang boleh dipilih admin pada form tambah/ubah pengguna.
-     * Sejak 2026-09-24 hanya ada `admin` dan `analyst` (role `viewer` dihapus).
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Role>
+     * Role yang boleh dipilih admin pada form pengguna (hanya admin & analyst).
      */
     public function getAssignableRoles()
     {
@@ -132,13 +123,9 @@ class UserManagementService
     }
 
     /**
-     * Menghapus akun pengguna.
+     * Hapus akun; tolak bila masih punya sesi analisis (CASCADE akan menghapus data riset).
      *
-     * Menolak penghapusan bila akun masih memiliki sesi analisis: relasi
-     * `analyses.user_id` memakai ON DELETE CASCADE sehingga data riset akan
-     * ikut terhapus. Untuk kasus itu, nonaktifkan akunnya saja.
-     *
-     * @return string|null Pesan penolakan, atau null bila akun berhasil dihapus.
+     * Kembalikan pesan penolakan, atau null bila akun berhasil dihapus.
      */
     public function deleteUser(User $user): ?string
     {

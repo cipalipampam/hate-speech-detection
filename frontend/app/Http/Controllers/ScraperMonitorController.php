@@ -16,8 +16,7 @@ class ScraperMonitorController extends Controller
     ) {}
 
     /**
-     * Tampilkan halaman status dan monitor sesi scraper (X & Threads).
-     * Mendukung respons JSON untuk pembaruan telemetri dinamis (real-time).
+     * Tampilkan halaman status scraper; respons JSON saat dipanggil via AJAX.
      */
     public function status(Request $request): View|JsonResponse
     {
