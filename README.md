@@ -10,6 +10,7 @@
 [![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose_Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
   <b>Platform terintegrasi untuk mendeteksi, mengkaji, dan memvisualisasikan ujaran kebencian secara multi-label dan hierarkis pada media sosial (X / Twitter & Threads) menggunakan deep learning Transformer (IndoBERT).</b>
@@ -20,7 +21,8 @@
 [Arsitektur Sistem](#-arsitektur-sistem--alur-kerja) •
 [Panduan Instalasi](#-panduan-instalasi--menjalankan) •
 [Akun Pengujian](#-akun-pengguna-default-demo) •
-[Dokumentasi API](#-dokumentasi-rest-api)
+[Dokumentasi API](#-dokumentasi-rest-api) •
+[Lisensi](#-lisensi--hak-cipta)
 
 ---
 </div>
@@ -97,7 +99,7 @@ flowchart LR
     end
 
     subgraph Frontend["Frontend Service (Port 8000)"]
-        L["Laravel 11 (PHP 8.2)"]
+        L["Laravel 13 (PHP 8.3+)"]
         B["Blade + Chart.js"]
         N["Nginx Web Server"]
     end
@@ -131,10 +133,10 @@ flowchart LR
 | **Deep Learning** | PyTorch 2.2+, Transformers | Fine-tuned `indobenchmark/indobert-base-p1` |
 | **Backend API** | FastAPI, Uvicorn, Pydantic | Arsitektur RESTful cepat & async |
 | **Scraping Engine** | Playwright (Python Headless Chromium) | Automasi browser untuk X & Threads |
-| **Frontend Framework** | Laravel 11, PHP 8.2 | Arsitektur MVC & orkestrasi bisnis |
+| **Frontend Framework** | Laravel 13, PHP 8.3+ | Arsitektur MVC & orkestrasi bisnis |
 | **UI & Visualisasi** | Blade Template, Chart.js, Vanilla CSS | Antarmuka responsif & interaktif |
 | **Database** | MySQL 8.0 | Penyimpanan relasional pengguna & analisis |
-| **Otentikasi & RBAC** | Laravel Breeze + Spatie Permission | Multi-role user management |
+| **Otentikasi & RBAC** | Custom Auth + Spatie Permission | Multi-role user management (Admin, Analyst) |
 | **Containerization** | Docker, Docker Compose | Orkestrasi container lintas platform |
 
 ---
@@ -158,11 +160,11 @@ hate-speech-detection/
 │   ├── main_api.py                 # Titik masuk utama FastAPI
 │   └── requirements.txt            # Dependensi paket Python
 │
-├── frontend/                       # Web Dashboard Laravel 11
+├── frontend/                       # Web Dashboard Laravel 13
 │   ├── app/                        # Controllers, Models, Middleware, Services
 │   │   └── Services/               # FastAPIClient service connector
 │   ├── database/                   # Migrasi database & Seeder akun demo
-│   ├── resources/views/            # Template Blade UI (Dashboard, Auth, Analysis)
+│   ├── resources/views/            # Template Blade UI (Dashboard, Auth, Analyses)
 │   ├── routes/                     # Definisi rute web aplikasi
 │   └── composer.json               # Dependensi paket PHP
 │
@@ -308,4 +310,11 @@ Proyek ini disusun dan dikembangkan sebagai karya penelitian tugas akhir (Skrips
 
 ## 📄 Lisensi & Hak Cipta
 
-Proyek ini Bebas digunakan dan dikembangkan untuk keperluan akademik dan penelitian dengan tetap mencantumkan atribusi penulis.
+Proyek ini dilisensikan di bawah ketentuan **[MIT License](LICENSE)**.
+
+```text
+Copyright (c) 2026 Firman Agung Alamsyah.
+Politeknik Negeri Jember — Jurusan Teknologi Informasi / Teknik Informatika.
+```
+
+Kode sumber dan arsitektur sistem ini bebas digunakan, dimodifikasi, dan didistribusikan untuk keperluan akademik, penelitian, maupun pengembangan lebih lanjut, dengan syarat tetap mencantumkan pemberitahuan hak cipta dan atribusi penulis asli.

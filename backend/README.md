@@ -8,6 +8,7 @@
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/HuggingFace-Transformers-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/python/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
 <p align="center">
   Layanan backend berbasis <b>FastAPI</b> dan <b>PyTorch</b> yang menyediakan endpoint RESTful untuk inferensi model <i>fine-tuned</i> <b>IndoBERT</b>, pembersihan dan normalisasi teks bahasa gaul/alay, serta automasi browser <i>headless</i> untuk mengumpulkan data dari platform <b>X (Twitter)</b> dan <b>Threads</b>.
@@ -243,3 +244,10 @@ Jika scraper gagal mengambil data karena diminta login:
 Buka `storage/dictionaries/kamusalay.csv`:
 - Tambahkan baris baru dengan format: `kata_tidak_baku,kata_baku`.
 - Perubahan akan langsung aktif tanpa perlu melatih ulang model AI.
+
+---
+
+## 📄 Lisensi & Hak Cipta
+
+Layanan backend ini dilisensikan di bawah ketentuan **[MIT License](../LICENSE)**.  
+Copyright (c) 2026 Firman Agung Alamsyah. Seluruh hak cipta dilindungi.

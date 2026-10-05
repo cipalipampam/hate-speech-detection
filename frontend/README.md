@@ -9,6 +9,7 @@
 [![Chart.js](https://img.shields.io/badge/Charts-Chart.js_3.x-FF6384.svg?logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
 [![Bootstrap & CSS](https://img.shields.io/badge/UI-Custom_Dark/Light_Design-7952B3.svg)](https://getbootstrap.com/)
 [![MySQL 8.0](https://img.shields.io/badge/Database-MySQL_8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
 <p align="center">
   Aplikasi web monolitik modern berbasis <b>Laravel 13</b> yang menyediakan antarmuka pengguna interaktif, visualisasi grafik data sentimen, manajemen pengguna multi-peran (RBAC), serta orkestrasi bisnis yang terhubung ke <b>FastAPI Backend</b>.
@@ -285,3 +286,10 @@ php artisan migrate:fresh --seed
 Buka file controller atau service terkait di `app/Services/AnalysisService.php` pada fungsi `exportToCsv()`:
 - Tambahkan header kolom pada array `$headers`.
 - Petakan field model Eloquent ke dalam baris penulisan CSV.
+
+---
+
+## 📄 Lisensi & Hak Cipta
+
+Proyek ini dilisensikan di bawah ketentuan **[MIT License](../LICENSE)**.  
+Copyright (c) 2026 Firman Agung Alamsyah. Seluruh hak cipta dilindungi.
