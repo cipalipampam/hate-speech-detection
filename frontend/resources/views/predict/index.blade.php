@@ -223,17 +223,6 @@
         </div>
 
     </div>
-
-    {{-- Metodologi Akademis --}}
-    <div class="card-flat" style="padding:1.25rem 1.5rem;">
-        <span class="stat-block-label" style="display:block;margin-bottom:0.5rem;">CATATAN METODOLOGI HIERARKIS INDOBERT</span>
-        <ol style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);line-height:1.8;padding-left:1.25rem;margin:0;">
-            <li><strong>Tahap Preprocessing:</strong> Pembersihan mention/URL, tokenisasi regex, dan normalisasi 15.167 entri slang Indonesia (Kamusalay).</li>
-            <li><strong>Tahap Level 1:</strong> Binary Classification mendeteksi Ujaran Kebencian (Hate Speech) vs Konten Netral/Aman.</li>
-            <li><strong>Tahap Level 2:</strong> Multi-class Classification mengelompokkan ke dalam 6 sub-tipe: <em>Delegitimasi Institusi, Dehumanisasi, Ajakan Kekerasan, Hoaks Pemicu Kebencian, Kutukan Agama & Personal</em>, atau <em>Tidak Relevan</em>.</li>
-        </ol>
-    </div>
-
 </div>
 
 @endsection

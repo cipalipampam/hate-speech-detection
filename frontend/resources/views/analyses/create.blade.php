@@ -109,7 +109,7 @@
                     {{-- Quick Preset Suggestions --}}
                     <div style="margin-top:0.625rem;display:flex;align-items:center;gap:0.375rem;flex-wrap:wrap;">
                         <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:700;color:var(--color-text-muted);">Saran Cepat:</span>
-                        @foreach(['Pilkada', 'Pemerintah', 'Korupsi', 'DPR', 'Kebijakan', 'Politik'] as $suggest)
+                        @foreach(['#SemuaBisaKena', '#SemuaBisaJadiKorban', '#KUHAPCacat', '#TolakRKUHAP', '#PeringatanDarurat', 'RKUHAP', 'KUHAP Baru', 'Revisi KUHAP', 'Undang-Undang KUHAP', 'Keadilan Restoratif'] as $suggest)
                         <button type="button"
                                 @click="if(!keywords.includes('{{ $suggest }}') && keywords.length < 10) keywords.push('{{ $suggest }}')"
                                 class="btn btn-outline btn-sm"

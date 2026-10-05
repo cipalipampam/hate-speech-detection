@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Analysis;
 use App\Models\AnalysisClassification;
-use App\Models\AnalysisPost;
 use App\Models\AnalysisStatistic;
 use Illuminate\Support\Facades\DB;
 

@@ -3,8 +3,7 @@
 namespace App\Services;
 
 use App\Models\SinglePrediction;
-use Exception;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Inferensi teks tunggal via FastAPI beserta pencatatan hasilnya ke database.
@@ -16,18 +15,11 @@ class SinglePredictService
     ) {}
 
     /**
-     * Kirim teks ke FastAPI untuk diklasifikasi, simpan hasilnya ke database.
+     * Kirim teks ke FastAPI untuk diklasifikasi, simpan hasilnya ke database single_predictions.
      */
     public function predict(string $text, ?int $userId = null, bool $preprocess = true): array
     {
-        return $this->predictAndSave($text, $userId ?? auth()->id(), $preprocess);
-    }
-
-    /**
-     * Kirim teks ke FastAPI untuk diklasifikasi, simpan hasilnya ke single_predictions.
-     */
-    public function predictAndSave(string $text, ?int $userId = null, bool $preprocess = true): array
-    {
+        $userId ??= Auth::id();
         $apiResult = $this->fastApiClient->classifySingle($text, $preprocess);
 
         if (!$apiResult['success']) {
@@ -76,17 +68,5 @@ class SinglePredictService
                 'created_at'         => $record->created_at->format('d M Y, H:i'),
             ],
         ];
-    }
-
-    /**
-     * Riwayat pengujian teks terbaru (opsional filter per user).
-     */
-    public function getRecentPredictions(?int $userId = null, int $limit = 20)
-    {
-        $query = SinglePrediction::with('user')->latest();
-        if ($userId) {
-            $query->where('user_id', $userId);
-        }
-        return $query->take($limit)->get();
     }
 }

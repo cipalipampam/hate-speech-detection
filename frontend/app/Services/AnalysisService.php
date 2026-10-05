@@ -139,13 +139,28 @@ class AnalysisService
                 $step = 4;
             } elseif ($msg) {
                 $m = strtolower($msg);
-                if (str_contains($m, 'klasifikasi') || str_contains($m, 'indobert') || str_contains($m, 'inferensi') || str_contains($m, 'langkah 4') || str_contains($m, 'langkah 5')) {
+                // Tahap 4: Klasifikasi IndoBERT
+                if (str_contains($m, 'klasifikasi') || str_contains($m, 'indobert') || str_contains($m, 'inferensi')
+                    || str_contains($m, 'langkah 4') || str_contains($m, 'tahap 4') || str_contains($m, 'stage 4')
+                    || str_contains($m, 'langkah 5')) {
                     $step = 4;
-                } elseif (str_contains($m, 'preprocess') || str_contains($m, 'kamusalay') || str_contains($m, 'pembersihan') || str_contains($m, 'normalisasi') || str_contains($m, 'langkah 3')) {
+                // Tahap 3: Preprocessing
+                } elseif (str_contains($m, 'preprocess') || str_contains($m, 'kamusalay') || str_contains($m, 'pembersihan')
+                    || str_contains($m, 'normalisasi') || str_contains($m, 'langkah 3') || str_contains($m, 'tahap 3')
+                    || str_contains($m, 'stage 3')) {
                     $step = 3;
-                } elseif (str_contains($m, 'scraping') || str_contains($m, 'crawling') || str_contains($m, 'meluncurkan') || str_contains($m, 'tweet') || str_contains($m, 'thread') || str_contains($m, 'unduh') || str_contains($m, 'langkah 2')) {
+                // Tahap 2: Scraping — diperluas untuk mencakup variasi pesan aktual backend Python
+                // ("[X] Tahap 2: Deep Crawl postingan", "Stage 1 selesai", dst.)
+                } elseif (str_contains($m, 'scraping') || str_contains($m, 'crawling') || str_contains($m, 'crawl')
+                    || str_contains($m, 'meluncurkan') || str_contains($m, 'tweet') || str_contains($m, 'thread')
+                    || str_contains($m, 'unduh') || str_contains($m, 'langkah 2') || str_contains($m, 'tahap 2')
+                    || str_contains($m, 'stage 2') || str_contains($m, 'deep crawl') || str_contains($m, 'postingan')
+                    || str_contains($m, 'paralel') || str_contains($m, 'stage 1 selesai') || str_contains($m, 'tahap 1 selesai')) {
                     $step = 2;
-                } elseif (str_contains($m, 'browser') || str_contains($m, 'playwright') || str_contains($m, 'validasi') || str_contains($m, 'inisialisasi') || str_contains($m, 'antrean') || str_contains($m, 'langkah 1')) {
+                // Tahap 1: Inisialisasi & Verifikasi Sesi
+                } elseif (str_contains($m, 'browser') || str_contains($m, 'playwright') || str_contains($m, 'validasi')
+                    || str_contains($m, 'inisialisasi') || str_contains($m, 'antrean') || str_contains($m, 'langkah 1')
+                    || str_contains($m, 'tahap 1') || str_contains($m, 'stage 1') || str_contains($m, 'sesi')) {
                     $step = 1;
                 }
             }

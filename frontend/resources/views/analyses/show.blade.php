@@ -141,7 +141,10 @@ function analysisDetail() {
                         this.status = data.analysis.status;
                         this.execTime = data.analysis.execution_time_seconds;
                         if (data.analysis.pipeline_step) {
-                            this.pipelineStep = data.analysis.pipeline_step;
+                            // Proteksi monotonik: progress bar tidak boleh mundur ke tahap lebih rendah.
+                            // Ini mencegah fluktuasi saat backend mengirim pesan yang tidak cocok
+                            // dengan kata kunci filter (misalnya, pesan deep crawl spesifik per URL).
+                            this.pipelineStep = Math.max(this.pipelineStep, data.analysis.pipeline_step);
                         }
                         if (data.analysis.pipeline_message) {
                             this.pipelineMessage = data.analysis.pipeline_message;
