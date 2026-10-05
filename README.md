@@ -175,8 +175,7 @@ hate-speech-detection/
 │
 ├── .env.example                    # Template variabel lingkungan
 ├── docker-compose.yml              # Konfigurasi orkestrasi Docker
-├── docker-up.bat                   # Script cepat start container (Windows)
-├── docker-down.bat                 # Script cepat stop container (Windows)
+├── LICENSE                         # Berkas lisensi open source (MIT)
 └── README.md                       # Dokumentasi utama proyek
 ```
 
@@ -202,15 +201,11 @@ Metode ini paling mudah dan tidak membutuhkan instalasi manual PHP, Python, atau
    ```
 
 2. **Jalankan Aplikasi:**
-   * **Pengguna Windows:** Cukup klik dua kali file **`docker-up.bat`**, atau jalankan di terminal:
-     ```cmd
-     docker-up.bat
-     ```
-   * **Pengguna Linux / macOS / Terminal Umum:**
-     ```bash
-     cp .env.example .env
-     docker compose up -d --build
-     ```
+   ```bash
+   # Salin template env (jika belum ada) dan bangun seluruh container:
+   cp .env.example .env
+   docker compose up -d --build
+   ```
 
 3. **Auto-Download Model AI:**
    * Saat pertama kali dijalankan, sistem secara otomatis mengunduh bobot model `best_model.pt` (~499 MB) dari GitHub Releases langsung ke folder `backend/saved_models/`.
@@ -224,7 +219,9 @@ Metode ini paling mudah dan tidak membutuhkan instalasi manual PHP, Python, atau
    * **FastAPI Docs (Swagger)** : [http://localhost:8080/docs](http://localhost:8080/docs)
 
 5. **Menghentikan Aplikasi:**
-   * Klik dua kali file **`docker-down.bat`** atau ketik `docker compose down`.
+   ```bash
+   docker compose down
+   ```
 
 </details>
 
