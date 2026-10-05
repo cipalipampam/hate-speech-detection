@@ -212,18 +212,3 @@ class PipelineJobStatusResponse(BaseModel):
         description="Detail error (tersedia jika status='error').",
     )
 
-
-class ExportFileItem(BaseModel):
-    """Informasi satu file CSV di storage/exports/."""
-
-    filename: str = Field(description="Nama file CSV.")
-    size_bytes: int = Field(description="Ukuran file dalam bytes.")
-    created_at: str = Field(description="Waktu pembuatan file (ISO 8601).")
-    download_url: str = Field(description="URL endpoint untuk mendownload file ini.")
-
-
-class ExportListResponse(BaseModel):
-    """Daftar file CSV hasil analisis di storage/exports/."""
-
-    total: int = Field(description="Jumlah file CSV yang tersedia.")
-    files: List[ExportFileItem] = Field(description="Daftar file beserta informasinya.")

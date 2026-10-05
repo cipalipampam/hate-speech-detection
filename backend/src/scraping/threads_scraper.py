@@ -25,7 +25,7 @@ if str(BACKEND_DIR) not in sys.path:
 from configs.config import THREADS_PROFILE_DIR, EXPORTS_DIR, SCRAPER_CONFIG
 from src.utils.async_compat import ensure_proactor_loop
 from src.scraping.base_scraper import (
-    create_browser, random_delay, scroll_page,
+    create_browser, random_delay,
     results_to_dataframe, save_dataframe, append_checkpoint, check_profile_exists,
     keyword_matches_text, is_system_text as _system_text_matches,
 )
