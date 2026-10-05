@@ -7,7 +7,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Hugging Face](https://img.shields.io/badge/Transformers-IndoBERT-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/indobenchmark/indobert-base-p1)
-[![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
+[![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose_Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
 [![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
 
@@ -31,7 +31,7 @@
 
 Sistem dirancang *end-to-end* yang menggabungkan:
 1. **Engine AI (FastAPI & PyTorch)**: Melakukan pembersihan data, normalisasi slang/bahasa alay, inferensi model IndoBERT, serta scraper live headless browser.
-2. **Web Dashboard (Laravel 11 & Blade)**: Antarmuka intuitif untuk analis sentimen, visualisasi statistik, manajemen dataset, dan kontrol akses berbasis peran (RBAC).
+2. **Web Dashboard (Laravel 13 & Blade)**: Antarmuka intuitif untuk analis sentimen, visualisasi statistik, manajemen dataset, dan kontrol akses berbasis peran (RBAC).
 3. **Containerized Deployment (Docker & Compose)**: Lingkungan mandiri yang siap dijalankan dalam sekali klik tanpa perlu menginstall dependensi rumit secara manual.
 
 ---

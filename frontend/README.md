@@ -3,15 +3,15 @@
 # 💻 HateSense ID Lab — Frontend Web Dashboard
 ### Modern Web Interface, Data Visualization, & Business Orchestration Layer
 
-[![PHP 8.2](https://img.shields.io/badge/PHP-8.2-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
-[![Laravel 11](https://img.shields.io/badge/Laravel-11.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
+[![PHP 8.3+](https://img.shields.io/badge/PHP-8.3+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
+[![Laravel 13](https://img.shields.io/badge/Laravel-13.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Spatie Permission](https://img.shields.io/badge/Spatie-Roles_&_Permissions-555555.svg)](https://spatie.be/docs/laravel-permission)
 [![Chart.js](https://img.shields.io/badge/Charts-Chart.js_3.x-FF6384.svg?logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
 [![Bootstrap & CSS](https://img.shields.io/badge/UI-Custom_Dark/Light_Design-7952B3.svg)](https://getbootstrap.com/)
 [![MySQL 8.0](https://img.shields.io/badge/Database-MySQL_8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
 
 <p align="center">
-  Aplikasi web monolitik modern berbasis <b>Laravel 11</b> yang menyediakan antarmuka pengguna interaktif, visualisasi grafik data sentimen, manajemen pengguna multi-peran (RBAC), serta orkestrasi bisnis yang terhubung ke <b>FastAPI Backend</b>.
+  Aplikasi web monolitik modern berbasis <b>Laravel 13</b> yang menyediakan antarmuka pengguna interaktif, visualisasi grafik data sentimen, manajemen pengguna multi-peran (RBAC), serta orkestrasi bisnis yang terhubung ke <b>FastAPI Backend</b>.
 </p>
 
 ---
@@ -54,57 +54,60 @@ frontend/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── Admin/
-│   │   │   │   └── UserController.php         # Manajemen akun pengguna & role
-│   │   │   ├── Auth/                          # Login, Register, Password Reset
-│   │   │   ├── AnalysisController.php         # Buat, pantau, dan lihat sesi analisis
-│   │   │   ├── DashboardController.php        # Halaman utama ringkasan statistik
-│   │   │   ├── PredictController.php          # Halaman uji prediksi teks tunggal
-│   │   │   ├── ProfileController.php          # Edit profil akun & ganti password
-│   │   │   └── ScraperMonitorController.php   # Pemantau status antrean scraper
-│   │   └── Middleware/                        # Autentikasi & pengecekan role Spatie
+│   │   │   │   └── UserManagementController.php # Manajemen akun pengguna & role
+│   │   │   ├── Auth/
+│   │   │   │   └── AuthController.php           # Login, Register, Logout
+│   │   │   ├── AnalysisController.php           # Buat, pantau, dan lihat sesi analisis
+│   │   │   ├── DashboardController.php          # Halaman utama ringkasan statistik
+│   │   │   ├── PredictController.php            # Halaman uji prediksi teks tunggal
+│   │   │   ├── ProfileController.php            # Edit profil akun & ganti password
+│   │   │   └── ScraperMonitorController.php     # Pemantau status antrean scraper
+│   │   └── Middleware/                          # Autentikasi & pengecekan role Spatie
 │   │
-│   ├── Models/                                # Model Eloquent Database
-│   │   ├── Analysis.php                       # Header sesi analisis (sumber, status)
-│   │   ├── AnalysisClassification.php         # Hasil prediksi IndoBERT per komentar
-│   │   ├── AnalysisExport.php                 # Riwayat file unduhan CSV/PDF
-│   │   ├── AnalysisPost.php                   # Data mentah postingan media sosial
-│   │   ├── AnalysisStatistic.php              # Agregasi metrik per sesi analisis
-│   │   ├── SinglePrediction.php               # Log riwayat uji teks tunggal
-│   │   └── User.php                           # Model pengguna terintegrasi Spatie
+│   ├── Models/                                  # Model Eloquent Database
+│   │   ├── Analysis.php                         # Header sesi analisis (sumber, status)
+│   │   ├── AnalysisClassification.php           # Hasil prediksi IndoBERT per komentar
+│   │   ├── AnalysisExport.php                   # Riwayat file unduhan CSV/PDF
+│   │   ├── AnalysisPost.php                     # Data mentah postingan media sosial
+│   │   ├── AnalysisStatistic.php                # Agregasi metrik per sesi analisis
+│   │   ├── SinglePrediction.php                 # Log riwayat uji teks tunggal
+│   │   └── User.php                             # Model pengguna terintegrasi Spatie
 │   │
-│   └── Services/                              # Core Service Layer
-│       ├── AnalysisImportService.php          # Parsing file CSV massal
-│       ├── AnalysisService.php                # Orkestrator alur analisis
-│       ├── DashboardMetricsService.php        # Agregasi data visualisasi grafik
-│       ├── FastAPIClientService.php           # HTTP Client penghubung ke FastAPI
-│       ├── SinglePredictService.php           # Logika inferensi teks tunggal
-│       └── UserManagementService.php          # Manajemen user dan hak akses
+│   └── Services/                                # Core Service Layer
+│       ├── AnalysisImportService.php            # Parsing file CSV massal
+│       ├── AnalysisService.php                  # Orkestrator alur analisis
+│       ├── DashboardMetricsService.php          # Agregasi data visualisasi grafik
+│       ├── FastAPIClientService.php             # HTTP Client penghubung ke FastAPI
+│       ├── ProfileService.php                   # Manajemen pembaruan profil & password
+│       ├── SinglePredictService.php             # Logika inferensi teks tunggal
+│       └── UserManagementService.php            # Manajemen user dan hak akses
 │
 ├── database/
-│   ├── migrations/                            # Skema DDL tabel database
-│   └── seeders/                               # Data awal akun demo & role
-│       ├── DatabaseSeeder.php                 # Master seeder
-│       ├── DemoAnalysisSeeder.php             # Sampel data analisis untuk presentasi
-│       └── RoleAndPermissionSeeder.php        # Setup role Admin & Analyst
+│   ├── migrations/                              # Skema DDL tabel database
+│   └── seeders/                                 # Data awal akun demo & role
+│       ├── DatabaseSeeder.php                   # Master seeder
+│       ├── DemoAnalysisSeeder.php               # Sampel data analisis untuk presentasi
+│       └── RoleAndPermissionSeeder.php          # Setup role Admin & Analyst
 │
 ├── resources/
-│   ├── css/                                   # Kustomisasi stylesheet CSS
-│   ├── js/                                    # Script interaktif (Chart.js & AJAX)
-│   └── views/                                 # Template antarmuka Blade
-│       ├── admin/                             # Tampilan kelola pengguna
-│       ├── analysis/                          # Form input, polling status, & hasil
-│       ├── auth/                              # Halaman login & register
-│       ├── dashboard/                         # Dashboard analitik utama
-│       ├── layouts/                           # Master layout, sidebar, & navbar
-│       └── predict/                           # Interface uji coba teks tunggal
+│   ├── css/                                     # Kustomisasi stylesheet CSS
+│   ├── js/                                      # Script interaktif (Chart.js & AJAX)
+│   └── views/                                   # Template antarmuka Blade
+│       ├── admin/                               # Tampilan kelola pengguna
+│       ├── analyses/                            # Form input, polling status, & hasil
+│       ├── auth/                                # Halaman login & register
+│       ├── dashboard/                           # Dashboard analitik utama
+│       ├── layouts/                             # Master layout, sidebar, & navbar
+│       ├── predict/                             # Interface uji coba teks tunggal
+│       ├── profile/                             # Manajemen profil pengguna
+│       └── scraper/                             # Pemantauan status scraper
 │
 ├── routes/
-│   ├── auth.php                               # Rute autentikasi
-│   ├── console.php                            # Artisan commands
-│   └── web.php                                # Seluruh rute aplikasi web
+│   ├── console.php                              # Artisan commands
+│   └── web.php                                  # Seluruh rute aplikasi web & autentikasi
 │
-├── composer.json                              # Dependensi paket PHP
-└── package.json                               # Dependensi aset frontend (NPM)
+├── composer.json                                # Dependensi paket PHP
+└── package.json                                 # Dependensi aset frontend (NPM)
 ```
 
 ---
@@ -187,7 +190,7 @@ erDiagram
 
 ## 🔐 Manajemen Hak Akses Pengguna (RBAC)
 
-Sistem menggunakan paket **Spatie Laravel Permission** dengan 3 tingkatan peran:
+Sistem menggunakan paket **Spatie Laravel Permission** dengan 2 tingkatan peran:
 
 | Role | Hak Akses (*Permissions*) | Keterangan |
 |---|---|---|
@@ -218,7 +221,7 @@ docker compose up -d --build frontend nginx
 ```
 
 ### Menjalankan Manual / Lokal
-1. Pastikan terpasang **PHP >= 8.2** dan **Composer**.
+1. Pastikan terpasang **PHP >= 8.3** dan **Composer**.
 2. Masuk ke folder frontend dan pasang dependensi:
    ```bash
    cd frontend
