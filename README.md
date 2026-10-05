@@ -186,6 +186,9 @@ hate-speech-detection/
 
 ### Cara 1: Menggunakan Docker Compose (Sangat Direkomendasikan ⭐)
 
+<details>
+<summary><b>Klik untuk melihat panduan menjalankan via Docker Compose</b></summary>
+
 Metode ini paling mudah dan tidak membutuhkan instalasi manual PHP, Python, atau MySQL di laptop Anda.
 
 #### Prasyarat:
@@ -222,6 +225,8 @@ Metode ini paling mudah dan tidak membutuhkan instalasi manual PHP, Python, atau
 
 5. **Menghentikan Aplikasi:**
    * Klik dua kali file **`docker-down.bat`** atau ketik `docker compose down`.
+
+</details>
 
 ---
 
