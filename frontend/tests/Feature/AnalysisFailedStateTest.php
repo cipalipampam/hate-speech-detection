@@ -59,8 +59,8 @@ class AnalysisFailedStateTest extends TestCase
         $response->assertDontSee('ERROR: PIPELINE GAGAL');
 
         // Status gagal tetap terlihat: judul kartu, badge, dan alasan kegagalan.
-        $response->assertSee('Pipeline AI Gagal Dieksekusi', false);
-        $response->assertSee('GAGAL DIEKSEKUSI');
+        $response->assertSee('AI Pipeline Failed', false);
+        $response->assertSee('EXECUTION FAILED');
         $response->assertSee(self::ERROR_MESSAGE);
     }
 

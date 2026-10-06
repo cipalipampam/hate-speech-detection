@@ -1,142 +1,32 @@
 @extends('layouts.app')
 
-@section('title', '§ 02.0 Riwayat Analisis')
+@section('title', '§ 02.0 Analysis History')
 
 @section('breadcrumb')
-<span style="color:#0A0A0A;">§ 02.0 RIWAYAT</span>
+<span style="color:#0A0A0A;">§ 02.0 ANALYSIS HISTORY</span>
 @endsection
 
 @section('content')
-<script>
-window.__INITIAL_ANALYSES__ = {!! json_encode([
-    'items'      => $analyses->items(),
-    'pagination' => [
-        'current_page'  => $analyses->currentPage(),
-        'last_page'     => $analyses->lastPage(),
-        'total'         => $analyses->total(),
-        'from'          => $analyses->firstItem() ?? 0,
-        'to'            => $analyses->lastItem() ?? 0,
-        'prev_page_url' => $analyses->previousPageUrl(),
-        'next_page_url' => $analyses->nextPageUrl(),
-    ],
-    'filters'    => [
-        'search'   => request('search', ''),
-        'platform' => request('platform', 'all'),
-        'status'   => request('status', 'all'),
-    ]
-], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!};
-
-function analysesIndex() {
-    const initial = window.__INITIAL_ANALYSES__ || {
-        items: [],
-        pagination: {},
-        filters: { search: '', platform: 'all', status: 'all' }
-    };
-
-    return {
-        analyses:   initial.items || [],
-        pagination: initial.pagination || {},
-        filters:    initial.filters || { search: '', platform: 'all', status: 'all' },
-        loading:    false,
-        pollTimer:  null,
-
-        init() {
-            if (!this.analyses || this.analyses.length === 0) {
-                if (window.__INITIAL_ANALYSES__ && window.__INITIAL_ANALYSES__.items && window.__INITIAL_ANALYSES__.items.length > 0) {
-                    this.analyses = window.__INITIAL_ANALYSES__.items;
-                    this.pagination = window.__INITIAL_ANALYSES__.pagination;
-                    this.filters = window.__INITIAL_ANALYSES__.filters;
-                }
-            }
-            this.checkAndStartPolling();
-        },
-
-        checkAndStartPolling() {
-            const anyRunning = this.analyses && this.analyses.some(item => item.status === 'running' || item.status === 'queued');
-            if (anyRunning && !this.pollTimer) {
-                this.pollTimer = setInterval(() => {
-                    this.fetchData(this.pagination.current_page || 1, false);
-                }, 3000);
-            } else if (!anyRunning && this.pollTimer) {
-                clearInterval(this.pollTimer);
-                this.pollTimer = null;
-            }
-        },
-
-        async fetchData(page = 1, showLoading = true) {
-            if (showLoading) {
-                this.loading = true;
-            }
-            try {
-                const query = new URLSearchParams({
-                    page:     page,
-                    search:   this.filters.search || '',
-                    platform: this.filters.platform || 'all',
-                    status:   this.filters.status || 'all',
-                });
-
-                const res = await fetch(`{{ route('analyses.index') }}?${query.toString()}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
-                });
-                const data = await res.json();
-                if (data && data.analyses) {
-                    this.analyses = data.analyses.data || [];
-                    this.pagination = {
-                        current_page:  data.analyses.current_page,
-                        last_page:     data.analyses.last_page,
-                        total:         data.analyses.total,
-                        from:          data.analyses.from,
-                        to:            data.analyses.to,
-                        prev_page_url: data.analyses.prev_page_url,
-                        next_page_url: data.analyses.next_page_url,
-                    };
-                    this.checkAndStartPolling();
-                }
-            } catch (e) {
-                console.error('Failed to fetch analyses:', e);
-            } finally {
-                if (showLoading) {
-                    this.loading = false;
-                }
-            }
-        },
-
-        resetFilters() {
-            this.filters.search = '';
-            this.filters.platform = 'all';
-            this.filters.status = 'all';
-            this.fetchData(1);
-        },
-
-        numberFormat(num) {
-            return new Intl.NumberFormat('id-ID').format(num || 0);
-        },
-
-        getKeywordList(item) {
-            if (!item || !item.keywords) return [];
-            if (Array.isArray(item.keywords)) return item.keywords;
-            if (typeof item.keywords === 'string') {
-                try {
-                    const p = JSON.parse(item.keywords);
-                    if (Array.isArray(p)) return p;
-                } catch(e) {}
-                return [item.keywords];
-            }
-            return [];
-        },
-
-        getUserName(item) {
-            return (item && item.user && item.user.name) ? item.user.name : 'SYSTEM';
-        },
-
-        formatDate(item) {
-            return (item && item.created_at) ? item.created_at.substring(0, 10) : '';
-        }
-    };
-}
+{{-- JSON Island: data server awal untuk halaman riwayat analisis --}}
+<script id="analyses-index-data" type="application/json">
+    {!! json_encode([
+        'endpoint'   => route('analyses.index'),
+        'items'      => $analyses->items(),
+        'pagination' => [
+            'current_page'  => $analyses->currentPage(),
+            'last_page'     => $analyses->lastPage(),
+            'total'         => $analyses->total(),
+            'from'          => $analyses->firstItem() ?? 0,
+            'to'            => $analyses->lastItem() ?? 0,
+            'prev_page_url' => $analyses->previousPageUrl(),
+            'next_page_url' => $analyses->nextPageUrl(),
+        ],
+        'filters'    => [
+            'search'   => request('search', ''),
+            'platform' => request('platform', 'all'),
+            'status'   => request('status', 'all'),
+        ],
+    ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) !!}
 </script>
 
 <div x-data="analysesIndex()">
@@ -145,20 +35,20 @@ function analysesIndex() {
     <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1.25rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
         <div>
             <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
-                <span class="badge badge-black">SEKSI § 02.0</span>
-                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">ARSIP DOSIR HISTORIS</span>
+                <span class="badge badge-black">SECTION § 02.0</span>
+                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">HISTORICAL ANALYSIS ARCHIVE</span>
             </div>
             <h1 style="font-size:2.25rem;font-weight:900;letter-spacing:-0.035em;color:#0A0A0A;margin:0;line-height:1.1;">
-                RIWAYAT INVESTIGASI KORPUS
+                ANALYSIS HISTORY
             </h1>
             <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0.35rem 0 0;">
-                Katalog berkas investigasi ujaran kebencian multi-platform yang tersimpan dalam repositori riset.
+                Browse stored multi-platform hate speech analysis records.
             </p>
         </div>
 
         @can('run-analysis')
         <a href="{{ route('analyses.create') }}" class="btn btn-primary btn-lg">
-            <span>+ INVESTIGASI BARU</span>
+            <span>+ NEW ANALYSIS</span>
         </a>
         @endcan
     </div>
@@ -172,26 +62,26 @@ function analysesIndex() {
                 <input type="text"
                        x-model.debounce.350ms="filters.search"
                        @input="fetchData(1)"
-                       placeholder="Cari judul riset atau kata kunci topik... (/)"
+                       placeholder="Search analysis title or topic keyword... (/)"
                        class="input"
                        style="height:38px;padding-left:0.75rem;font-size:0.8125rem;">
             </div>
             
             {{-- Platform Filter --}}
             <select x-model="filters.platform" @change="fetchData(1)" class="input" style="width:auto;height:38px;font-size:0.8125rem;cursor:pointer;">
-                <option value="all">SEMUA PLATFORM</option>
+                <option value="all">ALL PLATFORMS</option>
                 <option value="x">𝕏 TWITTER</option>
                 <option value="threads">⊙ THREADS</option>
-                <option value="both">DUAL PLATFORM</option>
+                <option value="both">BOTH PLATFORMS</option>
             </select>
 
             {{-- Status Filter --}}
             <select x-model="filters.status" @change="fetchData(1)" class="input" style="width:auto;height:38px;font-size:0.8125rem;cursor:pointer;">
-                <option value="all">SEMUA STATUS</option>
-                <option value="completed">SELESAI</option>
-                <option value="running">PROSES</option>
-                <option value="failed">GAGAL</option>
-                <option value="queued">ANTREAN</option>
+                <option value="all">ALL STATUSES</option>
+                <option value="completed">COMPLETED</option>
+                <option value="running">RUNNING</option>
+                <option value="failed">FAILED</option>
+                <option value="queued">QUEUED</option>
             </select>
 
         </div>
@@ -202,27 +92,27 @@ function analysesIndex() {
         
         {{-- Loading Skeleton Overlay --}}
         <div x-show="loading" x-cloak style="position:absolute;inset:0;background:rgba(246,245,240,0.8);display:flex;align-items:center;justify-content:center;z-index:10;">
-            <span class="badge badge-black">MEMPERBARUI ARSIP...</span>
+            <span class="badge badge-black">UPDATING ARCHIVE...</span>
         </div>
 
         <table>
             <thead>
                 <tr>
                     <th style="width:70px;">ID</th>
-                    <th>JUDUL PENELITIAN & PENELITI</th>
+                    <th>ANALYSIS TITLE & RESEARCHER</th>
                     <th style="width:120px;text-align:center;">PLATFORM</th>
-                    <th>KATA KUNCI TOPIK</th>
-                    <th style="width:90px;text-align:center;">TOTAL DATA</th>
+                    <th>TOPIC KEYWORDS</th>
+                    <th style="width:90px;text-align:center;">TOTAL RECORDS</th>
                     <th style="width:90px;text-align:center;">HATE %</th>
                     <th style="width:110px;text-align:center;">STATUS</th>
-                    <th style="width:130px;text-align:right;">AKSI</th>
+                    <th style="width:130px;text-align:right;">ACTIONS</th>
                 </tr>
             </thead>
             <tbody>
                 <template x-if="analyses.length === 0 && !loading">
                     <tr>
                         <td colspan="8" style="padding:4rem 1rem;text-align:center;font-family:var(--font-mono);color:var(--color-text-muted);">
-                            [TIDAK DITEMUKAN BERKAS INVESTIGASI SESUAI FILTER]
+                            [NO ANALYSIS RECORDS MATCH THE FILTER]
                         </td>
                     </tr>
                 </template>
@@ -273,21 +163,21 @@ function analysesIndex() {
                         </td>
                         <td style="text-align:center;">
                             <template x-if="item.status === 'completed'">
-                                <span class="badge badge-safe">SELESAI</span>
+                                <span class="badge badge-safe">COMPLETED</span>
                             </template>
                             <template x-if="item.status === 'running'">
-                                <span class="badge badge-hate" style="animation:telemetry-pulse 1.2s infinite;">PROSES</span>
+                                <span class="badge badge-hate" style="animation:telemetry-pulse 1.2s infinite;">RUNNING</span>
                             </template>
                             <template x-if="item.status === 'failed'">
-                                <span class="badge" style="background:#FEE2E2;color:#991B1B;border-color:#991B1B;">GAGAL</span>
+                                <span class="badge" style="background:#FEE2E2;color:#991B1B;border-color:#991B1B;">FAILED</span>
                             </template>
                             <template x-if="item.status === 'queued'">
-                                <span class="badge badge-mono">ANTREAN</span>
+                                <span class="badge badge-mono">QUEUED</span>
                             </template>
                         </td>
                         <td style="text-align:right;">
                             <a :href="'/analyses/' + item.id" class="btn btn-outline btn-sm" style="font-size:0.6875rem;padding:0.25rem 0.5rem;">
-                                DOSIR [→]
+                                VIEW [→]
                             </a>
                         </td>
                     </tr>
@@ -298,7 +188,7 @@ function analysesIndex() {
         {{-- Dynamic Pagination Footer --}}
         <div style="padding:0.75rem 1rem;background:#FFFFFF;border-top:1px solid #0A0A0A;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;font-family:var(--font-mono);font-size:0.75rem;">
             <span>
-                MENAMPILKAN <strong x-text="pagination.from || 0"></strong>–<strong x-text="pagination.to || 0"></strong> DARI <strong x-text="pagination.total || 0"></strong> TOTAL BERKAS
+                SHOWING <strong x-text="pagination.from || 0"></strong>–<strong x-text="pagination.to || 0"></strong> OF <strong x-text="pagination.total || 0"></strong> RECORDS
             </span>
 
             <div style="display:flex;align-items:center;gap:0.375rem;">
@@ -310,7 +200,7 @@ function analysesIndex() {
                     ← PREV
                 </button>
                 
-                <span style="padding:0 0.5rem;" x-text="'HAL ' + (pagination.current_page || 1) + ' / ' + (pagination.last_page || 1)"></span>
+                <span style="padding:0 0.5rem;" x-text="'PAGE ' + (pagination.current_page || 1) + ' / ' + (pagination.last_page || 1)"></span>
 
                 <button type="button"
                         :disabled="!pagination.next_page_url || loading"

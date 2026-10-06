@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="HateSense ID Lab — Platform Riset & Deteksi Ujaran Kebencian Multi-Platform berbasis Hierarchical IndoBERT.">
-    <title>HateSense ID Lab — Platform Deteksi Ujaran Kebencian Multi-Platform</title>
+    <meta name="description" content="HateSense ID Lab — Multi-platform hate speech detection powered by Hierarchical IndoBERT.">
+    <title>HateSense ID Lab — Multi-Platform Hate Speech Detection</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,25 +28,25 @@
                     HATESENSE <span style="color:var(--color-primary);">ID LAB</span>
                 </span>
                 <span style="font-family:var(--font-mono);font-size:0.625rem;color:var(--color-text-muted);letter-spacing:0.04em;">
-                    LAB RISET & DETEKSI NLP
+                    NLP RESEARCH & DETECTION LAB
                 </span>
             </div>
         </a>
 
         <nav class="masthead-nav hidden md:flex">
-            <a href="#fitur" class="masthead-link">§ 01.0 FITUR SISTEM</a>
-            <a href="#taksonomi" class="masthead-link">§ 02.0 TAKSONOMI 6 KELAS</a>
+            <a href="#fitur" class="masthead-link">§ 01.0 SYSTEM FEATURES</a>
+            <a href="#taksonomi" class="masthead-link">§ 02.0 SIX-CLASS TAXONOMY</a>
         </nav>
     </div>
 
     <div style="display:flex;align-items:center;gap:0.75rem;">
         @auth
             <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">
-                <span>BUKA DASHBOARD [→]</span>
+                <span>OPEN DASHBOARD [→]</span>
             </a>
         @else
             <a href="{{ route('login') }}" class="btn btn-primary btn-sm">
-                <span>MASUK PORTAL [→]</span>
+                <span>ENTER PORTAL [→]</span>
             </a>
         @endauth
     </div>
@@ -62,33 +62,33 @@
         <div>
             <div style="display:inline-flex;align-items:center;gap:0.5rem;margin-bottom:1.25rem;">
                 <span class="badge badge-black">RESEARCH PLATFORM</span>
-                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">BENCHMARK KORPUS BAHASA INDONESIA</span>
+                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">INDONESIAN LANGUAGE BENCHMARK CORPUS</span>
             </div>
 
             <h1 style="font-size:clamp(2.5rem,5vw,3.75rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;color:#0A0A0A;margin:0 0 1.25rem;">
-                SISTEM DETEKSI<br>
-                <span style="background:var(--color-danger);padding:0 0.25rem;border:2px solid #0A0A0A;">UJARAN KEBENCIAN</span><br>
+                HATE SPEECH<br>
+                <span style="background:var(--color-danger);padding:0 0.25rem;border:2px solid #0A0A0A;">DETECTION SYSTEM</span><br>
                 MULTI-PLATFORM
             </h1>
 
             <p style="font-size:1.0625rem;line-height:1.7;color:#262626;max-width:540px;margin:0 0 2rem;">
-                Identifikasi provokasi dan ujaran kebencian dari korpus media sosial <strong style="color:#0A0A0A;">Twitter (𝕏)</strong> dan <strong style="color:#0A0A0A;">Threads</strong> menggunakan model pra-latih <strong style="color:#0A0A0A;">Hierarchical IndoBERT</strong> dan kamus normalisasi Kamusalay 15.000 entri.
+                Identify provocation and hate speech in social media corpora from <strong style="color:#0A0A0A;">Twitter (𝕏)</strong> and <strong style="color:#0A0A0A;">Threads</strong> using <strong style="color:#0A0A0A;">Hierarchical IndoBERT</strong> and the 15,000-entry Kamusalay normalization lexicon.
             </p>
 
             <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem;">
                 @auth
                     <a href="{{ route('analyses.create') }}" class="btn btn-primary btn-lg">
-                        <span>+ MULAI INVESTIGASI BARU</span>
+                        <span>+ START NEW ANALYSIS</span>
                     </a>
                     <a href="{{ route('dashboard') }}" class="btn btn-outline btn-lg">
-                        <span>MENUJU OVERVIEW</span>
+                        <span>OPEN DASHBOARD</span>
                     </a>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-primary btn-lg">
-                        <span>MASUK KE PORTAL LAB</span>
+                        <span>ENTER LAB PORTAL</span>
                     </a>
                     <a href="#taksonomi" class="btn btn-outline btn-lg">
-                        <span>TAKSONOMI 6 KELAS [↓]</span>
+                        <span>SIX-CLASS TAXONOMY [↓]</span>
                     </a>
                 @endauth
             </div>
@@ -97,15 +97,15 @@
             <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:1rem;border-top:2px solid #0A0A0A;padding-top:1.25rem;">
                 <div>
                     <span class="stat-block-val" style="font-size:1.75rem;">15.167</span>
-                    <span class="stat-block-label" style="display:block;margin-top:2px;">KOSAKATA SLANG</span>
+                    <span class="stat-block-label" style="display:block;margin-top:2px;">SLANG TERMS</span>
                 </div>
                 <div>
-                    <span class="stat-block-val" style="font-size:1.75rem;">6 KELAS</span>
-                    <span class="stat-block-label" style="display:block;margin-top:2px;">TAKSONOMI L2</span>
+                    <span class="stat-block-val" style="font-size:1.75rem;">6 CLASSES</span>
+                    <span class="stat-block-label" style="display:block;margin-top:2px;">LEVEL 2 TAXONOMY</span>
                 </div>
                 <div>
-                    <span class="stat-block-val" style="font-size:1.75rem;">2 SUMBER</span>
-                    <span class="stat-block-label" style="display:block;margin-top:2px;">𝕏 & ⊙ CRAWLER</span>
+                    <span class="stat-block-val" style="font-size:1.75rem;">2 SOURCES</span>
+                    <span class="stat-block-label" style="display:block;margin-top:2px;">𝕏 & ⊙ CRAWLERS</span>
                 </div>
             </div>
         </div>
@@ -116,14 +116,14 @@
                 <div style="border-bottom:2px solid #0A0A0A;padding-bottom:0.75rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;">
                     <div>
                         <span class="badge badge-black" style="font-size:0.625rem;">SAMPLE DOSSIER</span>
-                        <h2 style="font-size:1.0625rem;font-weight:900;color:#0A0A0A;margin:2px 0 0;">Demo Klasifikasi Verbatim</h2>
+                        <h2 style="font-size:1.0625rem;font-weight:900;color:#0A0A0A;margin:2px 0 0;">Verbatim Classification Demo</h2>
                     </div>
                     <span class="badge badge-safe">INDOBERT ACTIVE</span>
                 </div>
 
                 {{-- Sample Text with XAI Highlight --}}
                 <div class="card-flat" style="padding:1rem;margin-bottom:1.25rem;">
-                    <span class="stat-block-label" style="margin-bottom:0.35rem;display:block;">TEKS KORPUS ANALISIS:</span>
+                    <span class="stat-block-label" style="margin-bottom:0.35rem;display:block;">ANALYSIS CORPUS TEXT:</span>
                     <div style="font-size:0.9375rem;line-height:1.7;color:#0A0A0A;">
                         "Dasar <span class="xai-toxic">pejabat penipu</span> tidak becus, sengaja <span class="xai-toxic">merusak tatanan bangsa</span> demi kepentingan antek!"
                     </div>
@@ -134,15 +134,15 @@
                     <div style="background:var(--color-danger);border:1px solid #0A0A0A;padding:0.75rem;display:flex;align-items:center;justify-content:space-between;">
                         <div>
                             <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:800;color:#0A0A0A;display:block;">LEVEL 1: SENTIMEN</span>
-                            <span style="font-size:1rem;font-weight:900;color:#0A0A0A;">Ujaran Kebencian (Hate Speech)</span>
+                            <span style="font-size:1rem;font-weight:900;color:#0A0A0A;">Hate Speech</span>
                         </div>
                         <span style="font-family:var(--font-mono);font-size:1.125rem;font-weight:900;color:#0A0A0A;">96.4%</span>
                     </div>
 
                     <div style="background:var(--color-primary-bg);border:1px solid var(--color-primary);padding:0.75rem;display:flex;align-items:center;justify-content:space-between;">
                         <div>
-                            <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:800;color:var(--color-primary);display:block;">LEVEL 2: TAKSONOMI</span>
-                            <span style="font-size:1rem;font-weight:900;color:var(--color-primary);">Delegitimasi Institusi</span>
+                            <span style="font-family:var(--font-mono);font-size:0.6875rem;font-weight:800;color:var(--color-primary);display:block;">LEVEL 2: TAXONOMY</span>
+                            <span style="font-size:1rem;font-weight:900;color:var(--color-primary);">Institutional Delegitimization</span>
                         </div>
                         <span style="font-family:var(--font-mono);font-size:1.125rem;font-weight:900;color:var(--color-primary);">89.1%</span>
                     </div>
@@ -150,8 +150,8 @@
 
                 {{-- Footer Telemetry --}}
                 <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #0A0A0A;padding-top:0.75rem;font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);">
-                    <span>LATENSI: ~42ms</span>
-                    <span>NORMALISASI: 2 KATA SLANG TERGANTI</span>
+                    <span>LATENCY: ~42ms</span>
+                    <span>NORMALIZATION: 2 SLANG TERMS REPLACED</span>
                 </div>
             </div>
         </div>
@@ -160,7 +160,7 @@
 </section>
 
 {{-- ═══════════════════════════════════════════════════════════
-     FITUR SISTEM SECTION
+    SYSTEM FEATURES SECTION
 ════════════════════════════════════════════════════════════ --}}
 <section id="fitur" style="scroll-margin-top:56px;padding:4rem 1.5rem;border-top:2px solid #0A0A0A;background:#FFFFFF;">
     <div style="max-width:1440px;margin:0 auto;">
@@ -168,18 +168,18 @@
             <div>
                 <span class="badge badge-black">SEKSI § 01.0</span>
                 <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0.25rem 0 0;">
-                    MODUL DETEKSI & FITUR SISTEM
+                    DETECTION MODULES & SYSTEM FEATURES
                 </h2>
             </div>
-            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">6 KOMPONEN INTEGRASI SISTEM</span>
+            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">6 INTEGRATED COMPONENTS</span>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.5rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr));gap:1.5rem;">
             <div class="card" style="padding:1.5rem;">
                 <span class="stat-block-label">MODUL 01</span>
                 <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Crawling Multi-Platform</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Pengambilan postingan dari X (Twitter) dan Threads (Meta) secara paralel menggunakan Playwright browser automation berotentikasi sesi persisten.
+                    Collect posts from X (Twitter) and Threads (Meta) in parallel using authenticated persistent Playwright browser sessions.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-black">𝕏 TWITTER</span>
@@ -191,7 +191,7 @@
                 <span class="stat-block-label">MODUL 02</span>
                 <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Normalisasi Kamusalay</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Pembersihan teks mentah dengan kamus slang 15.000+ entri, pembersihan regex untuk mention/hashtag/URL, dan case folding terstandar.
+                    Clean raw text with a 15,000+ entry slang lexicon, regex filters for mentions, hashtags, and URLs, plus standard case folding.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-mono">15.167 SLANG</span>
@@ -203,7 +203,7 @@
                 <span class="stat-block-label">MODUL 03</span>
                 <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Inferensi Hierarkis IndoBERT</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Klasifikasi 2 tingkat: Level 1 menyaring sentimen biner (Hate/Non-Hate), Level 2 mengidentifikasi 6 taksonomi kebencian spesifik.
+                    Two-stage classification: Level 1 screens binary sentiment (Hate/Non-Hate), while Level 2 identifies six specific hate speech classes.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-black">DUAL-LEVEL</span>
@@ -213,9 +213,9 @@
 
             <div class="card" style="padding:1.5rem;">
                 <span class="stat-block-label">MODUL 04</span>
-                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Visualisasi Komparatif</h3>
+                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Comparative Visualization</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Dashboard analitik dengan matriks disparitas platform, perbandingan volume, dan grafik distribusi sentimen ApexCharts.
+                    Analytics dashboards with platform disparity matrices, volume comparisons, and ApexCharts sentiment distributions.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-mono">APEXCHARTS</span>
@@ -225,21 +225,21 @@
 
             <div class="card" style="padding:1.5rem;">
                 <span class="stat-block-label">MODUL 05</span>
-                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Sandbox Pengujian Real-Time</h3>
+                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Real-Time Classifier</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Uji coba prediksi teks tunggal secara instan tanpa proses crawling, lengkap dengan probabilitas sentimen L1 dan taksonomi L2 langsung.
+                    Run instant single-text predictions without crawling, including Level 1 sentiment and Level 2 taxonomy probabilities.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-black">INSTANT INFERENCE</span>
-                    <span class="badge badge-safe">INTERAKTIF</span>
+                    <span class="badge badge-safe">INTERACTIVE</span>
                 </div>
             </div>
 
             <div class="card" style="padding:1.5rem;">
                 <span class="stat-block-label">MODUL 06</span>
-                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Ekspor Korpus Riset (CSV)</h3>
+                <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0.25rem 0 0.5rem;">Research Corpus Export (CSV)</h3>
                 <p style="font-size:0.875rem;line-height:1.6;color:var(--color-text-muted);margin:0 0 1rem;">
-                    Unduh seluruh data hasil analisis beserta teks pra-pembersihan, teks normal, skor keyakinan, dan metadata postingan.
+                    Download analysis records with pre-cleaning text, normalized text, confidence scores, and post metadata.
                 </p>
                 <div style="display:flex;gap:0.375rem;">
                     <span class="badge badge-mono">EXPORT CSV</span>
@@ -251,7 +251,7 @@
 </section>
 
 {{-- ═══════════════════════════════════════════════════════════
-     TAKSONOMI 6 SUB-KATEGORI SECTION
+    SIX-CLASS TAXONOMY SECTION
 ════════════════════════════════════════════════════════════ --}}
 <section id="taksonomi" style="scroll-margin-top:56px;padding:4rem 1.5rem;border-top:2px solid #0A0A0A;background:var(--color-canvas);">
     <div style="max-width:1440px;margin:0 auto;">
@@ -259,33 +259,33 @@
             <div>
                 <span class="badge badge-black">SEKSI § 02.0</span>
                 <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0.25rem 0 0;">
-                    TAKSONOMI 6 SUB-KATEGORI LEVEL 2
+                    SIX-CLASS LEVEL 2 TAXONOMY
                 </h2>
             </div>
-            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">KLASIFIKASI SPESIFIK INDOBERT</span>
+            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">INDOBERT-SPECIFIC CLASSIFICATION</span>
         </div>
 
         @php
         $cats = [
-            ['num'=>'01', 'name'=>'Delegitimasi Institusi', 'desc'=>'Ujaran yang melemahkan legitimasi lembaga negara, penegak hukum, atau otoritas publik sah.', 'is_hate'=>true],
-            ['num'=>'02', 'name'=>'Dehumanisasi', 'desc'=>'Pelecehan martabat dengan menyamakan manusia dengan hewan, penyakit, atau objek nista.', 'is_hate'=>true],
-            ['num'=>'03', 'name'=>'Ajakan Kekerasan', 'desc'=>'Seruan eksplisit maupun implisit untuk melakukan agresi fisik terhadap individu atau kelompok.', 'is_hate'=>true],
-            ['num'=>'04', 'name'=>'Hoaks Pemicu Kebencian', 'desc'=>'Fabrikasi informasi palsu yang sengaja disebarkan guna memicu permusuhan massa atau SARA.', 'is_hate'=>true],
-            ['num'=>'05', 'name'=>'Kutukan Agama & Personal', 'desc'=>'Serangan verbal, cercaan terhadap simbol keagamaan, atau stigmatisasi ras/etnis.', 'is_hate'=>true],
-            ['num'=>'06', 'name'=>'Tidak Relevan / Netral', 'desc'=>'Konten opini wajar atau diskusi publik yang tidak memenuhi kriteria ujaran kebencian.', 'is_hate'=>false],
+            ['num'=>'01', 'name'=>'Institutional Delegitimization', 'desc'=>'Language that undermines legitimate state institutions, law enforcement, or public authorities.', 'is_hate'=>true],
+            ['num'=>'02', 'name'=>'Dehumanization', 'desc'=>'Attacks on dignity that compare people to animals, diseases, or degrading objects.', 'is_hate'=>true],
+            ['num'=>'03', 'name'=>'Incitement to Violence', 'desc'=>'Explicit or implicit calls for physical aggression against individuals or groups.', 'is_hate'=>true],
+            ['num'=>'04', 'name'=>'Hate-Baiting Hoax', 'desc'=>'Fabricated information deliberately spread to provoke mass hostility or identity-based hatred.', 'is_hate'=>true],
+            ['num'=>'05', 'name'=>'Religious & Personal Abuse', 'desc'=>'Verbal attacks, contempt for religious symbols, or racial and ethnic stigmatization.', 'is_hate'=>true],
+            ['num'=>'06', 'name'=>'Non-Hate / Neutral', 'desc'=>'Ordinary opinions or public discussion that do not meet hate speech criteria.', 'is_hate'=>false],
         ];
         @endphp
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:1.25rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(320px, 100%), 1fr));gap:1.25rem;">
             @foreach($cats as $c)
             <div class="card" style="padding:1.25rem;display:flex;flex-direction:column;justify-content:space-between;gap:0.75rem;{{ !$c['is_hate'] ? 'background:var(--color-primary-bg);border-color:var(--color-primary);' : '' }}">
                 <div>
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                        <span class="stat-block-label">KELAS § 02.{{ $c['num'] }}</span>
+                        <span class="stat-block-label">CLASS § 02.{{ $c['num'] }}</span>
                         @if($c['is_hate'])
-                            <span class="badge badge-hate" style="font-size:0.625rem;">TOKSIK L2</span>
+                            <span class="badge badge-hate" style="font-size:0.625rem;">HATE L2</span>
                         @else
-                            <span class="badge badge-safe" style="font-size:0.625rem;">NON-TOKSIK</span>
+                            <span class="badge badge-safe" style="font-size:0.625rem;">NON-HATE</span>
                         @endif
                     </div>
                     <h3 style="font-size:1.125rem;font-weight:900;color:#0A0A0A;margin:0 0 0.35rem;">{{ $c['name'] }}</h3>
