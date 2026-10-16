@@ -30,7 +30,7 @@ return new class extends Migration
         if ($analysisCount > 0) {
             Log::warning(
                 "Akun demo legacy {$user->email} TIDAK dihapus: masih memiliki "
-                . "{$analysisCount} sesi analisis. Pindahkan atau hapus analisisnya lebih dulu."
+                ."{$analysisCount} sesi analisis. Pindahkan atau hapus analisisnya lebih dulu."
             );
 
             return;

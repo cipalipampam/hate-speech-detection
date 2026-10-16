@@ -26,25 +26,25 @@ class AnalysisService
     {
         // 1. Simpan konfigurasi awal ke tabel analyses
         $analysis = Analysis::create([
-            'user_id'          => $userId,
-            'title'            => $data['title'],
-            'platform'         => $data['platform'],
-            'keywords'         => $data['keywords'],
-            'search_mode'      => $data['search_mode'],
-            'max_links'        => $data['max_links'] ?? 50,
+            'user_id' => $userId,
+            'title' => $data['title'],
+            'platform' => $data['platform'],
+            'keywords' => $data['keywords'],
+            'search_mode' => $data['search_mode'],
+            'max_links' => $data['max_links'] ?? 50,
             'max_scroll_steps' => $data['max_scroll_steps'] ?? 300,
-            'headless'         => $data['headless'] ?? false,
-            'status'           => 'queued',
+            'headless' => $data['headless'] ?? false,
+            'status' => 'queued',
         ]);
 
         // 2. Kirim request asynchronous ke FastAPI
         $apiResult = $this->fastApiClient->runPipeline([
-            'keywords'         => $data['keywords'],
-            'platform'         => $data['platform'],
-            'search_mode'      => $data['search_mode'],
-            'max_links'        => $data['max_links'] ?? 50,
+            'keywords' => $data['keywords'],
+            'platform' => $data['platform'],
+            'search_mode' => $data['search_mode'],
+            'max_links' => $data['max_links'] ?? 50,
             'max_scroll_steps' => $data['max_scroll_steps'] ?? 300,
-            'headless'         => $data['headless'] ?? false,
+            'headless' => $data['headless'] ?? false,
         ]);
 
         if ($apiResult['success'] && isset($apiResult['data']['job_id'])) {
@@ -63,14 +63,13 @@ class AnalysisService
             }
 
             $analysis->update([
-                'status'        => 'failed',
+                'status' => 'failed',
                 'error_message' => $errMsg,
             ]);
         }
 
         return $analysis;
     }
-
 
     /**
      * Memeriksa status terbaru dari FastAPI dan menyinkronkan data via AnalysisImportService.
@@ -85,30 +84,32 @@ class AnalysisService
         // Jika tidak memiliki job_id dari server AI, tandai gagal
         if (empty($analysis->job_id)) {
             $analysis->update([
-                'status'        => 'failed',
+                'status' => 'failed',
                 'error_message' => $analysis->error_message ?? 'Sesi analisis tidak memiliki ID pekerjaan (job_id) di server AI.',
             ]);
+
             return $analysis;
         }
 
         $statusResult = $this->fastApiClient->getPipelineStatus($analysis->job_id);
 
-        if (!$statusResult['success']) {
+        if (! $statusResult['success']) {
             $httpStatus = $statusResult['http_status'] ?? 0;
 
             // Hanya tandai FAILED jika server AI secara eksplisit mengembalikan 404 (Job Not Found)
             if ($httpStatus === 404) {
                 $analysis->update([
-                    'status'        => 'failed',
+                    'status' => 'failed',
                     'error_message' => 'Job analisis tidak ditemukan di server AI (kemungkinan server direstart). Silakan buat analisis baru.',
                 ]);
             }
+
             // Jika http_status === 0 (timeout sementara saat CPU sibuk klasifikasi IndoBERT):
             // JANGAN matikan analisis! Tetap biarkan berjalan agar pengecekan berikutnya dapat mengambil hasil.
             return $analysis->fresh();
         }
 
-        $jobData   = $statusResult['data'];
+        $jobData = $statusResult['data'];
         $apiStatus = $jobData['status'] ?? 'running';
 
         if ($apiStatus === 'success') {
@@ -116,9 +117,9 @@ class AnalysisService
             $this->importService->importFromFastApiResult($analysis, $jobData);
         } elseif ($apiStatus === 'error' || $apiStatus === 'failed') {
             $analysis->update([
-                'status'                 => 'failed',
+                'status' => 'failed',
                 'execution_time_seconds' => $jobData['elapsed_seconds'] ?? null,
-                'error_message'          => $jobData['error_detail'] ?? ($jobData['message'] ?? 'Terjadi kesalahan saat pemrosesan pipeline.'),
+                'error_message' => $jobData['error_detail'] ?? ($jobData['message'] ?? 'Terjadi kesalahan saat pemrosesan pipeline.'),
             ]);
         }
         // Jika status 'running' atau 'queued' → biarkan tetap berjalan
@@ -144,20 +145,20 @@ class AnalysisService
                     || str_contains($m, 'langkah 4') || str_contains($m, 'tahap 4') || str_contains($m, 'stage 4')
                     || str_contains($m, 'langkah 5')) {
                     $step = 4;
-                // Tahap 3: Preprocessing
+                    // Tahap 3: Preprocessing
                 } elseif (str_contains($m, 'preprocess') || str_contains($m, 'kamusalay') || str_contains($m, 'pembersihan')
                     || str_contains($m, 'normalisasi') || str_contains($m, 'langkah 3') || str_contains($m, 'tahap 3')
                     || str_contains($m, 'stage 3')) {
                     $step = 3;
-                // Tahap 2: Scraping — diperluas untuk mencakup variasi pesan aktual backend Python
-                // ("[X] Tahap 2: Deep Crawl postingan", "Stage 1 selesai", dst.)
+                    // Tahap 2: Scraping — diperluas untuk mencakup variasi pesan aktual backend Python
+                    // ("[X] Tahap 2: Deep Crawl postingan", "Stage 1 selesai", dst.)
                 } elseif (str_contains($m, 'scraping') || str_contains($m, 'crawling') || str_contains($m, 'crawl')
                     || str_contains($m, 'meluncurkan') || str_contains($m, 'tweet') || str_contains($m, 'thread')
                     || str_contains($m, 'unduh') || str_contains($m, 'langkah 2') || str_contains($m, 'tahap 2')
                     || str_contains($m, 'stage 2') || str_contains($m, 'deep crawl') || str_contains($m, 'postingan')
                     || str_contains($m, 'paralel') || str_contains($m, 'stage 1 selesai') || str_contains($m, 'tahap 1 selesai')) {
                     $step = 2;
-                // Tahap 1: Inisialisasi & Verifikasi Sesi
+                    // Tahap 1: Inisialisasi & Verifikasi Sesi
                 } elseif (str_contains($m, 'browser') || str_contains($m, 'playwright') || str_contains($m, 'validasi')
                     || str_contains($m, 'inisialisasi') || str_contains($m, 'antrean') || str_contains($m, 'langkah 1')
                     || str_contains($m, 'tahap 1') || str_contains($m, 'stage 1') || str_contains($m, 'sesi')) {
@@ -201,7 +202,6 @@ class AnalysisService
         return $updatedCount;
     }
 
-
     // ──────────────────────────────────────────────────────────────────────────
     // 2. Query Data & Filtering
     // ──────────────────────────────────────────────────────────────────────────
@@ -225,7 +225,7 @@ class AnalysisService
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('keywords', 'like', "%{$search}%");
+                    ->orWhere('keywords', 'like', "%{$search}%");
             });
         }
 
@@ -249,7 +249,7 @@ class AnalysisService
             ->where('analysis_id', $analysis->id);
 
         // Filter Platform (X vs Threads) — case-insensitive agar "X" = "x", "Threads" = "threads"
-        if (!empty($filters['platform']) && strtolower($filters['platform']) !== 'all') {
+        if (! empty($filters['platform']) && strtolower($filters['platform']) !== 'all') {
             $platformFilter = strtolower($filters['platform']);
             if ($platformFilter === 'x' || $platformFilter === 'twitter') {
                 $query->whereRaw('LOWER(platform) IN (?, ?)', ['x', 'twitter']);
@@ -263,7 +263,7 @@ class AnalysisService
         // Filter Level 1 & Level 2 & Text Search pada Classification
         $labelLvl1 = $filters['label_lvl1'] ?? null;
         $labelLvl2 = $filters['label_lvl2'] ?? null;
-        $search    = $filters['search'] ?? null;
+        $search = $filters['search'] ?? null;
 
         if (($labelLvl1 && $labelLvl1 !== 'all') || ($labelLvl2 && $labelLvl2 !== 'all') || $search) {
             $query->whereHas('classification', function ($q) use ($labelLvl1, $labelLvl2, $search) {
@@ -291,21 +291,21 @@ class AnalysisService
     public function streamExportCsv(Analysis $analysis): StreamedResponse
     {
         $safeTitle = Str::slug($analysis->title, '_');
-        $filename  = "hatesense_analisis_{$analysis->id}_{$safeTitle}.csv";
+        $filename = "hatesense_analisis_{$analysis->id}_{$safeTitle}.csv";
 
         $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma'              => 'no-cache',
-            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires'             => '0',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
         $callback = function () use ($analysis) {
             $handle = fopen('php://output', 'w');
 
             // Tulis BOM UTF-8 agar karakter Indonesia/emoji terbaca mulus di Excel
-            fputs($handle, "\xEF\xBB\xBF");
+            fwrite($handle, "\xEF\xBB\xBF");
 
             // Header Kolom CSV
             fputcsv($handle, [
@@ -358,10 +358,10 @@ class AnalysisService
         if (is_string($value) && $value !== '') {
             $firstChar = $value[0];
             if (in_array($firstChar, ['=', '+', '-', '@', "\t", "\r"], true)) {
-                return "'" . $value;
+                return "'".$value;
             }
         }
+
         return $value;
     }
 }
-

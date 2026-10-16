@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
@@ -20,7 +21,7 @@ class UserManagementService
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -51,7 +52,7 @@ class UserManagementService
 
         return [
             'roleCounts' => [
-                'admin'   => (int) ($roleCounts['admin'] ?? 0),
+                'admin' => (int) ($roleCounts['admin'] ?? 0),
                 'analyst' => (int) ($roleCounts['analyst'] ?? 0),
             ],
             'activeCount' => User::where('is_active', true)->count(),
@@ -61,7 +62,7 @@ class UserManagementService
     /**
      * Role yang boleh dipilih admin pada form pengguna (hanya admin & analyst).
      */
-    public function getAssignableRoles()
+    public function getAssignableRoles(): Collection
     {
         return Role::whereIn('name', ['admin', 'analyst'])->orderBy('name')->get();
     }
@@ -72,13 +73,13 @@ class UserManagementService
     public function createUser(array $data): User
     {
         $user = User::create([
-            'name'      => $data['name'],
-            'email'     => $data['email'],
-            'password'  => Hash::make($data['password']),
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
             'is_active' => $data['is_active'] ?? true,
         ]);
 
-        if (!empty($data['role'])) {
+        if (! empty($data['role'])) {
             $role = Role::findOrCreate($data['role'], 'web');
             $user->syncRoles([$role]);
         }
@@ -92,18 +93,18 @@ class UserManagementService
     public function updateUser(User $user, array $data): User
     {
         $updateData = [
-            'name'      => $data['name'],
-            'email'     => $data['email'],
+            'name' => $data['name'],
+            'email' => $data['email'],
             'is_active' => isset($data['is_active']) ? (bool) $data['is_active'] : $user->is_active,
         ];
 
-        if (!empty($data['password'])) {
+        if (! empty($data['password'])) {
             $updateData['password'] = Hash::make($data['password']);
         }
 
         $user->update($updateData);
 
-        if (!empty($data['role'])) {
+        if (! empty($data['role'])) {
             $role = Role::findOrCreate($data['role'], 'web');
             $user->syncRoles([$role]);
         }
@@ -116,7 +117,7 @@ class UserManagementService
      */
     public function toggleActiveStatus(User $user): bool
     {
-        $user->is_active = !$user->is_active;
+        $user->is_active = ! $user->is_active;
         $user->save();
 
         return $user->is_active;
@@ -132,8 +133,8 @@ class UserManagementService
         $analysisCount = $user->analyses()->count();
 
         if ($analysisCount > 0) {
-            return 'Akun "' . $user->name . '" masih memiliki ' . $analysisCount
-                . ' sesi analisis. Nonaktifkan akun ini saja agar data riset tidak ikut terhapus.';
+            return 'Akun "'.$user->name.'" masih memiliki '.$analysisCount
+                .' sesi analisis. Nonaktifkan akun ini saja agar data riset tidak ikut terhapus.';
         }
 
         // Bersihkan baris pivot Spatie agar tidak menyisakan model_has_roles yatim.

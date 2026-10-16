@@ -26,16 +26,16 @@ class AnalysisSyncStatusTest extends TestCase
     private function makeRunningAnalysis(): Analysis
     {
         return Analysis::create([
-            'user_id'          => User::factory()->create()->id,
-            'job_id'           => 'job-uji-123',
-            'title'            => 'Analisis Uji Sync',
-            'platform'         => 'x',
-            'keywords'         => ['uji'],
-            'search_mode'      => 'latest',
-            'max_links'        => 10,
+            'user_id' => User::factory()->create()->id,
+            'job_id' => 'job-uji-123',
+            'title' => 'Analisis Uji Sync',
+            'platform' => 'x',
+            'keywords' => ['uji'],
+            'search_mode' => 'latest',
+            'max_links' => 10,
             'max_scroll_steps' => 10,
-            'headless'         => true,
-            'status'           => 'running',
+            'headless' => true,
+            'status' => 'running',
         ]);
     }
 
@@ -44,7 +44,7 @@ class AnalysisSyncStatusTest extends TestCase
         $fakeClient = Mockery::mock(FastAPIClientService::class);
         $fakeClient->shouldReceive('getPipelineStatus')->andReturn([
             'success' => true,
-            'data'    => $jobData,
+            'data' => $jobData,
         ]);
 
         return new AnalysisService($fakeClient, new AnalysisImportService($fakeClient));
@@ -55,7 +55,7 @@ class AnalysisSyncStatusTest extends TestCase
         $analysis = $this->makeRunningAnalysis();
 
         $synced = $this->serviceReturningJobStatus([
-            'status'  => 'running',
+            'status' => 'running',
             'message' => 'Polling job asinkron sedang berjalan...',
         ])->syncAnalysisStatus($analysis);
 
@@ -69,7 +69,7 @@ class AnalysisSyncStatusTest extends TestCase
         $analysis = $this->makeRunningAnalysis();
 
         $synced = $this->serviceReturningJobStatus([
-            'status'  => 'running',
+            'status' => 'running',
             'message' => 'Polling job asinkron sedang berjalan...',
         ])->syncAnalysisStatus($analysis);
 
@@ -82,7 +82,7 @@ class AnalysisSyncStatusTest extends TestCase
         $synced->save();
 
         $this->assertDatabaseHas('analyses', [
-            'id'     => $analysis->id,
+            'id' => $analysis->id,
             'status' => 'running',
         ]);
     }

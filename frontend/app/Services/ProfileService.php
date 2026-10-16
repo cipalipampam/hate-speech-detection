@@ -13,7 +13,7 @@ class ProfileService
     public function updateProfileInfo(User $user, array $data): bool
     {
         return $user->update([
-            'name'  => $data['name'],
+            'name' => $data['name'],
             'email' => $data['email'],
         ]);
     }

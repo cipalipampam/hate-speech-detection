@@ -22,50 +22,50 @@ class SinglePredictService
         $userId ??= Auth::id();
         $apiResult = $this->fastApiClient->classifySingle($text, $preprocess);
 
-        if (!$apiResult['success']) {
+        if (! $apiResult['success']) {
             return [
                 'success' => false,
                 'message' => $apiResult['message'] ?? 'Gagal melakukan klasifikasi teks.',
             ];
         }
 
-        $res  = $apiResult['data'];
+        $res = $apiResult['data'];
         $lvl1 = $res['level1'] ?? [];
         $lvl2 = $res['level2'] ?? [];
 
         $label1 = $lvl1['label'] ?? 'non_hate_speech';
         $label2 = ($label1 !== 'hate_speech') ? 'tidak_relevan' : ($lvl2['label'] ?? 'tidak_relevan');
-        $conf1  = (float) ($lvl1['confidence'] ?? 0.0);
-        $conf2  = ($label1 !== 'hate_speech') ? $conf1 : (float) ($lvl2['confidence'] ?? 0.0);
+        $conf1 = (float) ($lvl1['confidence'] ?? 0.0);
+        $conf2 = ($label1 !== 'hate_speech') ? $conf1 : (float) ($lvl2['confidence'] ?? 0.0);
 
         $record = SinglePrediction::create([
-            'user_id'            => $userId,
-            'input_text'         => $text,
-            'clean_text'         => $res['text'] ?? $text,
-            'label_lvl1'         => $label1,
-            'label_lvl2'         => $label2,
-            'confidence_lvl1'    => $conf1,
-            'confidence_lvl2'    => $conf2,
+            'user_id' => $userId,
+            'input_text' => $text,
+            'clean_text' => $res['text'] ?? $text,
+            'label_lvl1' => $label1,
+            'label_lvl2' => $label2,
+            'confidence_lvl1' => $conf1,
+            'confidence_lvl2' => $conf2,
             'probabilities_lvl1' => $lvl1['probabilities'] ?? null,
             'probabilities_lvl2' => ($label1 !== 'hate_speech') ? ['tidak_relevan' => 1.0] : ($lvl2['probabilities'] ?? null),
         ]);
 
         return [
             'success' => true,
-            'data'    => [
-                'id'                 => $record->id,
-                'input_text'         => $record->input_text,
-                'clean_text'         => $record->clean_text,
-                'is_hate_speech'     => ($record->label_lvl1 === 'hate_speech'),
-                'label_lvl1'         => $record->label_lvl1,
-                'label_lvl2'         => $record->label_lvl2,
-                'confidence_lvl1'    => $record->confidence_lvl1,
-                'confidence_lvl2'    => $record->confidence_lvl2,
+            'data' => [
+                'id' => $record->id,
+                'input_text' => $record->input_text,
+                'clean_text' => $record->clean_text,
+                'is_hate_speech' => ($record->label_lvl1 === 'hate_speech'),
+                'label_lvl1' => $record->label_lvl1,
+                'label_lvl2' => $record->label_lvl2,
+                'confidence_lvl1' => $record->confidence_lvl1,
+                'confidence_lvl2' => $record->confidence_lvl2,
                 'probabilities_lvl1' => $record->probabilities_lvl1,
                 'probabilities_lvl2' => $record->probabilities_lvl2,
-                'level1'             => $lvl1,
-                'level2'             => $lvl2,
-                'created_at'         => $record->created_at->format('d M Y, H:i'),
+                'level1' => $lvl1,
+                'level2' => $lvl2,
+                'created_at' => $record->created_at->format('d M Y, H:i'),
             ],
         ];
     }

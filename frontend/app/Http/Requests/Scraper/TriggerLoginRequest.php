@@ -52,7 +52,7 @@ class TriggerLoginRequest extends FormRequest
     {
         return [
             'platform.required' => 'Platform scraper wajib ditentukan.',
-            'platform.in'       => 'Platform tidak valid. Pilih X atau Threads.',
+            'platform.in' => 'Platform tidak valid. Pilih X atau Threads.',
         ];
     }
 

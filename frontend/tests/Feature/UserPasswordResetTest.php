@@ -40,11 +40,11 @@ class UserPasswordResetTest extends TestCase
     private function payload(User $target, string $password, ?string $confirmation = null): array
     {
         return [
-            'name'                  => $target->name,
-            'email'                 => $target->email,
-            'role'                  => 'analyst',
-            'is_active'             => '1',
-            'password'              => $password,
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'analyst',
+            'is_active' => '1',
+            'password' => $password,
             'password_confirmation' => $confirmation ?? $password,
         ];
     }
@@ -99,11 +99,11 @@ class UserPasswordResetTest extends TestCase
         $passwordLama = $target->password;
 
         $response = $this->actingAs($this->admin())->patch(route('admin.users.update', $target), [
-            'name'      => 'Nama Diubah',
-            'email'     => $target->email,
-            'role'      => 'analyst',
+            'name' => 'Nama Diubah',
+            'email' => $target->email,
+            'role' => 'analyst',
             'is_active' => '1',
-            'password'  => '',
+            'password' => '',
         ]);
 
         $response->assertRedirect();

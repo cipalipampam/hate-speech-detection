@@ -31,11 +31,11 @@ class DashboardMetricsService
         $totalNonHate = (int) ($stats->total_non_hate ?? 0);
 
         return [
-            'total_analyses'  => (int) ($stats->total_analyses ?? 0),
-            'total_opinions'  => $totalOpinions,
-            'total_hate'      => $totalHate,
-            'total_non_hate'  => $totalNonHate,
-            'avg_hate_pct'    => round((float) ($stats->avg_hate_pct ?? 0), 2),
+            'total_analyses' => (int) ($stats->total_analyses ?? 0),
+            'total_opinions' => $totalOpinions,
+            'total_hate' => $totalHate,
+            'total_non_hate' => $totalNonHate,
+            'avg_hate_pct' => round((float) ($stats->avg_hate_pct ?? 0), 2),
             'hate_percentage' => $totalOpinions > 0 ? round(($totalHate / $totalOpinions) * 100, 2) : 0.00,
         ];
     }
@@ -60,12 +60,12 @@ class DashboardMetricsService
     public function getLevel2BreakdownChartData(): array
     {
         $categories = [
-            'delegitimasi_institusi'  => 'Delegitimasi Institusi',
-            'dehumanisasi'            => 'Dehumanisasi',
-            'ajakan_kekerasan'        => 'Ajakan Kekerasan',
-            'hoaks_pemicu_kebencian'  => 'Hoaks Pemicu Kebencian',
-            'kutukan_agama_personal'  => 'Kutukan Agama & Personal',
-            'tidak_relevan'           => 'Tidak Relevan / Netral',
+            'delegitimasi_institusi' => 'Delegitimasi Institusi',
+            'dehumanisasi' => 'Dehumanisasi',
+            'ajakan_kekerasan' => 'Ajakan Kekerasan',
+            'hoaks_pemicu_kebencian' => 'Hoaks Pemicu Kebencian',
+            'kutukan_agama_personal' => 'Kutukan Agama & Personal',
+            'tidak_relevan' => 'Tidak Relevan / Netral',
         ];
 
         $counts = AnalysisClassification::select('label_lvl2', DB::raw('count(*) as total'))
@@ -87,7 +87,7 @@ class DashboardMetricsService
 
         return [
             'categories' => $labels,
-            'series'     => [
+            'series' => [
                 [
                     'name' => 'Jumlah Postingan',
                     'data' => $data,
@@ -118,7 +118,7 @@ class DashboardMetricsService
             $analysisStats = DB::table('analyses')
                 ->leftJoin('analysis_statistics', 'analyses.id', '=', 'analysis_statistics.analysis_id')
                 ->where('analyses.status', 'completed')
-                ->selectRaw("LOWER(analyses.platform) as plat, COALESCE(SUM(analysis_statistics.total_data), 0) as total")
+                ->selectRaw('LOWER(analyses.platform) as plat, COALESCE(SUM(analysis_statistics.total_data), 0) as total')
                 ->groupBy('plat')
                 ->pluck('total', 'plat')
                 ->toArray();
@@ -130,14 +130,14 @@ class DashboardMetricsService
         $total = $xCount + $threadsCount;
 
         return [
-            'labels'             => ['X (Twitter)', 'Threads (Meta)'],
-            'series'             => [$xCount, $threadsCount],
-            'colors'             => ['#0A0A0A', '#002FA7'],
-            'total'              => $total,
-            'x_count'            => $xCount,
-            'threads_count'      => $threadsCount,
-            'x_pct'              => $total > 0 ? round(($xCount / $total) * 100, 1) : 0,
-            'threads_pct'        => $total > 0 ? round(($threadsCount / $total) * 100, 1) : 0,
+            'labels' => ['X (Twitter)', 'Threads (Meta)'],
+            'series' => [$xCount, $threadsCount],
+            'colors' => ['#0A0A0A', '#002FA7'],
+            'total' => $total,
+            'x_count' => $xCount,
+            'threads_count' => $threadsCount,
+            'x_pct' => $total > 0 ? round(($xCount / $total) * 100, 1) : 0,
+            'threads_pct' => $total > 0 ? round(($threadsCount / $total) * 100, 1) : 0,
         ];
     }
 

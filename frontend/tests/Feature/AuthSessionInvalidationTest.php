@@ -33,13 +33,13 @@ class AuthSessionInvalidationTest extends TestCase
 
     public function test_sesi_dengan_hash_password_lama_dipaksa_logout(): void
     {
-        $user    = $this->analyst();
+        $user = $this->analyst();
         $hashLama = $user->getAuthPassword();
 
         // Ganti password lewat halaman Profil.
         $this->actingAs($user)->patch(route('profile.password'), [
-            'current_password'      => 'password',
-            'password'              => 'passwordbaru123',
+            'current_password' => 'password',
+            'password' => 'passwordbaru123',
             'password_confirmation' => 'passwordbaru123',
         ])->assertRedirect();
 

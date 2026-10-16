@@ -25,28 +25,28 @@ class AnalysisImportService
 
         // 1. Update status job di tabel analyses
         $analysis->update([
-            'status'                 => 'completed',
+            'status' => 'completed',
             'execution_time_seconds' => $jobData['elapsed_seconds'] ?? null,
-            'error_message'          => null,
+            'error_message' => null,
         ]);
 
         // 2. Simpan atau perbarui ringkasan agregasi di analysis_statistics
         AnalysisStatistic::updateOrCreate(
             ['analysis_id' => $analysis->id],
             [
-                'total_data'            => $stats['total_data'] ?? ($jobData['total_data'] ?? 0),
-                'hate_speech_count'     => $stats['hate_speech_count'] ?? 0,
+                'total_data' => $stats['total_data'] ?? ($jobData['total_data'] ?? 0),
+                'hate_speech_count' => $stats['hate_speech_count'] ?? 0,
                 'non_hate_speech_count' => $stats['non_hate_speech_count'] ?? 0,
-                'hate_speech_pct'       => $stats['hate_speech_pct'] ?? 0.00,
-                'avg_confidence_lvl1'   => $stats['avg_confidence_lvl1'] ?? 0.0000,
-                'avg_confidence_lvl2'   => $stats['avg_confidence_lvl2'] ?? 0.0000,
-                'level2_breakdown'      => $stats['level2_breakdown'] ?? [],
-                'platform_breakdown'    => $stats['platform_breakdown'] ?? [],
+                'hate_speech_pct' => $stats['hate_speech_pct'] ?? 0.00,
+                'avg_confidence_lvl1' => $stats['avg_confidence_lvl1'] ?? 0.0000,
+                'avg_confidence_lvl2' => $stats['avg_confidence_lvl2'] ?? 0.0000,
+                'level2_breakdown' => $stats['level2_breakdown'] ?? [],
+                'platform_breakdown' => $stats['platform_breakdown'] ?? [],
             ]
         );
 
         // 3. Catat metadata file ekspor di analysis_exports
-        if (!empty($jobData['exported_file'])) {
+        if (! empty($jobData['exported_file'])) {
             $this->recordExportFile($analysis, $jobData['exported_file']);
 
             // 4. Impor detail baris postingan dari file CSV (HTTP FastAPI / fallback filesystem)
@@ -62,14 +62,14 @@ class AnalysisImportService
         return AnalysisExport::updateOrCreate(
             [
                 'analysis_id' => $analysis->id,
-                'filename'    => $filename,
+                'filename' => $filename,
             ],
             [
-                'disk'       => 'backend',
-                'path'       => 'storage/exports/' . $filename,
-                'format'     => $format,
+                'disk' => 'backend',
+                'path' => 'storage/exports/'.$filename,
+                'format' => $format,
                 'size_bytes' => $sizeBytes,
-                'mime_type'  => $format === 'csv' ? 'text/csv' : 'application/octet-stream',
+                'mime_type' => $format === 'csv' ? 'text/csv' : 'application/octet-stream',
             ]
         );
     }
@@ -94,6 +94,7 @@ class AnalysisImportService
         if (! $this->fastApiClient->downloadExportToStream($filename, $file)) {
             fclose($file);
             Log::warning("File ekspor CSV gagal diambil via endpoint FastAPI: {$filename}");
+
             return 0;
         }
 
@@ -110,8 +111,9 @@ class AnalysisImportService
 
         $header = fgetcsv($file);
 
-        if (!$header) {
+        if (! $header) {
             fclose($file);
+
             return 0;
         }
 
@@ -142,7 +144,7 @@ class AnalysisImportService
             }
         }
 
-        if (!empty($batch)) {
+        if (! empty($batch)) {
             $totalImported += $this->insertBatchTransactional($analysis->id, $batch);
         }
 
@@ -170,12 +172,12 @@ class AnalysisImportService
                 // Untuk analisis "both", platform per-post dideteksi dari source_url
                 // agar filter platform pada halaman detail bisa bekerja dengan benar
                 $csvPlatform = $d['platform'] ?? '';
-                $sourceUrl   = $d['source'] ?? ($d['source_thread'] ?? '');
+                $sourceUrl = $d['source'] ?? ($d['source_thread'] ?? '');
 
-                if (!empty($csvPlatform) && strtolower($csvPlatform) !== 'unknown' && strtolower($csvPlatform) !== 'both') {
+                if (! empty($csvPlatform) && strtolower($csvPlatform) !== 'unknown' && strtolower($csvPlatform) !== 'both') {
                     // CSV sudah punya nilai spesifik (X / Threads) — gunakan langsung
                     $platform = $csvPlatform;
-                } elseif (!empty($sourceUrl)) {
+                } elseif (! empty($sourceUrl)) {
                     // Deteksi dari source URL
                     $lowerUrl = strtolower($sourceUrl);
                     if (str_contains($lowerUrl, 'x.com') || str_contains($lowerUrl, 'twitter.com')) {
@@ -191,34 +193,34 @@ class AnalysisImportService
 
                 // 1. Insert ke analysis_posts (Metadata ringan)
                 $postId = DB::table('analysis_posts')->insertGetId([
-                    'analysis_id'     => $analysisId,
-                    'platform'        => $platform,
-                    'source_url'      => $d['source'] ?? ($d['source_thread'] ?? null),
+                    'analysis_id' => $analysisId,
+                    'platform' => $platform,
+                    'source_url' => $d['source'] ?? ($d['source_thread'] ?? null),
                     'author_username' => $d['user_id'] ?? ($d['username'] ?? 'anonymous'),
-                    'post_type'       => $d['type'] ?? 'Original Post',
-                    'post_date'       => $d['date'] ?? null,
-                    'created_at'      => $now,
-                    'updated_at'      => $now,
+                    'post_type' => $d['type'] ?? 'Original Post',
+                    'post_date' => $d['date'] ?? null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
 
                 $labelLvl1 = $d['label_lvl1'] ?? 'non_hate_speech';
                 $labelLvl2 = ($labelLvl1 !== 'hate_speech') ? 'tidak_relevan' : ($d['label_lvl2'] ?? 'tidak_relevan');
-                $confLvl1  = (float) ($d['confidence_lvl1'] ?? 0.0);
-                $confLvl2  = ($labelLvl1 !== 'hate_speech') ? $confLvl1 : (float) ($d['confidence_lvl2'] ?? 0.0);
+                $confLvl1 = (float) ($d['confidence_lvl1'] ?? 0.0);
+                $confLvl2 = ($labelLvl1 !== 'hate_speech') ? $confLvl1 : (float) ($d['confidence_lvl2'] ?? 0.0);
 
                 // 2. Insert ke analysis_classifications (Konten teks & label hasil IndoBERT)
                 DB::table('analysis_classifications')->insert([
-                    'post_id'            => $postId,
-                    'raw_content'        => $d['content'] ?? ($d['raw_text'] ?? ''),
-                    'clean_content'      => $d['clean_text'] ?? ($d['content'] ?? ''),
-                    'label_lvl1'         => $labelLvl1,
-                    'confidence_lvl1'    => $confLvl1,
+                    'post_id' => $postId,
+                    'raw_content' => $d['content'] ?? ($d['raw_text'] ?? ''),
+                    'clean_content' => $d['clean_text'] ?? ($d['content'] ?? ''),
+                    'label_lvl1' => $labelLvl1,
+                    'confidence_lvl1' => $confLvl1,
                     'probabilities_lvl1' => null,
-                    'label_lvl2'         => $labelLvl2,
-                    'confidence_lvl2'    => $confLvl2,
+                    'label_lvl2' => $labelLvl2,
+                    'confidence_lvl2' => $confLvl2,
                     'probabilities_lvl2' => null,
-                    'created_at'         => $now,
-                    'updated_at'         => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]);
 
                 $count++;

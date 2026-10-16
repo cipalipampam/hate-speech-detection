@@ -25,7 +25,7 @@ class PredictController extends Controller
     {
         $result = $this->predictService->predict($request->validated('text'));
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return response()->json([
                 'success' => false,
                 'message' => $result['message'] ?? 'Server AI tidak merespons. Pastikan FastAPI sedang berjalan.',
@@ -34,7 +34,7 @@ class PredictController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $result['data'],
+            'data' => $result['data'],
         ]);
     }
 }

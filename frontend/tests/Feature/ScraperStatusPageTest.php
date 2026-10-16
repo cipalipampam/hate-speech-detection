@@ -44,19 +44,19 @@ class ScraperStatusPageTest extends TestCase
     {
         $client = Mockery::mock(FastAPIClientService::class);
         $client->shouldReceive('getTelemetryData')->andReturn([
-            'isServerOnline'   => true,
-            'sessionData'      => $sessionData + [
-                'x'       => ['is_valid' => false, 'message' => 'Cookie X kadaluarsa.'],
+            'isServerOnline' => true,
+            'sessionData' => $sessionData + [
+                'x' => ['is_valid' => false, 'message' => 'Cookie X kadaluarsa.'],
                 'threads' => ['is_valid' => true, 'message' => 'Sesi Threads aktif.'],
             ],
             'loginEnvironment' => [
-                'runtime'    => $guiMode === 'novnc' ? 'docker' : 'local',
-                'gui_mode'   => $guiMode,
-                'novnc_url'  => 'http://localhost:6080/vnc.html',
-                'message'    => 'Pesan lingkungan GUI dari server AI.',
+                'runtime' => $guiMode === 'novnc' ? 'docker' : 'local',
+                'gui_mode' => $guiMode,
+                'novnc_url' => 'http://localhost:6080/vnc.html',
+                'message' => 'Pesan lingkungan GUI dari server AI.',
             ],
-            'statusResult'     => ['success' => true, 'data' => []],
-            'serviceChannel'   => 'Internal Microservice Bridge',
+            'statusResult' => ['success' => true, 'data' => []],
+            'serviceChannel' => 'Internal Microservice Bridge',
         ]);
 
         $this->app->instance(FastAPIClientService::class, $client);

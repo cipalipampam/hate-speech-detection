@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 class FastAPIClientService
 {
     protected string $baseUrl;
+
     protected int $timeout;
 
     public function __construct()
@@ -48,11 +49,13 @@ class FastAPIClientService
                     $messages[] = $err['msg'];
                 }
             }
-            if (!empty($messages)) {
+            if (! empty($messages)) {
                 return implode(', ', $messages);
             }
+
             return json_encode($detail);
         }
+
         return $response->json('message') ?? $fallback;
     }
 
@@ -70,18 +73,20 @@ class FastAPIClientService
             if ($response->successful()) {
                 return [
                     'success' => true,
-                    'data'    => $response->json(),
+                    'data' => $response->json(),
                 ];
             }
+
             return [
                 'success' => false,
                 'message' => $response->json('detail') ?? 'Gagal mengambil status sesi dari server AI.',
             ];
         } catch (Exception $e) {
-            Log::debug("FastAPI getAuthStatus error: " . $e->getMessage());
+            Log::debug('FastAPI getAuthStatus error: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => 'Server AI Python tidak dapat dihubungi: ' . $e->getMessage(),
+                'message' => 'Server AI Python tidak dapat dihubungi: '.$e->getMessage(),
             ];
         }
     }
@@ -101,6 +106,7 @@ class FastAPIClientService
         }
 
         $status = $this->getAuthStatus();
+
         return (bool) ($status['success'] ?? false);
     }
 
@@ -109,20 +115,20 @@ class FastAPIClientService
      */
     public function getTelemetryData(): array
     {
-        $statusResult    = $this->getAuthStatus();
-        $isServerOnline  = (bool) ($statusResult['success'] ?? false);
-        $sessionData     = $this->sanitizeSessionData($statusResult['data'] ?? null);
+        $statusResult = $this->getAuthStatus();
+        $isServerOnline = (bool) ($statusResult['success'] ?? false);
+        $sessionData = $this->sanitizeSessionData($statusResult['data'] ?? null);
 
         // Runtime & mode GUI login (novnc saat Docker, native saat lokal).
         // Menjadi sumber kebenaran tunggal untuk instruksi login di UI.
         $loginEnvironment = $statusResult['data']['login_environment'] ?? null;
 
         return [
-            'isServerOnline'   => $isServerOnline,
-            'sessionData'      => $sessionData,
+            'isServerOnline' => $isServerOnline,
+            'sessionData' => $sessionData,
             'loginEnvironment' => $loginEnvironment,
-            'statusResult'     => $statusResult,
-            'serviceChannel'   => 'Internal Microservice Bridge',
+            'statusResult' => $statusResult,
+            'serviceChannel' => 'Internal Microservice Bridge',
         ];
     }
 
@@ -139,7 +145,7 @@ class FastAPIClientService
         $pathPattern = '/^([A-Za-z]:\\\\|\/[a-z])/';
 
         foreach (['x', 'threads'] as $platform) {
-            if (!isset($sessionData[$platform])) {
+            if (! isset($sessionData[$platform])) {
                 continue;
             }
 
@@ -175,18 +181,20 @@ class FastAPIClientService
             if ($response->successful()) {
                 return [
                     'success' => true,
-                    'data'    => $response->json(),
+                    'data' => $response->json(),
                 ];
             }
+
             return [
                 'success' => false,
                 'message' => $response->json('detail') ?? 'Gagal memicu proses login.',
             ];
         } catch (Exception $e) {
-            Log::error("FastAPI triggerLogin error: " . $e->getMessage());
+            Log::error('FastAPI triggerLogin error: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => 'Gagal terhubung ke server AI: ' . $e->getMessage(),
+                'message' => 'Gagal terhubung ke server AI: '.$e->getMessage(),
             ];
         }
     }
@@ -207,21 +215,22 @@ class FastAPIClientService
         try {
             // Gunakan timeout 60 detik khusus untuk inferensi model (cold-start bisa lambat)
             $response = $this->client(60)->post('/classify/single', [
-                'text'       => $text,
+                'text' => $text,
                 'preprocess' => $preprocess,
             ]);
             if ($response->successful()) {
                 return [
                     'success' => true,
-                    'data'    => $response->json(),
+                    'data' => $response->json(),
                 ];
             }
+
             return [
                 'success' => false,
                 'message' => $this->extractErrorMessage($response, 'Gagal melakukan klasifikasi teks.'),
             ];
         } catch (Exception $e) {
-            Log::error("FastAPI classifySingle error: " . $e->getMessage());
+            Log::error('FastAPI classifySingle error: '.$e->getMessage());
             // Pesan error yang lebih ramah pengguna
             $msg = $e->getMessage();
             if (str_contains($msg, 'timed out') || str_contains($msg, 'Operation timed out')) {
@@ -230,7 +239,8 @@ class FastAPIClientService
             if (str_contains($msg, 'Connection refused') || str_contains($msg, 'Failed to connect')) {
                 return ['success' => false, 'message' => 'Server AI tidak dapat dihubungi. Pastikan subsistem pemrosesan AI telah aktif.'];
             }
-            return ['success' => false, 'message' => 'Kesalahan komunikasi dengan server AI: ' . $msg];
+
+            return ['success' => false, 'message' => 'Kesalahan komunikasi dengan server AI: '.$msg];
         }
     }
 
@@ -245,28 +255,30 @@ class FastAPIClientService
     {
         try {
             $payload = [
-                'keywords'         => $params['keywords'] ?? [],
-                'platform'         => $params['platform'] ?? 'both',
-                'search_mode'      => $params['search_mode'] ?? 'latest',
-                'max_links'        => (int) ($params['max_links'] ?? 50),
+                'keywords' => $params['keywords'] ?? [],
+                'platform' => $params['platform'] ?? 'both',
+                'search_mode' => $params['search_mode'] ?? 'latest',
+                'max_links' => (int) ($params['max_links'] ?? 50),
                 'max_scroll_steps' => (int) ($params['max_scroll_steps'] ?? 300),
-                'headless'         => (bool) ($params['headless'] ?? false),
-                'export_csv'       => true,
+                'headless' => (bool) ($params['headless'] ?? false),
+                'export_csv' => true,
             ];
 
             $response = $this->client()->post('/pipeline/run', $payload);
             if ($response->status() === 202 || $response->successful()) {
                 return [
                     'success' => true,
-                    'data'    => $response->json(),
+                    'data' => $response->json(),
                 ];
             }
+
             return [
                 'success' => false,
                 'message' => $this->extractErrorMessage($response, 'Gagal membuat job analisis pipeline.'),
             ];
         } catch (Exception $e) {
-            Log::error("FastAPI runPipeline error: " . $e->getMessage());
+            Log::error('FastAPI runPipeline error: '.$e->getMessage());
+
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
@@ -280,22 +292,24 @@ class FastAPIClientService
             $response = $this->client()->get("/pipeline/status/{$jobId}");
             if ($response->successful()) {
                 return [
-                    'success'     => true,
-                    'data'        => $response->json(),
+                    'success' => true,
+                    'data' => $response->json(),
                     'http_status' => $response->status(),
                 ];
             }
+
             return [
-                'success'     => false,
+                'success' => false,
                 'http_status' => $response->status(),
-                'message'     => $this->extractErrorMessage($response, 'Job pipeline tidak ditemukan.'),
+                'message' => $this->extractErrorMessage($response, 'Job pipeline tidak ditemukan.'),
             ];
         } catch (Exception $e) {
-            Log::error("FastAPI getPipelineStatus error: " . $e->getMessage());
+            Log::error('FastAPI getPipelineStatus error: '.$e->getMessage());
+
             return [
-                'success'     => false,
+                'success' => false,
                 'http_status' => 0,
-                'message'     => $e->getMessage(),
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -316,12 +330,13 @@ class FastAPIClientService
                 return true;
             }
 
-            Log::warning("FastAPI downloadExportToStream gagal untuk {$filename}: HTTP " . $response->status());
+            Log::warning("FastAPI downloadExportToStream gagal untuk {$filename}: HTTP ".$response->status());
+
             return false;
         } catch (Exception $e) {
-            Log::error("FastAPI downloadExportToStream error untuk {$filename}: " . $e->getMessage());
+            Log::error("FastAPI downloadExportToStream error untuk {$filename}: ".$e->getMessage());
+
             return false;
         }
     }
 }
-

@@ -70,15 +70,15 @@ class UserDeletionTest extends TestCase
         $target = $this->analyst();
 
         Analysis::create([
-            'user_id'          => $target->id,
-            'title'            => 'Analisis Milik Target',
-            'platform'         => 'x',
-            'keywords'         => ['uji'],
-            'search_mode'      => 'latest',
-            'max_links'        => 10,
+            'user_id' => $target->id,
+            'title' => 'Analisis Milik Target',
+            'platform' => 'x',
+            'keywords' => ['uji'],
+            'search_mode' => 'latest',
+            'max_links' => 10,
             'max_scroll_steps' => 10,
-            'headless'         => true,
-            'status'           => 'completed',
+            'headless' => true,
+            'status' => 'completed',
         ]);
 
         $response = $this->actingAs($this->admin())
@@ -93,7 +93,7 @@ class UserDeletionTest extends TestCase
     public function test_analyst_tidak_dapat_menghapus_pengguna(): void
     {
         $analyst = $this->analyst();
-        $target  = $this->analyst();
+        $target = $this->analyst();
 
         $this->actingAs($analyst)
             ->delete(route('admin.users.destroy', $target))

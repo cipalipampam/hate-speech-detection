@@ -20,7 +20,7 @@ class SinglePredictRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'text'       => ['required', 'string', 'min:3', 'max:2000'],
+            'text' => ['required', 'string', 'min:3', 'max:2000'],
             'preprocess' => ['nullable', 'boolean'],
         ];
     }
@@ -32,8 +32,8 @@ class SinglePredictRequest extends FormRequest
     {
         return [
             'text.required' => 'Kalimat teks opini wajib diisi untuk diuji.',
-            'text.min'      => 'Panjang teks minimal 3 karakter.',
-            'text.max'      => 'Panjang teks maksimal 2.000 karakter.',
+            'text.min' => 'Panjang teks minimal 3 karakter.',
+            'text.max' => 'Panjang teks maksimal 2.000 karakter.',
         ];
     }
 
@@ -43,9 +43,8 @@ class SinglePredictRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'text'       => 'teks opini',
+            'text' => 'teks opini',
             'preprocess' => 'opsi prapemrosesan',
         ];
     }
 }
-

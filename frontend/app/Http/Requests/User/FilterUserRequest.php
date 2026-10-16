@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\User;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,13 +17,13 @@ class FilterUserRequest extends FormRequest
     }
 
     /**
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'search' => ['nullable', 'string', 'max:200'],
-            'role'   => ['nullable', 'string', Rule::in(['all', 'admin', 'analyst'])],
+            'role' => ['nullable', 'string', Rule::in(['all', 'admin', 'analyst'])],
             // 'aktif'/'nonaktif'/'1'/'0' dipertahankan agar URL lama tetap valid.
             'status' => ['nullable', 'string', Rule::in(['all', 'active', 'inactive', 'aktif', 'nonaktif', '1', '0'])],
         ];
@@ -32,8 +33,8 @@ class FilterUserRequest extends FormRequest
     {
         return [
             'search.max' => 'Kata kunci pencarian maksimal 200 karakter.',
-            'role.in'    => 'Peran yang dipilih tidak valid (pilihan: all, admin, analyst).',
-            'status.in'  => 'Status yang dipilih tidak valid (pilihan: all, active, inactive).',
+            'role.in' => 'Peran yang dipilih tidak valid (pilihan: all, admin, analyst).',
+            'status.in' => 'Status yang dipilih tidak valid (pilihan: all, active, inactive).',
         ];
     }
 
@@ -41,7 +42,7 @@ class FilterUserRequest extends FormRequest
     {
         return [
             'search' => 'kata kunci pencarian',
-            'role'   => 'filter peran',
+            'role' => 'filter peran',
             'status' => 'filter status',
         ];
     }

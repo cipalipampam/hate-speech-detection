@@ -30,14 +30,14 @@ class AnalysisStatistic extends Model
     protected function casts(): array
     {
         return [
-            'total_data'            => 'integer',
-            'hate_speech_count'     => 'integer',
+            'total_data' => 'integer',
+            'hate_speech_count' => 'integer',
             'non_hate_speech_count' => 'integer',
-            'hate_speech_pct'       => 'float',
-            'avg_confidence_lvl1'   => 'float',
-            'avg_confidence_lvl2'   => 'float',
-            'level2_breakdown'      => 'array',
-            'platform_breakdown'    => 'array',
+            'hate_speech_pct' => 'float',
+            'avg_confidence_lvl1' => 'float',
+            'avg_confidence_lvl2' => 'float',
+            'level2_breakdown' => 'array',
+            'platform_breakdown' => 'array',
         ];
     }
 

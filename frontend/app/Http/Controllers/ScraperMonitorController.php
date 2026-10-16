@@ -44,12 +44,12 @@ class ScraperMonitorController extends Controller
      */
     public function triggerLogin(TriggerLoginRequest $request): RedirectResponse
     {
-        $platform     = $request->getPlatform();
+        $platform = $request->getPlatform();
         $platformName = $request->getPlatformDisplayName();
 
         $result = $this->fastApiClient->triggerLogin($platform);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return back()->with('error', $result['message'] ?? 'Gagal memicu proses login.');
         }
 

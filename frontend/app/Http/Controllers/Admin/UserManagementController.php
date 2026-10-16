@@ -19,12 +19,12 @@ class UserManagementController extends Controller
 
     public function index(FilterUserRequest $request): View
     {
-        $users   = $this->userService->getFilteredUsers($request->validated());
+        $users = $this->userService->getFilteredUsers($request->validated());
         $metrics = $this->userService->getUserMetrics();
 
         return view('admin.users.index', [
-            'users'       => $users,
-            'roleCounts'  => $metrics['roleCounts'],
+            'users' => $users,
+            'roleCounts' => $metrics['roleCounts'],
             'activeCount' => $metrics['activeCount'],
         ]);
     }
@@ -41,13 +41,13 @@ class UserManagementController extends Controller
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'Pengguna "' . $user->name . '" berhasil ditambahkan.');
+            ->with('success', 'Pengguna "'.$user->name.'" berhasil ditambahkan.');
     }
 
     public function edit(User $user): View
     {
         return view('admin.users.edit', [
-            'user'  => $user,
+            'user' => $user,
             'roles' => $this->userService->getAssignableRoles(),
         ]);
     }
@@ -66,10 +66,10 @@ class UserManagementController extends Controller
             return back()->with('error', 'Anda tidak dapat menonaktifkan akun sendiri.');
         }
 
-        $isActive   = $this->userService->toggleActiveStatus($user);
+        $isActive = $this->userService->toggleActiveStatus($user);
         $statusText = $isActive ? 'diaktifkan' : 'dinonaktifkan';
 
-        return back()->with('success', 'Akun "' . $user->name . '" berhasil ' . $statusText . '.');
+        return back()->with('success', 'Akun "'.$user->name.'" berhasil '.$statusText.'.');
     }
 
     /**
@@ -89,6 +89,6 @@ class UserManagementController extends Controller
 
         return redirect()
             ->route('admin.users.index')
-            ->with('success', 'Akun "' . $user->name . '" berhasil dihapus.');
+            ->with('success', 'Akun "'.$user->name.'" berhasil dihapus.');
     }
 }

@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\AuthenticateSession;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // di-reset admin), sesi di perangkat/peramban lain otomatis logout.
         // Sesi yang sedang dipakai tetap valid karena hash baru disimpan setelah response.
         $middleware->web(append: [
-            \Illuminate\Session\Middleware\AuthenticateSession::class,
+            AuthenticateSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

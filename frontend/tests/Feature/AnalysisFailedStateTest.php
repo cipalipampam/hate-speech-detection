@@ -32,22 +32,22 @@ class AnalysisFailedStateTest extends TestCase
     private function failedAnalysis(User $owner): Analysis
     {
         return Analysis::create([
-            'user_id'          => $owner->id,
-            'title'            => 'Analisis Gagal Uji',
-            'platform'         => 'x',
-            'keywords'         => ['uji'],
-            'search_mode'      => 'latest',
-            'max_links'        => 10,
+            'user_id' => $owner->id,
+            'title' => 'Analisis Gagal Uji',
+            'platform' => 'x',
+            'keywords' => ['uji'],
+            'search_mode' => 'latest',
+            'max_links' => 10,
             'max_scroll_steps' => 10,
-            'headless'         => true,
-            'status'           => 'failed',
-            'error_message'    => self::ERROR_MESSAGE,
+            'headless' => true,
+            'status' => 'failed',
+            'error_message' => self::ERROR_MESSAGE,
         ]);
     }
 
     public function test_halaman_analisis_gagal_tanpa_banner_error(): void
     {
-        $admin    = User::factory()->create(['is_active' => true]);
+        $admin = User::factory()->create(['is_active' => true]);
         $admin->assignRole('admin');
         $analysis = $this->failedAnalysis($admin);
 
@@ -66,7 +66,7 @@ class AnalysisFailedStateTest extends TestCase
 
     public function test_daftar_analisis_dan_payload_ajax_masih_membawa_error_message(): void
     {
-        $admin    = User::factory()->create(['is_active' => true]);
+        $admin = User::factory()->create(['is_active' => true]);
         $admin->assignRole('admin');
         $analysis = $this->failedAnalysis($admin);
 

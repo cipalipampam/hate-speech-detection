@@ -53,12 +53,12 @@ class UserRoleManagementTest extends TestCase
     public function test_admin_tidak_dapat_membuat_pengguna_dengan_role_viewer(): void
     {
         $response = $this->actingAs($this->admin())->post(route('admin.users.store'), [
-            'name'                  => 'Uji Viewer',
-            'email'                 => 'uji.viewer@hatespeech.test',
-            'password'              => 'password123',
+            'name' => 'Uji Viewer',
+            'email' => 'uji.viewer@hatespeech.test',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
-            'role'                  => 'viewer',
-            'is_active'             => '1',
+            'role' => 'viewer',
+            'is_active' => '1',
         ]);
 
         $response->assertSessionHasErrors('role');
@@ -68,12 +68,12 @@ class UserRoleManagementTest extends TestCase
     public function test_admin_dapat_membuat_pengguna_analyst(): void
     {
         $response = $this->actingAs($this->admin())->post(route('admin.users.store'), [
-            'name'                  => 'Analis Baru',
-            'email'                 => 'analis.baru@hatespeech.test',
-            'password'              => 'password123',
+            'name' => 'Analis Baru',
+            'email' => 'analis.baru@hatespeech.test',
+            'password' => 'password123',
             'password_confirmation' => 'password123',
-            'role'                  => 'analyst',
-            'is_active'             => '1',
+            'role' => 'analyst',
+            'is_active' => '1',
         ]);
 
         $response->assertRedirect(route('admin.users.index'));
@@ -90,9 +90,9 @@ class UserRoleManagementTest extends TestCase
         $target->assignRole('analyst');
 
         $response = $this->actingAs($this->admin())->patch(route('admin.users.update', $target), [
-            'name'      => $target->name,
-            'email'     => $target->email,
-            'role'      => 'viewer',
+            'name' => $target->name,
+            'email' => $target->email,
+            'role' => 'viewer',
             'is_active' => '1',
         ]);
 

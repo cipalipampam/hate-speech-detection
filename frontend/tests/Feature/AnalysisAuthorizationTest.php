@@ -37,21 +37,21 @@ class AnalysisAuthorizationTest extends TestCase
     private function makeAnalysis(User $owner): Analysis
     {
         return Analysis::create([
-            'user_id'          => $owner->id,
-            'title'            => 'Analisis Uji Otorisasi',
-            'platform'         => 'x',
-            'keywords'         => ['uji'],
-            'search_mode'      => 'latest',
-            'max_links'        => 10,
+            'user_id' => $owner->id,
+            'title' => 'Analisis Uji Otorisasi',
+            'platform' => 'x',
+            'keywords' => ['uji'],
+            'search_mode' => 'latest',
+            'max_links' => 10,
             'max_scroll_steps' => 10,
-            'headless'         => true,
-            'status'           => 'completed',
+            'headless' => true,
+            'status' => 'completed',
         ]);
     }
 
     public function test_analyst_dapat_melihat_analisis_miliknya_sendiri(): void
     {
-        $analyst  = $this->userWithRole('analyst');
+        $analyst = $this->userWithRole('analyst');
         $analysis = $this->makeAnalysis($analyst);
 
         $this->actingAs($analyst)
@@ -61,7 +61,7 @@ class AnalysisAuthorizationTest extends TestCase
 
     public function test_analyst_tidak_dapat_melihat_analisis_milik_orang_lain(): void
     {
-        $owner    = $this->userWithRole('analyst');
+        $owner = $this->userWithRole('analyst');
         $penyusup = $this->userWithRole('analyst');
         $analysis = $this->makeAnalysis($owner);
 
@@ -72,8 +72,8 @@ class AnalysisAuthorizationTest extends TestCase
 
     public function test_admin_dapat_melihat_analisis_milik_pengguna_lain(): void
     {
-        $owner    = $this->userWithRole('analyst');
-        $admin    = $this->userWithRole('admin');
+        $owner = $this->userWithRole('analyst');
+        $admin = $this->userWithRole('admin');
         $analysis = $this->makeAnalysis($owner);
 
         $this->actingAs($admin)
@@ -83,7 +83,7 @@ class AnalysisAuthorizationTest extends TestCase
 
     public function test_analyst_dapat_mengekspor_analisis_miliknya_sendiri(): void
     {
-        $analyst  = $this->userWithRole('analyst');
+        $analyst = $this->userWithRole('analyst');
         $analysis = $this->makeAnalysis($analyst);
 
         $response = $this->actingAs($analyst)->get(route('analyses.export', $analysis));
@@ -98,7 +98,7 @@ class AnalysisAuthorizationTest extends TestCase
 
     public function test_analyst_tidak_dapat_mengekspor_analisis_milik_orang_lain(): void
     {
-        $owner    = $this->userWithRole('analyst');
+        $owner = $this->userWithRole('analyst');
         $penyusup = $this->userWithRole('analyst');
         $analysis = $this->makeAnalysis($owner);
 
@@ -110,7 +110,7 @@ class AnalysisAuthorizationTest extends TestCase
     public function test_pengguna_tanpa_permission_export_reports_tidak_dapat_mengekspor(): void
     {
         // Pemilik analisis, tetapi TIDAK punya role apa pun → tanpa permission export-reports.
-        $owner    = User::factory()->create(['is_active' => true]);
+        $owner = User::factory()->create(['is_active' => true]);
         $analysis = $this->makeAnalysis($owner);
 
         $this->actingAs($owner)
@@ -120,7 +120,7 @@ class AnalysisAuthorizationTest extends TestCase
 
     public function test_halaman_detail_analisis_milik_sendiri_dapat_dirender(): void
     {
-        $analyst  = $this->userWithRole('analyst');
+        $analyst = $this->userWithRole('analyst');
         $analysis = $this->makeAnalysis($analyst);
 
         $this->actingAs($analyst)

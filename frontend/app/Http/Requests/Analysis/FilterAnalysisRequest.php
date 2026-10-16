@@ -20,9 +20,9 @@ class FilterAnalysisRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'search'   => ['nullable', 'string', 'max:200'],
+            'search' => ['nullable', 'string', 'max:200'],
             'platform' => ['nullable', 'string', 'in:all,x,threads,both,X,Threads,Both'],
-            'status'   => ['nullable', 'string', 'in:all,queued,running,completed,failed'],
+            'status' => ['nullable', 'string', 'in:all,queued,running,completed,failed'],
             'per_page' => ['nullable', 'integer', 'between:5,100'],
         ];
     }
@@ -33,9 +33,9 @@ class FilterAnalysisRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'search.max'    => 'Kata kunci pencarian maksimal 200 karakter.',
-            'platform.in'   => 'Platform yang dipilih tidak valid (pilihan: all, x, threads, both).',
-            'status.in'     => 'Status analisis tidak valid (pilihan: all, queued, running, completed, failed).',
+            'search.max' => 'Kata kunci pencarian maksimal 200 karakter.',
+            'platform.in' => 'Platform yang dipilih tidak valid (pilihan: all, x, threads, both).',
+            'status.in' => 'Status analisis tidak valid (pilihan: all, queued, running, completed, failed).',
             'per_page.between' => 'Jumlah data per halaman harus antara 5 dan 100.',
         ];
     }
@@ -46,9 +46,9 @@ class FilterAnalysisRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'search'   => 'kata kunci pencarian',
+            'search' => 'kata kunci pencarian',
             'platform' => 'filter platform',
-            'status'   => 'filter status',
+            'status' => 'filter status',
             'per_page' => 'jumlah data per halaman',
         ];
     }

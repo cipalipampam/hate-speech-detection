@@ -30,8 +30,8 @@ class SinglePrediction extends Model
     protected function casts(): array
     {
         return [
-            'confidence_lvl1'    => 'float',
-            'confidence_lvl2'    => 'float',
+            'confidence_lvl1' => 'float',
+            'confidence_lvl2' => 'float',
             'probabilities_lvl1' => 'array',
             'probabilities_lvl2' => 'array',
         ];

@@ -17,10 +17,11 @@ class DemoAnalysisSeeder extends Seeder
     public function run(): void
     {
         $analyst = User::where('email', 'analyst@hatespeech.test')->first();
-        $admin   = User::where('email', 'admin@hatespeech.test')->first();
+        $admin = User::where('email', 'admin@hatespeech.test')->first();
 
-        if (!$analyst || !$admin) {
+        if (! $analyst || ! $admin) {
             $this->command->warn('User demo tidak ditemukan. Jalankan RoleAndPermissionSeeder terlebih dahulu.');
+
             return;
         }
 
@@ -37,11 +38,11 @@ class DemoAnalysisSeeder extends Seeder
             platforms: ['X', 'Threads'],
             level2Breakdown: [
                 'delegitimasi_institusi' => 64,
-                'dehumanisasi'           => 22,
-                'ajakan_kekerasan'       => 18,
+                'dehumanisasi' => 22,
+                'ajakan_kekerasan' => 18,
                 'hoaks_pemicu_kebencian' => 21,
                 'kutukan_agama_personal' => 10,
-                'tidak_relevan'          => 7,
+                'tidak_relevan' => 7,
             ],
             platformBreakdown: ['X' => 130, 'Threads' => 85],
             daysAgo: 5,
@@ -61,11 +62,11 @@ class DemoAnalysisSeeder extends Seeder
             platforms: ['X'],
             level2Breakdown: [
                 'delegitimasi_institusi' => 32,
-                'dehumanisasi'           => 8,
-                'ajakan_kekerasan'       => 4,
+                'dehumanisasi' => 8,
+                'ajakan_kekerasan' => 4,
                 'hoaks_pemicu_kebencian' => 7,
                 'kutukan_agama_personal' => 2,
-                'tidak_relevan'          => 1,
+                'tidak_relevan' => 1,
             ],
             platformBreakdown: ['X' => 98, 'Threads' => 0],
             daysAgo: 2,
@@ -85,11 +86,11 @@ class DemoAnalysisSeeder extends Seeder
             platforms: ['Threads'],
             level2Breakdown: [
                 'delegitimasi_institusi' => 5,
-                'dehumanisasi'           => 4,
-                'ajakan_kekerasan'       => 2,
+                'dehumanisasi' => 4,
+                'ajakan_kekerasan' => 2,
                 'hoaks_pemicu_kebencian' => 3,
                 'kutukan_agama_personal' => 4,
-                'tidak_relevan'          => 1,
+                'tidak_relevan' => 1,
             ],
             platformBreakdown: ['X' => 0, 'Threads' => 47],
             daysAgo: 0,
@@ -105,54 +106,55 @@ class DemoAnalysisSeeder extends Seeder
     // ─────────────────────────────────────────────────────────────────────────
 
     private function createAnalysis(
-        User   $user,
+        User $user,
         string $title,
         string $platform,
-        array  $keywords,
+        array $keywords,
         string $jobId,
-        int    $execTime,
-        int    $totalData,
-        int    $hateCount,
-        array  $platforms,
-        array  $level2Breakdown,
-        array  $platformBreakdown,
-        int    $daysAgo,
-        bool   $withExport,
+        int $execTime,
+        int $totalData,
+        int $hateCount,
+        array $platforms,
+        array $level2Breakdown,
+        array $platformBreakdown,
+        int $daysAgo,
+        bool $withExport,
     ): void {
         // Cegah duplikasi
         if (Analysis::where('title', $title)->exists()) {
             $this->command->line("  Skipped (sudah ada): {$title}");
+
             return;
         }
 
         $analysis = Analysis::create([
-            'user_id'                => $user->id,
-            'title'                  => $title,
-            'platform'               => $platform,
-            'keywords'               => $keywords,
-            'search_mode'            => 'latest',
-            'max_links'              => $totalData + 20,
-            'max_scroll_steps'       => 300,
-            'headless'               => true,
-            'status'                 => 'completed',
-            'job_id'                 => $jobId,
+            'user_id' => $user->id,
+            'title' => $title,
+            'platform' => $platform,
+            'keywords' => $keywords,
+            'search_mode' => 'latest',
+            'max_links' => $totalData + 20,
+            'max_scroll_steps' => 300,
+            'headless' => true,
+            'status' => 'completed',
+            'job_id' => $jobId,
             'execution_time_seconds' => $execTime,
-            'created_at'             => now()->subDays($daysAgo)->subHours(2),
-            'updated_at'             => now()->subDays($daysAgo),
+            'created_at' => now()->subDays($daysAgo)->subHours(2),
+            'updated_at' => now()->subDays($daysAgo),
         ]);
 
         // ── Statistics ─────────────────────────────────────────────────────────
         $nonHateCount = $totalData - $hateCount;
         AnalysisStatistic::create([
-            'analysis_id'          => $analysis->id,
-            'total_data'           => $totalData,
-            'hate_speech_count'    => $hateCount,
-            'non_hate_speech_count'=> $nonHateCount,
-            'hate_speech_pct'      => round(($hateCount / $totalData) * 100, 2),
-            'avg_confidence_lvl1'  => 0.8750,
-            'avg_confidence_lvl2'  => 0.8120,
-            'level2_breakdown'     => $level2Breakdown,
-            'platform_breakdown'   => $platformBreakdown,
+            'analysis_id' => $analysis->id,
+            'total_data' => $totalData,
+            'hate_speech_count' => $hateCount,
+            'non_hate_speech_count' => $nonHateCount,
+            'hate_speech_pct' => round(($hateCount / $totalData) * 100, 2),
+            'avg_confidence_lvl1' => 0.8750,
+            'avg_confidence_lvl2' => 0.8120,
+            'level2_breakdown' => $level2Breakdown,
+            'platform_breakdown' => $platformBreakdown,
         ]);
 
         // ── Posts & Classifications ────────────────────────────────────────────
@@ -162,14 +164,14 @@ class DemoAnalysisSeeder extends Seeder
         if ($withExport) {
             DB::table('analysis_exports')->insert([
                 'analysis_id' => $analysis->id,
-                'filename'    => 'analisis-demo-' . $jobId . '.csv',
-                'disk'        => 'local',
-                'path'        => 'exports/demo-' . $jobId . '.csv',
-                'format'      => 'csv',
-                'size_bytes'  => rand(15000, 60000),
-                'mime_type'   => 'text/csv',
-                'created_at'  => now()->subDays($daysAgo),
-                'updated_at'  => now()->subDays($daysAgo),
+                'filename' => 'analisis-demo-'.$jobId.'.csv',
+                'disk' => 'local',
+                'path' => 'exports/demo-'.$jobId.'.csv',
+                'format' => 'csv',
+                'size_bytes' => rand(15000, 60000),
+                'mime_type' => 'text/csv',
+                'created_at' => now()->subDays($daysAgo),
+                'updated_at' => now()->subDays($daysAgo),
             ]);
         }
 
@@ -212,24 +214,24 @@ class DemoAnalysisSeeder extends Seeder
             'tidak_relevan',
         ];
 
-        $postRows           = [];
+        $postRows = [];
         $classificationRows = [];
-        $now                = now()->toDateTimeString();
+        $now = now()->toDateTimeString();
 
         for ($i = 0; $i < $total; $i++) {
-            $isHate   = ($i < $hateCount);
+            $isHate = ($i < $hateCount);
             $platform = $platforms[array_rand($platforms)];
 
             // Simpan posts dalam batch
             $postId = DB::table('analysis_posts')->insertGetId([
-                'analysis_id'     => $analysis->id,
-                'platform'        => $platform,
-                'source_url'      => 'https://' . strtolower($platform) . '.com/demo/post/' . uniqid(),
-                'author_username' => 'user_demo_' . rand(100, 999),
-                'post_type'       => 'Original Post',
-                'post_date'       => now()->subDays(rand(0, 30))->format('Y-m-d'),
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'analysis_id' => $analysis->id,
+                'platform' => $platform,
+                'source_url' => 'https://'.strtolower($platform).'.com/demo/post/'.uniqid(),
+                'author_username' => 'user_demo_'.rand(100, 999),
+                'post_type' => 'Original Post',
+                'post_date' => now()->subDays(rand(0, 30))->format('Y-m-d'),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
 
             $rawContent = $isHate
@@ -238,19 +240,19 @@ class DemoAnalysisSeeder extends Seeder
 
             $label1 = $isHate ? 'hate_speech' : 'non_hate_speech';
             $label2 = $isHate ? $level2Labels[array_rand($level2Labels)] : 'tidak_relevan';
-            $conf1  = round(rand(72, 98) / 100, 4);
-            $conf2  = $isHate ? round(rand(65, 95) / 100, 4) : 0.0000;
+            $conf1 = round(rand(72, 98) / 100, 4);
+            $conf2 = $isHate ? round(rand(65, 95) / 100, 4) : 0.0000;
 
             DB::table('analysis_classifications')->insert([
-                'post_id'         => $postId,
-                'raw_content'     => $rawContent,
-                'clean_content'   => strtolower(preg_replace('/[^a-zA-Z0-9\s]/', '', $rawContent)),
-                'label_lvl1'      => $label1,
+                'post_id' => $postId,
+                'raw_content' => $rawContent,
+                'clean_content' => strtolower(preg_replace('/[^a-zA-Z0-9\s]/', '', $rawContent)),
+                'label_lvl1' => $label1,
                 'confidence_lvl1' => $conf1,
-                'label_lvl2'      => $label2,
+                'label_lvl2' => $label2,
                 'confidence_lvl2' => $conf2,
-                'created_at'      => $now,
-                'updated_at'      => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
         }
     }

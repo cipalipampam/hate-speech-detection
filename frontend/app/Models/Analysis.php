@@ -35,10 +35,10 @@ class Analysis extends Model
     protected function casts(): array
     {
         return [
-            'keywords'               => 'array',
-            'max_links'              => 'integer',
-            'max_scroll_steps'       => 'integer',
-            'headless'               => 'boolean',
+            'keywords' => 'array',
+            'max_links' => 'integer',
+            'max_scroll_steps' => 'integer',
+            'headless' => 'boolean',
             'execution_time_seconds' => 'float',
         ];
     }

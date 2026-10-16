@@ -47,7 +47,7 @@ class AnalysisImportServiceTest extends TestCase
             $lines[] = implode(',', $row);
         }
 
-        return ($withBom ? "\xEF\xBB\xBF" : '') . implode("\n", $lines) . "\n";
+        return ($withBom ? "\xEF\xBB\xBF" : '').implode("\n", $lines)."\n";
     }
 
     /**
@@ -61,6 +61,7 @@ class AnalysisImportServiceTest extends TestCase
         $fakeClient->shouldReceive('downloadExportToStream')
             ->andReturnUsing(function (string $filename, $sink) use ($csv): bool {
                 fwrite($sink, $csv);
+
                 return true;
             });
 
@@ -70,15 +71,15 @@ class AnalysisImportServiceTest extends TestCase
     private function createAnalysis(string $platform = 'both'): Analysis
     {
         return Analysis::create([
-            'user_id'          => User::factory()->create()->id,
-            'title'            => 'Uji Impor BOM',
-            'platform'         => $platform,
-            'keywords'         => ['uji'],
-            'search_mode'      => 'latest',
-            'max_links'        => 10,
+            'user_id' => User::factory()->create()->id,
+            'title' => 'Uji Impor BOM',
+            'platform' => $platform,
+            'keywords' => ['uji'],
+            'search_mode' => 'latest',
+            'max_links' => 10,
             'max_scroll_steps' => 10,
-            'headless'         => true,
-            'status'           => 'completed',
+            'headless' => true,
+            'status' => 'completed',
         ]);
     }
 
@@ -93,7 +94,7 @@ class AnalysisImportServiceTest extends TestCase
             ['Threads,https://t.co/def456,akunlain,Reply/Comment,2026-09-18T10:00:00.000Z,teks uji dua,hate_speech,dehumanisasi,0.9871,0.9700'],
         ]);
 
-        $service  = $this->serviceReturningCsv($csv);
+        $service = $this->serviceReturningCsv($csv);
         $analysis = $this->createAnalysis('both');
 
         $imported = $service->importPostsFromCsv($analysis, '__test_bom_import.csv');
@@ -115,7 +116,7 @@ class AnalysisImportServiceTest extends TestCase
             ['X,https://t.co/abc123,akunuji,Original Post,2026-09-17T13:08:22.000Z,teks uji,non_hate_speech,tidak_relevan,0.9996,0.9996'],
         ], withBom: false);
 
-        $service  = $this->serviceReturningCsv($csv);
+        $service = $this->serviceReturningCsv($csv);
         $analysis = $this->createAnalysis('both');
 
         $this->assertSame(1, $service->importPostsFromCsv($analysis, '__test_nobom_import.csv'));
@@ -129,7 +130,7 @@ class AnalysisImportServiceTest extends TestCase
             ['Threads,https://www.threads.com/@akunuji/post/xyz,akunuji,Reply/Comment,2026-09-18T10:00:00.000Z,konten uji,hate_speech,dehumanisasi,0.9871,0.9700'],
         ]);
 
-        $service  = $this->serviceReturningCsv($csv);
+        $service = $this->serviceReturningCsv($csv);
         $analysis = $this->createAnalysis('both');
 
         $service->importPostsFromCsv($analysis, '__test_mapping_import.csv');
@@ -168,9 +169,9 @@ class AnalysisImportServiceTest extends TestCase
             'lihat akun kamu semua bodoh',
         ];
 
-        $csv = "\xEF\xBB\xBF" . implode(',', $header) . "\n" . implode(',', $row) . "\n";
+        $csv = "\xEF\xBB\xBF".implode(',', $header)."\n".implode(',', $row)."\n";
 
-        $service  = $this->serviceReturningCsv($csv);
+        $service = $this->serviceReturningCsv($csv);
         $analysis = $this->createAnalysis('both');
 
         $this->assertSame(1, $service->importPostsFromCsv($analysis, '__test_rawclean_import.csv'));
@@ -197,7 +198,7 @@ class AnalysisImportServiceTest extends TestCase
             ['X,https://t.co/ccc333,akun3,Original Post,2026-09-17T13:08:22.000Z,teks tiga,non_hate_speech,tidak_relevan,0.9,0.9'],
         ]);
 
-        $service  = $this->serviceReturningCsv($csv);
+        $service = $this->serviceReturningCsv($csv);
         $analysis = $this->createAnalysis('both');
 
         DB::flushQueryLog();
@@ -226,7 +227,7 @@ class AnalysisImportServiceTest extends TestCase
         $fakeClient = Mockery::mock(FastAPIClientService::class);
         $fakeClient->shouldReceive('downloadExportToStream')->andReturnFalse();
 
-        $service  = new AnalysisImportService($fakeClient);
+        $service = new AnalysisImportService($fakeClient);
         $analysis = $this->createAnalysis('both');
 
         $this->assertSame(0, $service->importPostsFromCsv($analysis, '__gagal_unduh.csv'));
@@ -236,10 +237,11 @@ class AnalysisImportServiceTest extends TestCase
     /**
      * Impor HARUS selalu lewat HTTP FastAPI, walau file dengan nama sama kebetulan ada
      * di filesystem backend (jalur lokal sudah dihapus — prinsip anti-path-mismatch).
-     */    public function test_import_selalu_lewat_http_walau_file_lokal_bernama_sama_ada(): void
+     */
+    public function test_import_selalu_lewat_http_walau_file_lokal_bernama_sama_ada(): void
     {
         $decoyName = '__decoy_http_only.csv';
-        $decoyPath = base_path('../backend/storage/exports/' . $decoyName);
+        $decoyPath = base_path('../backend/storage/exports/'.$decoyName);
 
         // File umpan (decoy) berisi data berbeda — tidak boleh dipakai lagi.
         file_put_contents($decoyPath, $this->buildCsv([
@@ -251,7 +253,7 @@ class AnalysisImportServiceTest extends TestCase
                 ['X,https://t.co/http123,akun_http,Original Post,2026-09-17T13:08:22.000Z,teks http,non_hate_speech,tidak_relevan,0.9,0.9'],
             ]);
 
-            $service  = $this->serviceReturningCsv($csv);
+            $service = $this->serviceReturningCsv($csv);
             $analysis = $this->createAnalysis('both');
 
             $this->assertSame(1, $service->importPostsFromCsv($analysis, $decoyName));

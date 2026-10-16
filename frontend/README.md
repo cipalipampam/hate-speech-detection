@@ -4,10 +4,11 @@
 ### Modern Web Interface, Data Visualization, & Business Orchestration Layer
 
 [![PHP 8.3+](https://img.shields.io/badge/PHP-8.3+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
-[![Laravel 13](https://img.shields.io/badge/Laravel-13.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
+[![Laravel 11/12+](https://img.shields.io/badge/Laravel-11%2F12+-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Spatie Permission](https://img.shields.io/badge/Spatie-Roles_&_Permissions-555555.svg)](https://spatie.be/docs/laravel-permission)
-[![Chart.js](https://img.shields.io/badge/Charts-Chart.js_3.x-FF6384.svg?logo=chartdotjs&logoColor=white)](https://www.chartjs.org/)
-[![Bootstrap & CSS](https://img.shields.io/badge/UI-Custom_Dark/Light_Design-7952B3.svg)](https://getbootstrap.com/)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC.svg?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Alpine.js](https://img.shields.io/badge/Alpine.js-3.x-8BC0D0.svg?logo=alpinedotjs&logoColor=white)](https://alpinejs.dev/)
+[![ApexCharts](https://img.shields.io/badge/Charts-ApexCharts-002FA7.svg)](https://apexcharts.com/)
 [![MySQL 8.0](https://img.shields.io/badge/Database-MySQL_8.0-4479A1.svg?logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
@@ -92,7 +93,7 @@ frontend/
 │
 ├── resources/
 │   ├── css/                                     # Kustomisasi stylesheet CSS
-│   ├── js/                                      # Script interaktif (Chart.js & AJAX)
+│   ├── js/                                      # Script interaktif (Alpine.js & ApexCharts)
 │   └── views/                                   # Template antarmuka Blade
 │       ├── admin/                               # Tampilan kelola pengguna
 │       ├── analyses/                            # Form input, polling status, & hasil
@@ -117,8 +118,8 @@ frontend/
 
 ### 1. Dashboard Eksekutif & Visualisasi
 * **Kartu Ringkasan**: Total komentar dianalisis, rasio hate speech, distribusi platform (X vs Threads), dan sesi aktif.
-* **Grafik Interaktif (Chart.js)**:
-  - *Donut Chart*: Persentase ujaran kebencian vs non-kebencian.
+* **Grafik Interaktif (ApexCharts & Swiss Monograph)**:
+  - *Donut Chart*: Persentase ujaran kebencian vs non-kebencian dengan tipografi monospaced.
   - *Bar Chart*: Distribusi 6 sub-kategori kebencian (delegitimasi institusi, dehumanisasi, ajakan kekerasan, dll.).
   - *Trend Timeline*: Fluktuasi kemunculan ujaran kebencian berdasarkan tanggal.
 
@@ -160,30 +161,77 @@ erDiagram
     ANALYSES {
         bigint id PK
         bigint user_id FK
+        string job_id
         string title
-        string platform "x | threads | csv"
-        string query_or_url
-        string status "pending | running | completed | failed"
-        integer total_posts
+        string platform "x | threads | both"
+        json keywords
+        string search_mode "latest | top"
+        integer max_links
+        integer max_scroll_steps
+        boolean headless
+        string status "queued | running | completed | failed"
+        decimal execution_time_seconds
+        text error_message
     }
 
     ANALYSIS_POSTS {
         bigint id PK
         bigint analysis_id FK
-        string post_id
-        text original_text
-        text cleaned_text
-        string author
-        datetime posted_at
+        string platform
+        text source_url
+        string author_username
+        string post_type
+        string post_date
     }
 
     ANALYSIS_CLASSIFICATIONS {
         bigint id PK
         bigint post_id FK
+        text raw_content
+        text clean_content
         string label_lvl1 "hate_speech | non_hate_speech"
-        float score_lvl1
+        decimal confidence_lvl1
+        json probabilities_lvl1
         string label_lvl2 "sub_kategori"
-        float score_lvl2
+        decimal confidence_lvl2
+        json probabilities_lvl2
+    }
+
+    ANALYSIS_STATISTICS {
+        bigint id PK
+        bigint analysis_id FK
+        integer total_data
+        integer hate_speech_count
+        integer non_hate_speech_count
+        decimal hate_speech_pct
+        decimal avg_confidence_lvl1
+        decimal avg_confidence_lvl2
+        json level2_breakdown
+        json platform_breakdown
+    }
+
+    ANALYSIS_EXPORTS {
+        bigint id PK
+        bigint analysis_id FK
+        string filename
+        string disk
+        string path
+        string format "csv | xlsx | pdf"
+        bigint size_bytes
+        string mime_type
+    }
+
+    SINGLE_PREDICTIONS {
+        bigint id PK
+        bigint user_id FK
+        text input_text
+        text clean_text
+        string label_lvl1
+        decimal confidence_lvl1
+        json probabilities_lvl1
+        string label_lvl2
+        decimal confidence_lvl2
+        json probabilities_lvl2
     }
 ```
 
@@ -283,9 +331,9 @@ php artisan migrate:fresh --seed
 ```
 
 ### 4. Menambah Kolom Baru pada Laporan Ekspor
-Buka file controller atau service terkait di `app/Services/AnalysisService.php` pada fungsi `exportToCsv()`:
-- Tambahkan header kolom pada array `$headers`.
-- Petakan field model Eloquent ke dalam baris penulisan CSV.
+Buka file service di `app/Services/AnalysisService.php` pada method `streamExportCsv()`:
+- Tambahkan header kolom pada pemanggilan `fputcsv($handle, [...])`.
+- Petakan field model Eloquent ke dalam baris penulisan CSV di dalam blok chunk data.
 
 ---
 

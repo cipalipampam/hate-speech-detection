@@ -47,11 +47,12 @@ class AnalysisExport extends Model
     {
         $bytes = $this->size_bytes;
         if ($bytes >= 1_048_576) {
-            return round($bytes / 1_048_576, 2) . ' MB';
+            return round($bytes / 1_048_576, 2).' MB';
         }
         if ($bytes >= 1_024) {
-            return round($bytes / 1_024, 2) . ' KB';
+            return round($bytes / 1_024, 2).' KB';
         }
-        return $bytes . ' B';
+
+        return $bytes.' B';
     }
 }
