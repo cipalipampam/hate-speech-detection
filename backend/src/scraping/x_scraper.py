@@ -30,17 +30,11 @@ if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 
-# ---------------------------------------------------------------------------
-# Path Default Output
-# ---------------------------------------------------------------------------
 
 DEFAULT_CHECKPOINT = str(EXPORTS_DIR / "x_checkpoint.csv")
 DEFAULT_OUTPUT     = str(EXPORTS_DIR / "x_scraper_result.csv")
 
 
-# ---------------------------------------------------------------------------
-# Noise / Filter UI X (Twitter)
-# ---------------------------------------------------------------------------
 
 SYSTEM_EXACT_PHRASES = {
     "log in", "sign up", "masuk", "daftar",
@@ -75,9 +69,6 @@ def is_system_text(content: str) -> bool:
     return _system_text_matches(content, SYSTEM_EXACT_PHRASES)
 
 
-# ---------------------------------------------------------------------------
-# Konfigurasi Scraper
-# ---------------------------------------------------------------------------
 
 @dataclass
 class XScrapeConfig:
@@ -95,9 +86,7 @@ class XScrapeConfig:
     per_post_timeout_s: float = 1800.0
 
 
-# ---------------------------------------------------------------------------
 # JavaScript Snippet — Ekstraksi Komentar / Tweet dari DOM
-# ---------------------------------------------------------------------------
 
 _SYSTEM_EXACT_JS = json.dumps(sorted(SYSTEM_EXACT_PHRASES))
 _NOISE_JS        = json.dumps(sorted(NOISE_EXACT))
@@ -212,9 +201,6 @@ _JS_EXTRACT_SEARCH_CARDS = """
 """
 
 
-# ---------------------------------------------------------------------------
-# Helper: Pengecekan Thread Divider & Auto-Expand Replies
-# ---------------------------------------------------------------------------
 
 async def _check_thread_divider(page: Page, step: int = 0) -> bool:
     """Deteksi tanda pembatas akhir reply di postingan X (hanya di kolom utama)."""
@@ -298,9 +284,6 @@ async def _collect_js_items(page: Page, source_link: str, collected: dict) -> in
     return len(collected) - count_before
 
 
-# ---------------------------------------------------------------------------
-# Stage 2: Slow Scan (Micro-Step Forward + Reverse Sweep)
-# ---------------------------------------------------------------------------
 
 async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfig) -> list[dict]:
     """Ekstrak tweet + seluruh reply via micro-step forward scan + reverse sweep."""
@@ -366,7 +349,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfi
     forward_count = len(collected)
     logger.info(f"Forward scan selesai: {forward_count} item dari {step + 1} langkah.")
 
-    # Reverse sweep
     try:
         scroll_height  = await page.evaluate("document.body.scrollHeight")
         current_pos    = scroll_height
@@ -385,7 +367,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfi
     if reverse_gained > 0:
         logger.info(f"Reverse sweep menambah {reverse_gained} item baru!")
 
-    # Final settle pass
     try:
         final_expanded = await _click_expand_buttons(page)
         if final_expanded > 0:
@@ -395,7 +376,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfi
     except Exception as e:
         logger.debug(f"Final settle dilewati: {e}")
 
-    # HTML fallback via parsel
     try:
         html = await page.content()
         for item in _parse_post_page_html(html, source_link):
@@ -409,9 +389,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfi
     return list(collected.values())
 
 
-# ---------------------------------------------------------------------------
-# HTML Fallback Parser (Parsel)
-# ---------------------------------------------------------------------------
 
 _TIME_AGO_RE    = re.compile(r'^\d+[smhdw]$', re.IGNORECASE)
 _DATE_FORMAT_RE = re.compile(r'^(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}|\d{1,2}\s+[a-zA-Z]{3,9}(\s+\d{2,4})?|[a-zA-Z]{3,9}\s+\d{1,2}(\s+\d{2,4})?)$', re.IGNORECASE)
@@ -486,17 +463,11 @@ def _parse_post_page_html(html: str, source_link: str) -> list[dict]:
     return results
 
 
-# ---------------------------------------------------------------------------
-# Utilitas Keyword Matching
-# ---------------------------------------------------------------------------
 
 # Keyword matching dipindah ke base_scraper.keyword_matches_text() (satu
 # implementasi bersama dengan Threads) — lihat blok import di atas.
 
 
-# ---------------------------------------------------------------------------
-# Stage 1: Search Discovery
-# ---------------------------------------------------------------------------
 
 async def collect_post_urls(
     page: Page,
@@ -584,9 +555,6 @@ async def collect_post_urls(
     return ordered_urls
 
 
-# ---------------------------------------------------------------------------
-# Stage 2: Deep Crawl
-# ---------------------------------------------------------------------------
 
 async def deep_crawl_post(
     page: Page,
@@ -619,9 +587,6 @@ async def deep_crawl_post(
                 return []
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Publik Utama: run_x_scraper
-# ---------------------------------------------------------------------------
 
 @ensure_proactor_loop
 async def run_x_scraper(
@@ -639,7 +604,6 @@ async def run_x_scraper(
     keywords    = keywords or []
     direct_urls = direct_urls or []
 
-    # Validasi sesi
     if not check_profile_exists(config.profile_dir):
         logger.error(
             f"Sesi X belum ditemukan di '{config.profile_dir}'. "
@@ -658,7 +622,6 @@ async def run_x_scraper(
             return pd.DataFrame()
 
         try:
-            # Validasi sesi aktif di browser
             cookies     = await context.cookies()
             has_auth    = any(c.get("name") == "auth_token" and bool(c.get("value")) for c in cookies)
             has_twid    = any(c.get("name") == "twid"       and bool(c.get("value")) for c in cookies)
@@ -666,7 +629,6 @@ async def run_x_scraper(
             if not (has_auth or has_twid):
                 logger.warning("Cookie auth_token/twid tidak ditemukan. Periksa status login X.")
 
-            # Standby di home
             try:
                 await page.goto("https://x.com/home", timeout=60_000)
             except Exception:
@@ -674,13 +636,11 @@ async def run_x_scraper(
 
             session_urls: list[str] = []
 
-            # Direct URLs
             for u in direct_urls:
                 if u not in global_seen_urls:
                     global_seen_urls.add(u)
                     session_urls.append(u)
 
-            # Stage 1 — Keyword Search
             for kw in keywords:
                 urls = await collect_post_urls(
                     page,
@@ -702,7 +662,6 @@ async def run_x_scraper(
                     status_callback(f"[X] {msg_empty}")
                 return pd.DataFrame()
 
-            # Stage 2 — Deep Crawl
             total_urls = len(session_urls)
             for idx, link in enumerate(session_urls, start=1):
                 logger.info(f"[{idx}/{total_urls}] {link}")
@@ -730,9 +689,6 @@ async def run_x_scraper(
     return df
 
 
-# ---------------------------------------------------------------------------
-# Entrypoint CLI
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import asyncio

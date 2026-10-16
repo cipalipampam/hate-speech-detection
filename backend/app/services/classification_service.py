@@ -1,4 +1,3 @@
-"""Classification Service: inferensi IndoBERT satu teks (/classify/single)."""
 
 import logging
 from typing import Any, Dict, Optional

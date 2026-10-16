@@ -1,25 +1,3 @@
-"""
-Verifikasi pemisahan TEKS MENTAH vs TEKS BERSIH pada EndToEndPipeline.
-
-Latar belakang bug:
-    `transform_dataframe()` dipanggil tanpa `overwrite_content=False`, sehingga kolom
-    'content' (teks mentah) ditimpa hasil preprocessing. Akibatnya file ekspor CSV
-    hanya berisi satu versi teks (yang sudah bersih) dan frontend menyimpan teks
-    bersih itu pada kolom `analysis_classifications.raw_content` — teks mentah hilang.
-
-Yang diuji skrip ini (tanpa memuat model IndoBERT 499MB — predictor di-stub):
-    1. execute_preprocessing() TIDAK mengubah kolom 'content' (teks mentah utuh).
-    2. Kolom baru 'clean_text' berisi hasil preprocessing (URL/emoji/@mention dibuang).
-    3. execute_classification() mengirim teks BERSIH ke model, bukan teks mentah.
-    4. Kedua kolom bertahan sampai akhir pipeline → ikut ke file ekspor CSV,
-       sehingga frontend bisa memetakan content→raw_content, clean_text→clean_content.
-
-Cara menjalankan (dari direktori backend):
-    python -m tests.check_pipeline_text_columns
-    python -m tests.check_pipeline_text_columns --report laporan.txt
-
-Exit code 0 = lulus, 1 = gagal.
-"""
 
 import sys
 from pathlib import Path
@@ -95,7 +73,6 @@ def main() -> int:
     stub = StubPredictor()
     pipeline = EndToEndPipeline(predictor=stub)
 
-    # ── Tahap 1: Preprocessing ──────────────────────────────────────────────
     df_clean = pipeline.execute_preprocessing(df_raw)
 
     if len(df_clean) != 1:
@@ -121,7 +98,6 @@ def main() -> int:
         if clean != clean.lower():
             failures.append(f"case folding tidak diterapkan pada 'clean_text': {clean!r}")
 
-    # ── Tahap 2: Klasifikasi ────────────────────────────────────────────────
     df_classified = pipeline.execute_classification(df_clean)
 
     # (3) model harus menerima teks bersih
@@ -143,7 +119,6 @@ def main() -> int:
         if column not in header.split(","):
             failures.append(f"header CSV ekspor tidak memuat kolom '{column}': {header}")
 
-    # ── Laporan ─────────────────────────────────────────────────────────────
     # `ascii()` dipakai agar emoji/non-ASCII tidak memicu UnicodeEncodeError di
     # console Windows (cp1252) maupun saat output di-redirect ke file.
     report = [

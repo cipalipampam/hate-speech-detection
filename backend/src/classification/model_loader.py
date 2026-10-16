@@ -1,4 +1,3 @@
-"""Model Loader: muat arsitektur IndoBERT hierarkis + tokenizer + bobot (singleton)."""
 
 import json
 import logging
@@ -11,11 +10,7 @@ from transformers import AutoModel, AutoTokenizer
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Konstanta Default
-# ---------------------------------------------------------------------------
 
-# Default label classes (fallback jika label_mapping.json tidak ditemukan)
 _DEFAULT_CLASSES_LVL1 = ["non_hate_speech", "hate_speech"]
 _DEFAULT_CLASSES_LVL2 = [
     "tidak_relevan",
@@ -31,9 +26,7 @@ _DEFAULT_MAX_LENGTH       = 128
 _DEFAULT_DROPOUT_RATE     = 0.3
 
 
-# ---------------------------------------------------------------------------
 # Arsitektur Model (Porting dari core/model.py)
-# ---------------------------------------------------------------------------
 
 class ClassificationHead(nn.Module):
     """Head klasifikasi: Linear → LayerNorm → GELU → Dropout → Linear."""
@@ -116,9 +109,7 @@ class IndoBERTHierarchicalClassifier(nn.Module):
         return logits_lvl1, logits_lvl2
 
 
-# ---------------------------------------------------------------------------
 # Singleton Model Loader
-# ---------------------------------------------------------------------------
 
 class ModelLoader:
     """Singleton loader: model + tokenizer + label mapping dimuat 1× ke memori (tanpa re-load 490 MB)."""
@@ -172,7 +163,6 @@ class ModelLoader:
 
         self._initialized = True
 
-    # ── Private Loaders ───────────────────────────────────────────────────
 
     def _load_config(self):
         """Memuat model_config.json dan label_mapping.json."""
@@ -255,7 +245,6 @@ class ModelLoader:
             f"(Total params: {total_params:,}, Trainable: {trainable_params:,})"
         )
 
-    # ── Public Accessors ─────────────────────────────────────────────────
 
     def get_model(self) -> IndoBERTHierarchicalClassifier:
         """Mengembalikan instance model PyTorch (sudah .eval())."""

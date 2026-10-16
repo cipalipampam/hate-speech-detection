@@ -1,4 +1,3 @@
-"""Helper bersama scraper: browser factory, delay, scroll, penyimpanan CSV, filter teks."""
 
 import asyncio
 import logging
@@ -11,9 +10,6 @@ from playwright.async_api import Page
 
 logger = logging.getLogger("base_scraper")
 
-# ---------------------------------------------------------------------------
-# Konfigurasi Stealth Anti-Detection
-# ---------------------------------------------------------------------------
 
 STEALTH_ARGS = [
     "--disable-blink-features=AutomationControlled",
@@ -30,9 +26,7 @@ STEALTH_SCRIPT = """
 """
 
 
-# ---------------------------------------------------------------------------
 # Browser Factory — Persistent Context
-# ---------------------------------------------------------------------------
 
 async def create_browser(playwright, profile_dir: str, headless: bool = False):
     """Buka browser persistent (Chrome → Edge → Chromium); kembalikan (context, page)."""
@@ -62,9 +56,6 @@ async def create_browser(playwright, profile_dir: str, headless: bool = False):
     )
 
 
-# ---------------------------------------------------------------------------
-# Utilitas Scroll & Delay
-# ---------------------------------------------------------------------------
 
 async def random_delay(delay_range: tuple):
     """Tunda eksekusi dengan durasi acak (mitigasi deteksi bot)."""
@@ -87,9 +78,7 @@ async def scroll_page(page: Page, times: int, delay_range: tuple):
             break
 
 
-# ---------------------------------------------------------------------------
 # Penanganan Data & Penyimpanan
-# ---------------------------------------------------------------------------
 
 STANDARD_SCRAPER_COLUMNS = ["platform", "source", "user_id", "type", "date", "content"]
 
@@ -152,9 +141,7 @@ def check_profile_exists(profile_dir: str) -> bool:
         return False
 
 
-# ---------------------------------------------------------------------------
 # Filter Teks Bersama — dipakai oleh x_scraper & threads_scraper
-# ---------------------------------------------------------------------------
 
 def keyword_matches_text(text: str, keywords: list[str]) -> bool:
     """True bila teks mengandung salah satu keyword (case-insensitive, spasi diabaikan)."""

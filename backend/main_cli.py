@@ -1,4 +1,3 @@
-"""Entrypoint CLI: terminal interaktif untuk auth, scraping, preprocessing, klasifikasi, dan pipeline."""
 
 import asyncio
 import os
@@ -28,7 +27,6 @@ try:
 except ImportError:
     HAS_RICH = False
 
-# Import modul auth backend
 from src.auth import (
     setup_x_login,
     setup_threads_login,
@@ -42,7 +40,6 @@ from configs.config import (
     MODEL_DIR,
 )
 
-# Import modul scraping backend
 from src.scraping import (
     run_x_scraper,
     run_threads_scraper,
@@ -50,15 +47,12 @@ from src.scraping import (
     ThreadsScrapeConfig,
 )
 
-# Import modul preprocessing backend
 from src.preprocessing import PreprocessingPipeline, clean_text, case_folding
 
 console = Console() if HAS_RICH else None
 
 
-# ---------------------------------------------------------------------------
 # Tampilan Header & Banner
-# ---------------------------------------------------------------------------
 
 def display_banner():
     """Menampilkan banner judul utama aplikasi."""
@@ -120,9 +114,7 @@ def print_scraper_failure(platform_label: str, error: Exception):
             print(f"    {line}")
 
 
-# ---------------------------------------------------------------------------
 # Fitur Modul 1: Manajemen Autentikasi & Sesi
-# ---------------------------------------------------------------------------
 
 def show_auth_status_table():
     """Menampilkan tabel status sesi login untuk kedua platform."""
@@ -213,9 +205,6 @@ def handle_auth_menu():
             break
 
 
-# ---------------------------------------------------------------------------
-# Helper Input & Menu Modul Analisis
-# ---------------------------------------------------------------------------
 
 def _input_keywords_and_urls() -> tuple[list[str], list[str]]:
     """Minta keyword dan/atau URL dari user; multi-nilai dipisah koma. Kembalikan (keywords, direct_urls)."""
@@ -249,7 +238,6 @@ def handle_scraping_menu():
 
         if HAS_RICH:
             console.print("\n[bold cyan]─── [MENU 2] SCRAPING DATA MEDIA SOSIAL ───[/bold cyan]")
-            # Tampilkan status sesi singkat & mode aktif
             for key, s in get_all_sessions_status().items():
                 badge = "[green]●[/green]" if s["is_valid"] else "[red]○[/red]"
                 console.print(f"  {badge} Sesi {s['platform']}: {'AKTIF' if s['is_valid'] else 'Belum Ada/Expired'}")
@@ -411,7 +399,6 @@ def handle_scraping_menu():
             else:
                 print_warning("Sesi Threads tidak aktif, melewati scraping Threads.")
 
-            # Ringkasan Akhir
             if HAS_RICH:
                 summary_table = Table(title=f"\n📊 Ringkasan Hasil Scraping Sekuensial [{CURRENT_SEARCH_MODE.upper()}]", box=box.ROUNDED)
                 summary_table.add_column("Platform", style="bold cyan")
@@ -462,7 +449,6 @@ def handle_scraping_menu():
             try:
                 res_x, res_t = asyncio.run(_run_both_parallel())
 
-                # Evaluasi hasil X
                 if isinstance(res_x, Exception):
                     print_error(f"Scraping X error: {res_x}")
                 elif not res_x.empty:
@@ -471,7 +457,6 @@ def handle_scraping_menu():
                 else:
                     print_warning("Tidak ada data X yang terkumpul.")
 
-                # Evaluasi hasil Threads
                 if isinstance(res_t, Exception):
                     print_scraper_failure("Threads", res_t)
                 elif not res_t.empty:
@@ -483,7 +468,6 @@ def handle_scraping_menu():
             except Exception as e:
                 print_error(f"Terjadi kegagalan pada scraping paralel: {e}")
 
-            # Ringkasan Akhir
             if HAS_RICH:
                 summary_table = Table(title=f"\n📊 Ringkasan Hasil Scraping Paralel ⚡ [{CURRENT_SEARCH_MODE.upper()}]", box=box.ROUNDED)
                 summary_table.add_column("Platform", style="bold cyan")
@@ -524,11 +508,9 @@ def handle_preprocessing_menu():
             break
 
         if choice == "1":
-            # ─── Preprocess CSV ───
             if HAS_RICH:
                 console.print("\n[bold cyan]─── PREPROCESS FILE CSV SCRAPING ───[/bold cyan]")
 
-            # Cari file CSV yang ada di EXPORTS_DIR
             csv_files = sorted(EXPORTS_DIR.glob("*.csv"))
             if not csv_files:
                 print_warning(f"Tidak ada file CSV di direktori export: {EXPORTS_DIR}")
@@ -557,7 +539,6 @@ def handle_preprocessing_menu():
                 print_warning("Nomor file tidak valid.")
                 continue
 
-            # Load dan preprocess
             try:
                 print_info(f"Memuat file: {selected_file.name}...")
                 df_raw = pd.read_csv(selected_file, encoding="utf-8-sig")
@@ -581,7 +562,6 @@ def handle_preprocessing_menu():
                     show_progress=True,
                 )
 
-                # Simpan output
                 stem = selected_file.stem.replace("_result", "").replace("_scraper", "")
                 out_filename = f"{stem}_preprocessed.csv"
                 out_path = EXPORTS_DIR / out_filename
@@ -590,7 +570,6 @@ def handle_preprocessing_menu():
                 print_success(f"Preprocessing selesai! {len(df_clean):,} baris bersih.")
                 print_info(f"File output tersimpan: {out_path}")
 
-                # Tampilkan sample 3 baris
                 if HAS_RICH:
                     sample_table = Table(title="Contoh Hasil Preprocessing (3 Baris Pertama)", box=box.ROUNDED)
                     sample_table.add_column("#", style="dim", width=3)
@@ -619,7 +598,6 @@ def handle_preprocessing_menu():
             input("\nTekan Enter untuk kembali ke menu preprocessing...")
 
         elif choice == "2":
-            # ─── Demo teks langsung ───
             if HAS_RICH:
                 console.print("\n[bold cyan]─── DEMO PREPROCESSING TEKS LANGSUNG ───[/bold cyan]")
                 console.print("[dim]Ketik teks bebas untuk melihat hasil cleaning + normalisasi slang.[/dim]")
@@ -680,7 +658,6 @@ def handle_classification_menu():
         if choice == "0":
             break
 
-        # ─── Cek Ketersediaan Model ───
         weights_file = MODEL_DIR / "best_model.pt"
         if not weights_file.exists():
             if HAS_RICH:
@@ -705,7 +682,6 @@ def handle_classification_menu():
             input("\nTekan Enter untuk kembali...")
             continue
 
-        # Inisialisasi Predictor (Lazy-loaded singleton: hanya dimuat saat menu 4 dibuka)
         try:
             print_info("Memuat model IndoBERT ke memori...")
             from src.classification import HateSpeechPredictor
@@ -717,12 +693,10 @@ def handle_classification_menu():
             continue
 
         if choice == "1":
-            # ─── Uji Prediksi Teks Tunggal ───
             if HAS_RICH:
                 console.print("\n[bold magenta]─── UJI PREDIKSI TEKS TUNGGAL ───[/bold magenta]")
                 console.print("[dim]Ketik kalimat opini/komentar untuk melihat prediksi Level 1 & Level 2.[/dim]")
 
-            # Pipeline preprocessing untuk membersihkan teks sebelum masuk tokenizer
             prep_pipeline = PreprocessingPipeline()
 
             while True:
@@ -740,7 +714,6 @@ def handle_classification_menu():
                     print_warning("Teks kosong setelah dibersihkan.")
                     continue
 
-                # Jalankan prediksi
                 res = predictor.predict_text(clean_input_text)
 
                 lvl1_label = res["level1"]["label"]
@@ -780,11 +753,9 @@ def handle_classification_menu():
                     print(f"Status      : {'⚠️ UJARAN KEBENCIAN' if is_hate else '✅ NON-HATE SPEECH'}")
 
         elif choice == "2":
-            # ─── Klasifikasi File CSV ───
             if HAS_RICH:
                 console.print("\n[bold magenta]─── KLASIFIKASI FILE CSV HASIL PREPROCESSING ───[/bold magenta]")
 
-            # Cari file CSV yang ada di EXPORTS_DIR
             csv_files = sorted(EXPORTS_DIR.glob("*.csv"))
             if not csv_files:
                 print_warning(f"Tidak ada file CSV di direktori: {EXPORTS_DIR}")
@@ -824,7 +795,6 @@ def handle_classification_menu():
                     input("\nTekan Enter untuk kembali...")
                     continue
 
-                # Tentukan kolom teks yang akan diprediksi — memakai resolver yang SAMA
                 # dengan pipeline API agar hasil CLI tidak menyimpang dari API
                 # (API memprioritaskan 'clean_text', bukan 'content' mentah).
                 from src.pipeline import resolve_text_column
@@ -842,7 +812,6 @@ def handle_classification_menu():
                     show_progress=True,
                 )
 
-                # Simpan output
                 stem = selected_file.stem.replace("_preprocessed", "").replace("_result", "").replace("_scraper", "")
                 out_filename = f"{stem}_classified.csv"
                 out_path = EXPORTS_DIR / out_filename
@@ -867,7 +836,6 @@ def handle_classification_menu():
                     stat_table.add_row("[bold]TOTAL[/bold]", f"[bold]{total_rows:,}[/bold]", "[bold]100.00%[/bold]")
                     console.print(stat_table)
 
-                    # Tabel Sampel Hasil
                     sample_table = Table(title="Contoh Hasil Klasifikasi (3 Baris Pertama)", box=box.ROUNDED)
                     sample_table.add_column("#", style="dim", width=3)
                     sample_table.add_column("user_id", style="yellow", width=12)
@@ -900,7 +868,6 @@ def handle_classification_menu():
             input("\nTekan Enter untuk kembali ke menu klasifikasi...")
 
         elif choice == "3":
-            # ─── Informasi & Status Model ───
             if HAS_RICH:
                 info_table = Table(title="Informasi & Metadata Model IndoBERT", box=box.ROUNDED)
                 info_table.add_column("Parameter", style="bold cyan", width=25)
@@ -956,7 +923,6 @@ def handle_pipeline_menu():
         }
         selected_platform = platform_map.get(choice, "both")
 
-        # ─── 1. Cek Ketersediaan Model ───
         weights_file = MODEL_DIR / "best_model.pt"
         if not weights_file.exists():
             print_error(f"Model IndoBERT ('best_model.pt') belum ditemukan di: {MODEL_DIR}")
@@ -964,7 +930,6 @@ def handle_pipeline_menu():
             input("\nTekan Enter untuk kembali...")
             continue
 
-        # ─── 2. Input Parameter Analisis ───
         if HAS_RICH:
             console.print(f"\n[bold cyan]─── PARAMETER ANALISIS END-TO-END [{selected_platform.upper()}] ───[/bold cyan]")
         
@@ -973,7 +938,6 @@ def handle_pipeline_menu():
             print_warning("Tidak ada keyword atau URL yang dimasukkan. Analisis dibatalkan.")
             continue
 
-        # Konfigurasi Tambahan
         if HAS_RICH:
             limit_str = Prompt.ask("Batas link/postingan yang di-scan per platform", default="30")
             steps_str = Prompt.ask("Maksimal scroll scan per postingan (kedalaman komentar)", default="200")
@@ -987,7 +951,6 @@ def handle_pipeline_menu():
         max_scroll_steps = int(steps_str) if steps_str.isdigit() else 200
         headless = (headless_choice == "y")
 
-        # ─── 3. Eksekusi Pipeline ───
         if HAS_RICH:
             console.print(f"\n[bold green]▶ MEMULAI PIPELINE END-TO-END [{CURRENT_SEARCH_MODE.upper()}]...[/bold green]")
         else:
@@ -1037,7 +1000,6 @@ def handle_pipeline_menu():
             print_success(f"\n🎉 ANALISIS SELESAI DALAM {elapsed:.1f} DETIK! ({total_data:,} data terproses)")
             print_info(f"📁 File CSV Lengkap Disimpan: {exported_file}")
 
-            # ─── Tampilan Laporan Statistik ───
             if HAS_RICH:
                 # 1. Tabel Ringkasan Utama (Level 1)
                 main_table = Table(title="📊 Ringkasan Deteksi Ujaran Kebencian (Level 1)", box=box.ROUNDED)
@@ -1125,9 +1087,6 @@ def handle_pipeline_menu():
         input("\nTekan Enter untuk kembali ke menu pipeline...")
 
 
-# ---------------------------------------------------------------------------
-# Loop Utama Program (Main Interactive Loop)
-# ---------------------------------------------------------------------------
 
 def main():
     """Fungsi entrypoint utama CLI runner."""
@@ -1139,7 +1098,6 @@ def main():
 
         display_banner()
         
-        # Tampilkan status ringkas sesi auth di beranda CLI
         print_info("Status Sesi Saat Ini:")
         statuses = get_all_sessions_status()
         for key, s in statuses.items():

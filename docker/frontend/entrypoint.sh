@@ -1,22 +1,5 @@
 #!/bin/bash
-# ==============================================================================
-# entrypoint.sh — Frontend Laravel Auto-Setup & Startup Script
-# ==============================================================================
-# Script ini dijalankan SETIAP KALI container frontend dimulai.
-# Secara otomatis menangani setup lengkap untuk FRESH CLONE:
-#   - Composer install (jika vendor/ belum ada)
-#   - .env generation (jika belum ada)
-#   - APP_KEY generation (jika kosong)
-#   - Pembersihan cache bootstrap warisan host + package:discover
-#     (mencegah "Class ... not found" dari packages.php/services.php host yang
-#      dibuat dengan dev-dependency seperti laravel/pail & laravel/pao)
-#   - Wait for MySQL (hingga database siap menerima koneksi)
-#   - php artisan migrate --force
-#   - php artisan db:seed --force (jika tabel users masih kosong)
-#   - npm install + npm run build (jika node_modules/ atau public/build belum ada)
-#   - php artisan storage:link
-#   - php artisan serve (server laravel)
-# ==============================================================================
+# Prepares Laravel dependencies and starts the development server.
 
 set -e
 
@@ -27,7 +10,6 @@ echo "╚═══════════════════════�
 
 cd /var/www/html
 
-# ── STEP 1: Generate .env dari environment variables Docker ───────────────────
 echo ""
 echo "[1/8] Menyiapkan file .env..."
 
@@ -91,15 +73,9 @@ else
     echo "  ✓ File .env sudah ada. Konfigurasi dipertahankan."
 fi
 
-# ── STEP 2: Composer Install (hanya jika vendor/ belum ada / tidak sinkron) ──
 echo ""
 echo "[2/9] Memeriksa PHP dependencies (Composer)..."
 
-# Pengecekan robust: vendor/ dianggap valid hanya jika:
-#   1. vendor/autoload.php ada (dibutuhkan Laravel untuk bootstrap)
-#   2. Jumlah file di vendor/ lebih dari 100 (menghindari folder vendor kosong/stub)
-#   3. Hash composer.lock sama dengan saat install terakhir (volume tidak basi)
-# Ini mencegah folder vendor setengah-kosong (misal terpush ke repo) menipu kondisi ini.
 VENDOR_FILE_COUNT=$(find vendor -type f 2>/dev/null | wc -l)
 LOCK_HASH=$(md5sum composer.lock 2>/dev/null | awk '{print $1}')
 INSTALLED_LOCK_HASH=$(cat vendor/.composer-lock-hash 2>/dev/null || echo "")
@@ -120,24 +96,15 @@ else
     echo "  ✓ vendor/ sudah lengkap dan sinkron dengan composer.lock (${VENDOR_FILE_COUNT} files). Skip composer install."
 fi
 
-# ── STEP 3: Bersihkan Cache Bootstrap Warisan Host ───────────────────────────
 echo ""
 echo "[3/9] Membersihkan cache bootstrap Laravel..."
 
-# `bootstrap/cache` di-bind-mount dari host (./frontend), sehingga file hasil
-# `php artisan` di Windows ikut terbawa ke container — termasuk packages.php /
-# services.php yang mencantumkan dev-dependency (laravel/pail, laravel/pao)
-# yang TIDAK ada di vendor container (composer install --no-dev).
-# Gejala: Laravel\Pail\PailServiceProvider not found saat artisan dijalankan.
-# Hapus di level filesystem (tanpa boot Laravel, karena app belum bisa boot),
-# lalu bangun ulang manifest paket dari vendor container yang sebenarnya.
 find bootstrap/cache -maxdepth 1 -type f -name '*.php' -delete 2>/dev/null || true
 rm -f bootstrap/cache/*.php 2>/dev/null || true
 echo "  ✓ Cache lama (packages / services / config / route) dibersihkan."
 php artisan package:discover --ansi
 echo "  ✓ Manifest paket dibangun ulang dari vendor container."
 
-# ── STEP 4: Generate APP_KEY (jika kosong) ────────────────────────────────────
 echo ""
 echo "[4/9] Memeriksa APP_KEY..."
 
@@ -150,7 +117,6 @@ else
     echo "  ✓ APP_KEY sudah ada."
 fi
 
-# ── STEP 5: Tunggu MySQL siap ─────────────────────────────────────────────────
 echo ""
 echo "[5/9] Menunggu MySQL database siap..."
 
@@ -182,13 +148,11 @@ done
 
 echo "  ✓ MySQL siap menerima koneksi."
 
-# ── STEP 6: Jalankan Migrasi ──────────────────────────────────────────────────
 echo ""
 echo "[6/9] Menjalankan database migration..."
 php artisan migrate --force --ansi
 echo "  ✓ Migrasi selesai."
 
-# ── STEP 7: Seed database (jika fresh / tabel users kosong) ──────────────────
 echo ""
 echo "[7/9] Memeriksa apakah database perlu di-seed..."
 
@@ -216,7 +180,6 @@ else
     echo "  ✓ Tabel users sudah memiliki ${USER_COUNT} akun. Skip seeding."
 fi
 
-# ── STEP 8: Build Asset Frontend dengan Vite ─────────────────────────────────
 echo ""
 echo "[8/9] Memeriksa asset frontend (npm / Vite)..."
 
@@ -234,20 +197,16 @@ else
     echo "  ✓ Asset sudah ada di public/build/. Skip build."
 fi
 
-# ── STEP 9: Storage Link & Cache ─────────────────────────────────────────────
 echo ""
 echo "[9/9] Finalisasi setup Laravel..."
 
-# Storage link
 php artisan storage:link --force 2>/dev/null || true
 echo "  ✓ storage:link aktif."
 
-# Clear caches untuk fresh start
 php artisan config:clear 2>/dev/null || true
 php artisan view:clear 2>/dev/null || true
 echo "  ✓ Cache dibersihkan."
 
-# ── Jalankan Laravel Server ───────────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║  Setup selesai! Menjalankan Laravel server...               ║"
@@ -258,15 +217,5 @@ echo "║  FastAPI API     : http://localhost:${FASTAPI_PORT:-8080}/docs        
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
-# CATATAN `--no-reload` (JANGAN dihapus saat jalan di Docker):
-# Laravel ServeCommand menghitung $hasEnvironment = file_exists(base_path('.env')).
-# Karena `frontend/.env` ada (bind-mount dari host), tanpa flag ini ia HANYA
-# meneruskan variabel whitelist (APP_ENV, PATH, XDEBUG_*, ...) ke proses `php -S`
-# dan membuang seluruh variabel lain dari environment container.
-# Akibatnya DB_HOST/DB_USERNAME/DB_PASSWORD/FASTAPI_BASE_URL dari docker-compose
-# diabaikan, lalu proses web jatuh ke nilai `frontend/.env` milik host lokal
-# (DB_HOST=127.0.0.1, user root) → error "SQLSTATE[HY000] [2002] Connection refused"
-# di setiap request. Dengan `--no-reload` seluruh environment container diteruskan
-# ke server web, sehingga nilai dari docker-compose yang menang.
-# Trade-off: server tidak auto-restart saat .env berubah (tidak relevan di container).
+# Required: Laravel's reloader drops Docker DB/API variables when .env exists.
 exec php artisan serve --host=0.0.0.0 --port=8000 --no-reload

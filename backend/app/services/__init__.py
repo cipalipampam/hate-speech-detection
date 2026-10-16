@@ -1,8 +1,3 @@
-"""
-Application Service Layer Package.
-
-Mengekspor seluruh instance service publik untuk diakses oleh Controller / Router.
-"""
 
 from .job_service import JobManager, job_manager
 from .auth_service import AuthService, auth_service

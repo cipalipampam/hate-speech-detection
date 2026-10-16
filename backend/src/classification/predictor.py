@@ -1,4 +1,3 @@
-"""Predictor IndoBERT: inferensi hierarkis satu teks (predict_text) dan batch DataFrame."""
 
 import logging
 import math
@@ -13,9 +12,7 @@ from .model_loader import ModelLoader
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
 # Class HateSpeechPredictor
-# ---------------------------------------------------------------------------
 
 class HateSpeechPredictor:
     """Mesin prediksi hierarkis: memakai ModelLoader singleton agar tidak ada re-load model."""
@@ -39,14 +36,12 @@ class HateSpeechPredictor:
             f"Level 2: {len(self.classes_lvl2)} kelas."
         )
 
-    # ── Prediksi Teks Tunggal ─────────────────────────────────────────────
 
     def predict_text(self, text: str) -> dict:
         """Prediksi satu teks; kembalikan {text, level1, level2, is_hate_speech}."""
         results = self.predict_batch([text])
         return results[0] if results else {}
 
-    # ── Prediksi Batch (List of Strings) ──────────────────────────────────
 
     def predict_batch(self, texts: list, batch_size: int = 32) -> list:
         """Prediksi banyak teks per batch; hasil berurutan sesuai input."""
@@ -94,7 +89,6 @@ class HateSpeechPredictor:
 
                 _TIDAK_RELEVAN = "tidak_relevan"
 
-                # ── Hierarchical Constraint (Two-Way Gating) ───────────────
                 if label1 != "hate_speech":
                     # KASUS 1: Jika Level 1 adalah NON-HATE SPEECH, maka secara
                     # taksonomi hierarki Level 2 otomatis "tidak_relevan".
@@ -155,7 +149,6 @@ class HateSpeechPredictor:
 
         return all_results
 
-    # ── Prediksi DataFrame ────────────────────────────────────────────────
 
     def predict_dataframe(
         self,

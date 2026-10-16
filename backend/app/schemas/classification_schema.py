@@ -1,16 +1,11 @@
-"""Schema Pydantic untuk klasifikasi IndoBERT & pipeline end-to-end."""
 
 from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-# ===========================================================================
 # KLASIFIKASI INDOBERT
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
 # Request Models
-# ---------------------------------------------------------------------------
 
 class ClassifySingleRequest(BaseModel):
     """Request prediksi untuk satu kalimat teks."""
@@ -70,13 +65,9 @@ class ClassifyItemResponse(BaseModel):
     )
 
 
-# ===========================================================================
 # PIPELINE END-TO-END
-# ===========================================================================
 
-# ---------------------------------------------------------------------------
 # Request Models
-# ---------------------------------------------------------------------------
 
 class PipelineRunRequest(BaseModel):
     """Parameter request untuk menjalankan pipeline analisis penuh (end-to-end)."""
@@ -138,9 +129,7 @@ class PipelineRunRequest(BaseModel):
     )
 
 
-# ---------------------------------------------------------------------------
 # Response Models — Pipeline
-# ---------------------------------------------------------------------------
 
 class PipelineJobResponse(BaseModel):
     """Response segera (202 Accepted) saat pipeline job berhasil dibuat."""

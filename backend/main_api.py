@@ -1,4 +1,3 @@
-"""Entrypoint FastAPI: REST API analisis ujaran kebencian berbasis IndoBERT (port 8080)."""
 
 import asyncio
 import logging
@@ -6,7 +5,6 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-# ── Windows Fix: Playwright membutuhkan ProactorEventLoop untuk menjalankan
 # subprocess browser (Chromium). WindowsSelectorEventLoop (default) tidak
 # mendukung asyncio.create_subprocess_exec() di Windows.
 if sys.platform == "win32":
@@ -15,19 +13,16 @@ if sys.platform == "win32":
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Pastikan direktori backend ada di sys.path
 BACKEND_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-# Import routers — dari barrel package app.routers
 from app.routers import (
     auth_router,
     classification_router,
     pipeline_router,
 )
 
-# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
@@ -36,14 +31,9 @@ logging.basicConfig(
 logger = logging.getLogger("main_api")
 
 
-# ---------------------------------------------------------------------------
-# Lifespan Event: Preload Model IndoBERT saat startup
-# ---------------------------------------------------------------------------
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: muat model IndoBERT (~490 MB) sekali ke `app.state.predictor`. Shutdown: dibebaskan GC."""
-    # ── STARTUP ──────────────────────────────────────────────────────────────
     logger.info("=" * 60)
     logger.info("Memulai FastAPI Server — Sistem Analisis Ujaran Kebencian")
     logger.info("=" * 60)
@@ -83,17 +73,12 @@ async def lifespan(app: FastAPI):
 
     yield  # ← Server aktif melayani request
 
-    # ── SHUTDOWN ─────────────────────────────────────────────────────────────
     logger.info("Server shutdown. Membersihkan resource...")
     app.state.predictor = None
     from app.services import classification_service
     classification_service.set_predictor(None)
     logger.info("Server berhasil dimatikan.")
 
-
-# ---------------------------------------------------------------------------
-# Inisialisasi Aplikasi FastAPI
-# ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="🛡️ Sistem Analisis Ujaran Kebencian API",
@@ -122,10 +107,6 @@ app = FastAPI(
 )
 
 
-# ---------------------------------------------------------------------------
-# CORS Middleware
-# ---------------------------------------------------------------------------
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],          # Development: izinkan semua origin
@@ -135,20 +116,12 @@ app.add_middleware(
 )
 
 
-# ---------------------------------------------------------------------------
-# Registrasi Routers
-# ---------------------------------------------------------------------------
-
 API_PREFIX = "/api/v1"
 
 app.include_router(auth_router,           prefix=API_PREFIX)
 app.include_router(classification_router, prefix=API_PREFIX)
 app.include_router(pipeline_router,       prefix=API_PREFIX)
 
-
-# ---------------------------------------------------------------------------
-# Root Endpoint (Health Check)
-# ---------------------------------------------------------------------------
 
 @app.get(f"{API_PREFIX}/health", tags=["Health Check"], summary="Lightweight Health Check")
 def health_check():

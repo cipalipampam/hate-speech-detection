@@ -1,4 +1,3 @@
-"""Text Cleaner: bersihkan URL, @mention, #hashtag, prefix RT, emoji/non-ASCII dari teks medsos."""
 
 import re
 import logging
@@ -6,9 +5,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
 # Regex Pattern — Dikompilasi sekali untuk efisiensi
-# ---------------------------------------------------------------------------
 
 # 1. URL lengkap: http, https, ftp, www, dan shortlink t.co
 _RE_URL = re.compile(
@@ -33,9 +30,6 @@ _RE_NON_ALPHANUM = re.compile(r"[^a-zA-Z0-9\s]")
 _RE_MULTI_SPACE = re.compile(r"\s+")
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Publik
-# ---------------------------------------------------------------------------
 
 def clean_text(text: str) -> str:
     """Bersihkan satu teks mentah media sosial sesuai 6 tahap di bawah."""

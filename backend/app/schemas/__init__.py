@@ -1,7 +1,3 @@
-"""
-Pydantic Schemas Package.
-Menyimpan model validasi tipe data untuk Request dan Response FastAPI.
-"""
 
 # CATATAN ARSITEKTUR (dihapus 2026-09-25):
 # Barrel re-export `__all__` (26 nama schema) yang dulu ada di file ini DIHAPUS karena

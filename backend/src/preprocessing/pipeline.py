@@ -1,4 +1,3 @@
-"""Preprocessing Pipeline: clean_text → case_folding → normalisasi slang (single, batch, DataFrame)."""
 
 import logging
 import pandas as pd
@@ -10,9 +9,6 @@ from .normalizer import SlangNormalizer
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Tunggal
-# ---------------------------------------------------------------------------
 
 def preprocess_text(text: str, normalizer: SlangNormalizer) -> str:
     """Jalankan clean_text → case_folding → normalize untuk satu teks."""
@@ -22,9 +18,7 @@ def preprocess_text(text: str, normalizer: SlangNormalizer) -> str:
     return text
 
 
-# ---------------------------------------------------------------------------
 # Class PreprocessingPipeline
-# ---------------------------------------------------------------------------
 
 class PreprocessingPipeline:
     """Orchestrator preprocessing terpadu: teks tunggal, batch, dan DataFrame."""

@@ -1,4 +1,3 @@
-"""Job Service: in-memory job store, batas kapasitas, task guard, dan lock per platform."""
 
 import asyncio
 import logging
@@ -22,7 +21,6 @@ class JobManager:
         self._lock_x = asyncio.Lock()
         self._lock_threads = asyncio.Lock()
 
-    # ── Job Store Operations ───────────────────────────────────────────────
 
     def create_job(self, job_id: str, job_type: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Mendaftarkan job baru dengan status awal 'queued'."""
@@ -85,14 +83,12 @@ class JobManager:
             self._jobs.pop(job_id, None)
             logger.debug(f"JobManager: Job {job_id} (sudah selesai) dihapus dari memori untuk menjaga kapasitas.")
 
-    # ── Task Lifetime Tracking ─────────────────────────────────────────────
 
     def track_task(self, task: asyncio.Task):
         """Simpan strong reference ke asyncio.Task agar tidak di-garbage collect di tengah eksekusi."""
         self._active_tasks.add(task)
         task.add_done_callback(self._active_tasks.discard)
 
-    # ── Concurrency Lock Manager ───────────────────────────────────────────
 
     @asynccontextmanager
     async def platform_lock(self, platform: str):

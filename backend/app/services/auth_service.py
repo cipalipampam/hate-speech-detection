@@ -1,4 +1,3 @@
-"""Auth Service: deteksi runtime GUI, status sesi browser, dan login background."""
 
 import logging
 import os
@@ -17,9 +16,6 @@ from app.schemas.auth_schema import (
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Konstanta deteksi runtime GUI
-# ---------------------------------------------------------------------------
 
 # Mode yang diakui untuk env `LOGIN_GUI_MODE`. Nilai ini di-set EKSPLISIT oleh
 # docker-compose.yml ("novnc") supaya deteksi tidak bergantung pada tebakan.
@@ -31,7 +27,6 @@ DOCKER_SENTINEL = Path("/.dockerenv")
 # Port default viewer noVNC (websockify) bila `NOVNC_PORT` tidak di-set.
 DEFAULT_NOVNC_PORT = "6080"
 
-# Path viewer noVNC relatif terhadap akar port (entrypoint membuat symlink index.html).
 NOVNC_VIEW_PATH = "/vnc.html"
 
 

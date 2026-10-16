@@ -1,4 +1,3 @@
-"""Login X (Twitter) interaktif: buka browser GUI, polling login, sesi tersimpan permanen ke disk."""
 
 import asyncio
 import logging
@@ -20,9 +19,6 @@ logger = logging.getLogger("login_x")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# ---------------------------------------------------------------------------
-# Konstanta
-# ---------------------------------------------------------------------------
 
 LOGIN_URL       = "https://x.com/i/flow/login"
 MAX_WAIT_SEC    = 600       # Maks 10 menit (120 polling x 5 detik)
@@ -40,9 +36,6 @@ LOGGED_IN_SELECTORS = [
 # implementasi untuk scraping & login (diimpor di blok import di atas).
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Utama: Setup Login X
-# ---------------------------------------------------------------------------
 
 @ensure_proactor_loop
 async def setup_x_login(profile_dir: str = None) -> bool:
@@ -85,7 +78,6 @@ async def setup_x_login(profile_dir: str = None) -> bool:
             for check in range(1, max_checks + 1):
                 await asyncio.sleep(POLL_INTERVAL)
 
-                # --- Jika user menutup tab browser ---
                 if page.is_closed():
                     logger.info("Tab browser ditutup oleh pengguna.")
                     try:
@@ -100,7 +92,6 @@ async def setup_x_login(profile_dir: str = None) -> bool:
                     break
 
                 try:
-                    # --- Cek 1: Cookie auth_token / twid ---
                     cookies     = await context.cookies()
                     has_auth    = any(c.get("name") == "auth_token" and bool(c.get("value")) for c in cookies)
                     has_twid    = any(c.get("name") == "twid"       and bool(c.get("value")) for c in cookies)
@@ -111,7 +102,6 @@ async def setup_x_login(profile_dir: str = None) -> bool:
                         logger.info("✓ Cookie auth_token / twid terdeteksi — login berhasil!")
                         break
 
-                    # --- Cek 2: Elemen DOM antarmuka akun terotentikasi ---
                     for selector in LOGGED_IN_SELECTORS:
                         try:
                             if await page.locator(selector).count() > 0:
@@ -131,7 +121,6 @@ async def setup_x_login(profile_dir: str = None) -> bool:
                 if check % (30 // POLL_INTERVAL) == 0:
                     logger.info(f"Menunggu login... ({check * POLL_INTERVAL} detik berlalu dari maks {MAX_WAIT_SEC} detik)")
 
-            # --- Hasil Akhir ---
             if logged_in:
                 await asyncio.sleep(3)  # Beri waktu agar data sesi penuh tersimpan ke disk
                 print("\n" + "★" * 65)
@@ -152,9 +141,6 @@ async def setup_x_login(profile_dir: str = None) -> bool:
                 pass
 
 
-# ---------------------------------------------------------------------------
-# Entrypoint
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     # Izinkan override path profil via argumen CLI:

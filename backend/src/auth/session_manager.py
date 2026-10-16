@@ -1,4 +1,3 @@
-"""Session Manager: cek profil & cookie autentikasi di filesystem tanpa membuka browser."""
 
 import logging
 import os
@@ -9,7 +8,6 @@ from pathlib import Path
 from datetime import datetime
 from time import time
 
-# Import path konfigurasi terpusat
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # tambah root backend ke path
 
@@ -20,9 +18,6 @@ if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 
-# ---------------------------------------------------------------------------
-# Konstanta
-# ---------------------------------------------------------------------------
 
 PLATFORM_PROFILES = {
     "x"       : X_PROFILE_DIR,
@@ -53,9 +48,6 @@ AUTH_COOKIE_HOSTS = {
 CHROMIUM_EPOCH_OFFSET = 11644473600
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Utama
-# ---------------------------------------------------------------------------
 
 def check_profile_exists(platform: str) -> bool:
     """True bila folder profil platform ada dan berisi data."""
@@ -224,9 +216,7 @@ def get_all_sessions_status() -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
 # CLI standalone — jalankan langsung untuk cek status sesi
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     print("\n=== CEK STATUS SESI LOGIN ===\n")

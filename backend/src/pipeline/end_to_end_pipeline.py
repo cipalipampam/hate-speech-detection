@@ -1,4 +1,3 @@
-"""Orkestrator end-to-end: validasi sesi → scraping → preprocessing → klasifikasi → statistik → CSV."""
 
 import asyncio
 import logging
@@ -19,9 +18,6 @@ from src.classification.predictor import HateSpeechPredictor
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Helper Format Slug
-# ---------------------------------------------------------------------------
 
 def _create_filename_slug(keywords: List[str] = None, platform: str = "both") -> str:
     """Membuat nama file unik berbasis timestamp dan keyword."""
@@ -66,9 +62,7 @@ def validate_platform_sessions(platform: str) -> Tuple[bool, List[str]]:
     return len(errors) == 0, errors
 
 
-# ---------------------------------------------------------------------------
 # Kelas EndToEndPipeline
-# ---------------------------------------------------------------------------
 
 class EndToEndPipeline:
     """Orchestrator alur analisis end-to-end (async)."""
@@ -96,14 +90,12 @@ class EndToEndPipeline:
             self._predictor = HateSpeechPredictor()
         return self._predictor
 
-    # ── Tahap 1: Validasi Sesi ────────────────────────────────────────────
 
     def validate_sessions(self, platform: str) -> Dict[str, Any]:
         """Delegasi ke validate_platform_sessions(); kembalikan {"valid": bool, "errors": list[str]}."""
         valid, errors = validate_platform_sessions(platform)
         return {"valid": valid, "errors": errors}
 
-    # ── Tahap 2: Eksekusi Scraping ────────────────────────────────────────
 
     async def execute_scraping(
         self,
@@ -186,7 +178,6 @@ class EndToEndPipeline:
 
         return df_merged
 
-    # ── Tahap 3: Preprocessing Teks ───────────────────────────────────────
 
     def execute_preprocessing(
         self,
@@ -211,7 +202,6 @@ class EndToEndPipeline:
         )
         return df_clean
 
-    # ── Tahap 4: Klasifikasi IndoBERT ─────────────────────────────────────
 
     def execute_classification(
         self,
@@ -238,7 +228,6 @@ class EndToEndPipeline:
         )
         return df_classified
 
-    # ── Tahap 5: Perhitungan Statistik ───────────────────────────────────
 
     def compute_statistics(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Hitung ringkasan statistik: total, hate/non-hate, breakdown Level 2 & platform, rata-rata confidence."""
@@ -259,7 +248,6 @@ class EndToEndPipeline:
         hate_count = int(sum(df["label_lvl1"] == "hate_speech"))
         nonhate_count = total - hate_count
 
-        # Breakdown Level 2
         lvl2_counts = df["label_lvl2"].value_counts().to_dict()
         lvl2_breakdown = {}
         for cat, cnt in lvl2_counts.items():
@@ -268,7 +256,6 @@ class EndToEndPipeline:
                 "percentage": round(float(cnt / total * 100), 2),
             }
 
-        # Breakdown Platform
         plat_counts = df["platform"].value_counts().to_dict()
         plat_breakdown = {}
         for p, cnt in plat_counts.items():
@@ -296,7 +283,6 @@ class EndToEndPipeline:
             "avg_confidence_lvl2": round(avg_conf2 * 100, 2),
         }
 
-    # ── Tahap 6: Ekspor CSV ───────────────────────────────────────────────
 
     def export_results(
         self,
@@ -316,7 +302,6 @@ class EndToEndPipeline:
         logger.info(f"Hasil analisis berhasil diekspor ke: {out_path}")
         return out_path
 
-    # ── Eksekutor Utama (Async) ───────────────────────────────────────────
 
     async def run(
         self,
@@ -428,9 +413,6 @@ class EndToEndPipeline:
         }
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Interface Eksternal
-# ---------------------------------------------------------------------------
 
 async def run_end_to_end_pipeline(
     keywords: Optional[List[str]] = None,

@@ -1,8 +1,3 @@
-"""
-FastAPI Routers Package.
-
-Menyimpan definisi endpoint REST API berdasarkan domain modul masing-masing.
-"""
 
 from .api_auth import router as auth_router
 from .api_classification import router as classification_router

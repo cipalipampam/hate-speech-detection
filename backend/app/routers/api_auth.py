@@ -1,4 +1,3 @@
-"""Router API autentikasi & sesi: status sesi X/Threads + trigger login interaktif."""
 
 import logging
 from typing import Literal
@@ -15,9 +14,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Autentikasi & Sesi"])
 
 
-# ---------------------------------------------------------------------------
 # Endpoints
-# ---------------------------------------------------------------------------
 
 @router.get(
     "/status",

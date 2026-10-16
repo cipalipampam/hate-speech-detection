@@ -1,4 +1,3 @@
-"""Schema Pydantic untuk modul autentikasi & sesi (/api/v1/auth)."""
 
 from typing import Literal, Optional
 

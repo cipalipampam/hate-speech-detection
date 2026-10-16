@@ -1,18 +1,3 @@
-"""
-Test regresi Paket F3 — konsolidasi duplikasi & konsistensi perilaku.
-
-Cakupan:
-    1. Fungsi duplikat 100% identik (keyword matcher, filter teks sistem, browser
-       factory) benar-benar memakai SATU implementasi bersama.
-    2. Pemilihan kolom teks untuk inferensi memakai resolver yang sama di pipeline
-       dan CLI (dulu CLI memakai 'content' mentah, API memakai 'clean_text').
-    3. Kunci config `SCRAPER_CONFIG["headless"]` yang tidak pernah dibaca sudah hilang,
-       dan default headless scraper bersifat eksplisit.
-
-Jalankan:
-    cd backend
-    python -m unittest tests.test_paket_f3 -v
-"""
 
 from __future__ import annotations
 

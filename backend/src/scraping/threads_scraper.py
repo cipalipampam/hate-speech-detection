@@ -1,4 +1,3 @@
-"""Scraper Threads (Meta): Stage 1 search discovery + Stage 2 deep crawl post & reply."""
 
 import asyncio
 import json
@@ -100,9 +99,6 @@ def _dump_stage1_urls(urls: list[str], keywords: list[str], direct_urls: list[st
         return None
 
 
-# ---------------------------------------------------------------------------
-# Path Default Output
-# ---------------------------------------------------------------------------
 
 DEFAULT_CHECKPOINT = str(EXPORTS_DIR / "threads_checkpoint.csv")
 DEFAULT_OUTPUT     = str(EXPORTS_DIR / "threads_scraper_result.csv")
@@ -135,11 +131,9 @@ def _threads_post_path(url: str) -> str:
     return urllib.parse.urlsplit(_normalize_threads_url(url)).path
 
 
-# ---------------------------------------------------------------------------
 # Identitas Halaman — Anti-Hijack & Anti-Salah-Label
 # Threads bisa membounce permalink ke beranda SETELAH domcontentloaded, jadi
 # identitas halaman diverifikasi berulang (URL + elemen milik post id).
-# ---------------------------------------------------------------------------
 
 # Ambang jumlah langkah scan antar-verifikasi identitas (overhead kecil).
 IDENTITY_CHECK_EVERY = 5
@@ -294,11 +288,9 @@ async def _open_post_in_app(page: Page, requested_url: str) -> bool:
     return False
 
 
-# ---------------------------------------------------------------------------
 # Verifikasi Sesi Live (host-aware)
 # Cek nama cookie saja tidak cukup: cookie .threads.net/.instagram.com harus
 # ditolak karena halaman yang di-crawl adalah threads.com.
-# ---------------------------------------------------------------------------
 
 _LOGIN_MARKER_JS = """
 () => {
@@ -352,9 +344,6 @@ async def _looks_like_login_wall(page: Page) -> bool:
     return bool(info.get("hasLoginCta")) and not has_nav
 
 
-# ---------------------------------------------------------------------------
-# Noise / Filter UI Threads (Meta)
-# ---------------------------------------------------------------------------
 
 SYSTEM_EXACT_PHRASES = {
     "log in", "log masuk", "masuk", "sign up", "daftar",
@@ -382,9 +371,6 @@ def is_system_text(content: str) -> bool:
     return _system_text_matches(content, SYSTEM_EXACT_PHRASES)
 
 
-# ---------------------------------------------------------------------------
-# Konfigurasi Scraper
-# ---------------------------------------------------------------------------
 
 @dataclass
 class ThreadsScrapeConfig:
@@ -402,9 +388,7 @@ class ThreadsScrapeConfig:
     per_post_timeout_s: float = 1800.0
 
 
-# ---------------------------------------------------------------------------
 # JavaScript Snippet — Ekstraksi Komentar / Thread dari DOM
-# ---------------------------------------------------------------------------
 
 _SYSTEM_EXACT_JS = json.dumps(sorted(SYSTEM_EXACT_PHRASES))
 _NOISE_JS        = json.dumps(sorted(NOISE_EXACT))
@@ -549,9 +533,6 @@ _JS_EXTRACT_SEARCH_CARDS = """
 """
 
 
-# ---------------------------------------------------------------------------
-# Helper: Thread Divider & Auto-Expand
-# ---------------------------------------------------------------------------
 
 async def _check_thread_divider(page: Page) -> bool:
     """Deteksi tanda pembatas akhir reply di postingan Threads (Related Threads, dll.)."""
@@ -654,9 +635,6 @@ async def _collect_js_items(
     return len(collected) - count_before
 
 
-# ---------------------------------------------------------------------------
-# Stage 2: Slow Scan (Micro-Step Forward + Reverse Sweep)
-# ---------------------------------------------------------------------------
 
 async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrapeConfig) -> list[dict]:
     """Ekstrak post + seluruh reply via micro-step forward scan + reverse sweep.
@@ -742,7 +720,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
     forward_count = len(collected)
     logger.info(f"Forward scan selesai: {forward_count} item dari {step + 1} langkah.")
 
-    # Reverse sweep
     try:
         scroll_height = await page.evaluate("document.body.scrollHeight")
         current_pos   = scroll_height
@@ -761,7 +738,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
     if reverse_gained > 0:
         logger.info(f"Reverse sweep menambah {reverse_gained} item baru!")
 
-    # Final settle pass
     try:
         final_expanded = await _click_expand_buttons(page)
         if final_expanded > 0:
@@ -771,7 +747,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
     except Exception as e:
         logger.debug(f"Final settle dilewati: {e}")
 
-    # HTML fallback via parsel
     try:
         html = await page.content()
         for item in _parse_post_page_html(html, source_link):
@@ -795,9 +770,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: ThreadsScrap
     return list(collected.values())
 
 
-# ---------------------------------------------------------------------------
-# HTML Fallback Parser (Parsel)
-# ---------------------------------------------------------------------------
 
 _TIME_AGO_RE     = re.compile(r'^\d+[smhdw]$', re.IGNORECASE)
 _DATE_FORMAT_RE  = re.compile(r'^(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}|\d{1,2}\s+[a-zA-Z]{3,9}(\s+\d{2,4})?|[a-zA-Z]{3,9}\s+\d{1,2}(\s+\d{2,4})?)$', re.IGNORECASE)
@@ -904,17 +876,11 @@ def _parse_post_page_html(html: str, source_link: str) -> list[dict]:
     return results
 
 
-# ---------------------------------------------------------------------------
-# Utilitas Keyword Matching
-# ---------------------------------------------------------------------------
 
 # Implementasi dipindah ke base_scraper.keyword_matches_text() agar X dan Threads
 # memakai satu kode yang sama (lihat blok import di atas).
 
 
-# ---------------------------------------------------------------------------
-# Stage 1: Search Discovery
-# ---------------------------------------------------------------------------
 
 async def collect_post_urls(
     page: Page,
@@ -1039,9 +1005,6 @@ async def collect_post_urls(
     return ordered_urls
 
 
-# ---------------------------------------------------------------------------
-# Stage 2: Deep Crawl
-# ---------------------------------------------------------------------------
 
 async def deep_crawl_post(
     page: Page,
@@ -1133,9 +1096,6 @@ async def deep_crawl_post(
     return Stage2Outcome(skipped=True, reason=reason)
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Publik Utama: run_threads_scraper
-# ---------------------------------------------------------------------------
 
 @ensure_proactor_loop
 async def run_threads_scraper(
@@ -1156,7 +1116,6 @@ async def run_threads_scraper(
     # Log ke disk agar kegagalan dapat diperiksa setelah kejadian.
     _ensure_file_logging()
 
-    # Validasi sesi (level filesystem)
     if not check_profile_exists(config.profile_dir):
         logger.error(
             f"Sesi Threads belum ditemukan di '{config.profile_dir}'. "
@@ -1200,13 +1159,11 @@ async def run_threads_scraper(
 
             session_urls: list[str] = []
 
-            # Direct URLs
             for u in direct_urls:
                 if u not in global_seen_urls:
                     global_seen_urls.add(u)
                     session_urls.append(u)
 
-            # Stage 1 — Keyword Search
             for kw in keywords:
                 urls = await collect_post_urls(
                     page,
@@ -1231,7 +1188,6 @@ async def run_threads_scraper(
                     status_callback(f"[Threads] {msg_empty}")
                 return pd.DataFrame()
 
-            # Stage 2 — Deep Crawl
             total_urls = len(session_urls)
             skipped_urls: list[tuple[str, str]] = []
 
@@ -1286,9 +1242,6 @@ async def run_threads_scraper(
     return df
 
 
-# ---------------------------------------------------------------------------
-# Entrypoint CLI
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import asyncio

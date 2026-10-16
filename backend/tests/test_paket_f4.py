@@ -1,18 +1,3 @@
-"""
-Test regresi Paket F4 — kebijakan sesi tunggal & dokumentasi endpoint yang akurat.
-
-Cakupan:
-    1. Validasi sesi platform dipakai BERSAMA oleh endpoint `/scrape/run` (ScraperService)
-       dan pipeline end-to-end — satu aturan, satu pesan (dulu dua salinan).
-    2. `validate_sessions()` tidak lagi memanggil `get_all_sessions_status()` (scan
-       filesystem ekstra & key `statuses` yang tidak pernah dibaca).
-    3. README backend mendokumentasikan endpoint yang BENAR-BENAR ada (sebelumnya masih
-       mencantumkan endpoint hantu seperti `/api/v1/preprocess/clean` & `/api/v1/auth/sessions`).
-
-Jalankan:
-    cd backend
-    python -m unittest tests.test_paket_f4 -v
-"""
 
 from __future__ import annotations
 

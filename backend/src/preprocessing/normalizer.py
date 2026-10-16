@@ -1,4 +1,3 @@
-"""Slang Normalizer: ubah kata slang/singkatan menjadi kata baku via kamusalay.csv (15.000+ entri)."""
 
 import logging
 from pathlib import Path
@@ -7,17 +6,11 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Konstanta path default (fallback jika config tidak tersedia)
-# ---------------------------------------------------------------------------
 
 # parents[0] = preprocessing, parents[1] = src, parents[2] = backend (apps/backend)
 _DEFAULT_DICT_PATH = Path(__file__).resolve().parents[2] / "storage" / "dictionaries" / "kamusalay.csv"
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Utilitas
-# ---------------------------------------------------------------------------
 
 def load_slang_dictionary(path=None) -> dict:
     """Muat kamus slang dari CSV tanpa header (kolom 0 = slang, kolom 1 = baku) menjadi {slang: baku}."""
@@ -58,9 +51,7 @@ def load_slang_dictionary(path=None) -> dict:
         return {}
 
 
-# ---------------------------------------------------------------------------
 # Class SlangNormalizer
-# ---------------------------------------------------------------------------
 
 class SlangNormalizer:
     """Normalisasi slang → kata baku dengan lookup O(1) pada hash map in-memory."""

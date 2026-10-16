@@ -1,4 +1,3 @@
-"""Login Threads interaktif pada host threads.com (cookie threads.net/.instagram.com tidak berlaku di sana)."""
 
 import asyncio
 import logging
@@ -20,9 +19,6 @@ logger = logging.getLogger("login_threads")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# ---------------------------------------------------------------------------
-# Konstanta
-# ---------------------------------------------------------------------------
 
 LOGIN_URL       = "https://www.threads.com/login"
 VERIFY_URL      = "https://www.threads.com/"
@@ -80,9 +76,6 @@ async def _verify_login_on_threads(page) -> bool:
         return False
 
 
-# ---------------------------------------------------------------------------
-# Fungsi Utama: Setup Login Threads
-# ---------------------------------------------------------------------------
 
 @ensure_proactor_loop
 async def setup_threads_login(profile_dir: str = None) -> bool:
@@ -125,7 +118,6 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
             for check in range(1, max_checks + 1):
                 await asyncio.sleep(POLL_INTERVAL)
 
-                # --- Jika user menutup tab browser ---
                 if page.is_closed():
                     logger.info("Tab browser ditutup oleh pengguna.")
                     try:
@@ -151,7 +143,6 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
                     break
 
                 try:
-                    # --- Cek 1: Cookie sessionid & ds_user_id (host-aware) ---
                     cookies         = await context.cookies()
                     has_session     = any(c.get("name") == "sessionid"  and bool(c.get("value")) for c in cookies)
                     has_ds_user     = any(c.get("name") == "ds_user_id" and bool(c.get("value")) for c in cookies)
@@ -184,7 +175,6 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
                             f"(host sessionid saat ini: {', '.join(session_hosts) or '<kosong>'})"
                         )
 
-                    # --- Cek 2: Elemen DOM navigasi terotentikasi ---
                     if "login" not in current_url:
                         for selector in LOGGED_IN_SELECTORS:
                             try:
@@ -207,7 +197,6 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
                 if check % (30 // POLL_INTERVAL) == 0:
                     logger.info(f"Menunggu login... ({check * POLL_INTERVAL} detik berlalu dari maks {MAX_WAIT_SEC} detik)")
 
-            # --- Hasil Akhir ---
             if logged_in:
                 await asyncio.sleep(3)  # Beri waktu agar data sesi penuh tersimpan ke disk
                 print("\n" + "★" * 65)
@@ -228,9 +217,6 @@ async def setup_threads_login(profile_dir: str = None) -> bool:
                 pass
 
 
-# ---------------------------------------------------------------------------
-# Entrypoint
-# ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
     # Izinkan override path profil via argumen CLI:

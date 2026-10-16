@@ -1,4 +1,3 @@
-"""Router API pipeline: jalankan analisis, polling status, unduh berkas CSV hasil."""
 
 from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import FileResponse
@@ -13,9 +12,7 @@ from app.services.pipeline_service import pipeline_service
 router = APIRouter(prefix="/pipeline", tags=["End-to-End Analysis Pipeline"])
 
 
-# ---------------------------------------------------------------------------
 # Endpoints
-# ---------------------------------------------------------------------------
 
 @router.post(
     "/run",

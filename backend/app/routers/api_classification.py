@@ -1,4 +1,3 @@
-"""Router API klasifikasi IndoBERT: inferensi satu teks (/classify/single)."""
 
 import logging
 
@@ -14,9 +13,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/classify", tags=["Klasifikasi IndoBERT"])
 
 
-# ---------------------------------------------------------------------------
-# Helper Dependency
-# ---------------------------------------------------------------------------
 
 def _ensure_predictor_ready() -> None:
     """Pastikan predictor yang diinjeksikan ke service sudah siap digunakan."""
@@ -29,9 +25,7 @@ def _ensure_predictor_ready() -> None:
                 "Coba lagi sebentar."
             ),
         )
-# ---------------------------------------------------------------------------
 # Endpoints
-# ---------------------------------------------------------------------------
 
 @router.post(
     "/single",

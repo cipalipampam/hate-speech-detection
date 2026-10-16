@@ -1,4 +1,3 @@
-"""Pipeline Service: orkestrasi pipeline end-to-end, statistik, dan berkas ekspor."""
 
 import asyncio
 import logging

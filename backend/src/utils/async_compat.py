@@ -1,4 +1,3 @@
-"""Helper kompatibilitas asyncio & Playwright di Windows: SelectorEventLoop → ProactorEventLoop."""
 
 # Uvicorn `--reload` memaksa SelectorEventLoop, padahal Playwright butuh ProactorEventLoop
 # untuk `create_subprocess_exec()` — tanpa helper ini muncul NotImplementedError.

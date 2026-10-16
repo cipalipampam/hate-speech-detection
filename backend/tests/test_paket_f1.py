@@ -1,19 +1,3 @@
-"""
-Test regresi Paket F1 — keamanan data & ketahanan service layer.
-
-Cakupan:
-    1. JobManager tidak boleh membuang job yang masih queued/running.
-    2. Statistik pipeline yang tidak lengkap tidak boleh menggagalkan seluruh job.
-    3. Proteksi path traversal pada unduhan ekspor tetap ketat & tepat.
-    4. Schema Pydantic v2 bebas dari `class Config` (deprecated).
-
-Catatan: uji serialisasi NaN (dulu ada di sini) DIHAPUS bersama endpoint `/api/v1/scrape/*`
-beserta `ScraperService` — kode bermasalah itu sudah tidak ada, jadi test-nya ikut hilang.
-
-Jalankan:
-    cd backend
-    python -m unittest tests.test_paket_f1 -v
-"""
 
 from __future__ import annotations
 
@@ -42,9 +26,7 @@ from app.services.pipeline_service import PipelineService, pipeline_service
 pipeline_service_module = sys.modules["app.services.pipeline_service"]
 
 
-# ---------------------------------------------------------------------------
 # 1. JobManager — eviction
-# ---------------------------------------------------------------------------
 
 class JobManagerEvictionTest(unittest.TestCase):
     """Job aktif tidak boleh hilang dari memori (penyebab 404 → frontend FAILED)."""
@@ -93,9 +75,7 @@ class JobManagerEvictionTest(unittest.TestCase):
         self.assertLessEqual(len(manager._jobs), 3, "Kapasitas max_jobs harus tetap ditegakkan.")
 
 
-# ---------------------------------------------------------------------------
 # 3. Statistik pipeline tidak lengkap
-# ---------------------------------------------------------------------------
 
 class PipelineStatisticsTest(unittest.IsolatedAsyncioTestCase):
     async def test_statistik_tidak_lengkap_tidak_menggagalkan_job(self):
@@ -150,9 +130,7 @@ class PipelineStatisticsTest(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(33.33, status.statistics.platform_breakdown["Threads"].hate_pct, places=2)
 
 
-# ---------------------------------------------------------------------------
 # 4. Proteksi path traversal
-# ---------------------------------------------------------------------------
 
 class SafeExportPathTest(unittest.TestCase):
     def setUp(self):
@@ -187,9 +165,7 @@ class SafeExportPathTest(unittest.TestCase):
         self.assertIsNone(PipelineService.get_safe_export_path("sub"))
 
 
-# ---------------------------------------------------------------------------
 # 5. Pydantic v2 — tidak boleh pakai `class Config`
-# ---------------------------------------------------------------------------
 
 class PydanticV2ConfigTest(unittest.TestCase):
     def test_tidak_ada_deprecation_class_config(self):

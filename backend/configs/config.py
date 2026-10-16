@@ -1,43 +1,20 @@
-"""Konfigurasi terpusat backend: path direktori, SCRAPER_CONFIG, MODEL_CONFIG."""
 
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Direktori Root
-# ---------------------------------------------------------------------------
-
-# Direktori root backend (d:/skripsi/Project/apps/backend)
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-# Direktori storage runtime
 STORAGE_DIR     = BACKEND_DIR / "storage"
 SESSIONS_DIR    = STORAGE_DIR / "sessions"
 EXPORTS_DIR     = STORAGE_DIR / "exports"
 DICT_DIR        = STORAGE_DIR / "dictionaries"
 
-# Direktori model IndoBERT
 MODEL_DIR       = BACKEND_DIR / "saved_models"
 
-# ---------------------------------------------------------------------------
-# Path Sesi Login (Persistent Browser Profile)
-# ---------------------------------------------------------------------------
-
-# Direktori User Data Directory browser untuk X (Twitter)
 X_PROFILE_DIR       = SESSIONS_DIR / "x_profile"
 
-# Direktori User Data Directory browser untuk Threads / Instagram
 THREADS_PROFILE_DIR = SESSIONS_DIR / "threads_profile"
 
-# ---------------------------------------------------------------------------
-# Path File Pendukung
-# ---------------------------------------------------------------------------
-
-# Kamus normalisasi kata tidak baku (slang/typo) ke kata baku bahasa Indonesia
 KAMUSALAY_PATH = DICT_DIR / "kamusalay.csv"
-
-# ---------------------------------------------------------------------------
-# Konfigurasi Scraper
-# ---------------------------------------------------------------------------
 
 SCRAPER_CONFIG = {
     # CATATAN: tidak ada kunci "headless" di sini. Opsi itu dikendalikan per-request
@@ -53,10 +30,6 @@ SCRAPER_CONFIG = {
     "scan_delay_range"  : (0.15, 0.30),    # Delay antar langkah scroll (detik)
     "scan_max_steps"    : 3000,            # Batas pengaman langkah deep crawl per postingan
 }
-
-# ---------------------------------------------------------------------------
-# Konfigurasi Model IndoBERT
-# ---------------------------------------------------------------------------
 
 MODEL_CONFIG = {
     "pretrained_model"  : "indobenchmark/indobert-base-p1",
@@ -76,10 +49,6 @@ MODEL_CONFIG = {
         "kutukan_agama_personal",  # 5
     ],
 }
-
-# ---------------------------------------------------------------------------
-# Pastikan direktori penting sudah ada saat modul diimpor
-# ---------------------------------------------------------------------------
 
 for _dir in (SESSIONS_DIR, EXPORTS_DIR, DICT_DIR, X_PROFILE_DIR.parent, THREADS_PROFILE_DIR.parent):
     _dir.mkdir(parents=True, exist_ok=True)

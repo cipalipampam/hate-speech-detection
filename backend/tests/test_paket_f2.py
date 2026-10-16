@@ -1,15 +1,3 @@
-"""
-Test regresi Paket F2 — kontrak endpoint & entrance CLI tetap utuh.
-
-Paket F2 hanya menghapus dead code (method/fungsi/import mati). Test ini menjaga
-dua hal yang TIDAK boleh rusak saat pembersihan:
-    1. Inventaris endpoint FastAPI (kontrak dengan frontend Laravel) tidak berubah.
-    2. `main_cli.py` tetap bisa diimpor (import mati yang dihapus tidak memutus apa pun).
-
-Jalankan:
-    cd backend
-    python -m unittest tests.test_paket_f2 -v
-"""
 
 from __future__ import annotations
 
