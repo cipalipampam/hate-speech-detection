@@ -141,14 +141,6 @@ class ModelLoader:
         if not (self._model_dir / "best_model.pt").exists() and (self._model_dir / "indobert_sentiment" / "best_model.pt").exists():
             self._model_dir = self._model_dir / "indobert_sentiment"
 
-        weights_path = self._model_dir / "best_model.pt"
-        if not weights_path.exists():
-            raise FileNotFoundError(
-                f"File bobot model tidak ditemukan: {weights_path}\n"
-                f"Pastikan file 'best_model.pt' hasil training dari Google Colab "
-                f"sudah diekstrak ke folder: {self._model_dir}"
-            )
-
         # Auto-detect device
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 

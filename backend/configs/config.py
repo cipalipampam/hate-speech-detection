@@ -1,5 +1,9 @@
 
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Muat environment variables dari .env bila tersedia
+load_dotenv()
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
@@ -11,7 +15,6 @@ DICT_DIR        = STORAGE_DIR / "dictionaries"
 MODEL_DIR       = BACKEND_DIR / "saved_models"
 
 X_PROFILE_DIR       = SESSIONS_DIR / "x_profile"
-
 THREADS_PROFILE_DIR = SESSIONS_DIR / "threads_profile"
 
 KAMUSALAY_PATH = DICT_DIR / "kamusalay.csv"
@@ -31,24 +34,9 @@ SCRAPER_CONFIG = {
     "scan_max_steps"    : 3000,            # Batas pengaman langkah deep crawl per postingan
 }
 
-MODEL_CONFIG = {
-    "pretrained_model"  : "indobenchmark/indobert-base-p1",
-    "max_seq_len"       : 128,              # Panjang token maksimum untuk tokenizer
-    "batch_size"        : 32,               # Jumlah sampel per batch inferensi
-    "dropout_rate"      : 0.3,              # Dropout rate classifier head
-    "classes_lvl1"      : [
-        "non_hate_speech",   # 0
-        "hate_speech",       # 1
-    ],
-    "classes_lvl2"      : [
-        "tidak_relevan",           # 0
-        "delegitimasi_institusi",  # 1
-        "dehumanisasi",            # 2
-        "ajakan_kekerasan",        # 3
-        "hoaks_pemicu_kebencian",  # 4
-        "kutukan_agama_personal",  # 5
-    ],
-}
+# CATATAN ARSITEKTUR: Konfigurasi model IndoBERT (arsitektur, label mapping, max_length)
+# dibaca langsung secara dinamis dari `saved_models/model_config.json` dan
+# `saved_models/label_mapping.json` oleh `ModelLoader` (bukan hardcoded di sini).
 
-for _dir in (SESSIONS_DIR, EXPORTS_DIR, DICT_DIR, X_PROFILE_DIR.parent, THREADS_PROFILE_DIR.parent):
+for _dir in (SESSIONS_DIR, EXPORTS_DIR, DICT_DIR, X_PROFILE_DIR, THREADS_PROFILE_DIR):
     _dir.mkdir(parents=True, exist_ok=True)

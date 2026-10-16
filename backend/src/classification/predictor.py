@@ -95,8 +95,7 @@ class HateSpeechPredictor:
                     label2 = _TIDAK_RELEVAN
                     if _TIDAK_RELEVAN in self.classes_lvl2:
                         pred_idx2 = self.classes_lvl2.index(_TIDAK_RELEVAN)
-                    confidence1 = float(p1[pred_idx1])
-                    confidence2 = confidence1  # Keyakinan tidak relevan identik dengan keyakinan non-hate
+                    confidence2 = float(p1[pred_idx1])  # Keyakinan tidak relevan identik dengan keyakinan non-hate
                     prob_dist_lvl2 = {
                         cls: (1.0 if cls == _TIDAK_RELEVAN else 0.0)
                         for cls in self.classes_lvl2
@@ -119,7 +118,6 @@ class HateSpeechPredictor:
                                 f"L2 forced from 'tidak_relevan' → '{label2}' "
                                 f"(p={p2[pred_idx2]:.4f})"
                             )
-                    confidence1 = float(p1[pred_idx1])
                     confidence2 = float(p2[pred_idx2])
                     prob_dist_lvl2 = {
                         cls: round(float(p2[idx]), 4)

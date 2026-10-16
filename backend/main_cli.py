@@ -154,7 +154,7 @@ def show_auth_status_table():
         console.print(table)
     else:
         print("\n=== STATUS SESI LOGIN BROWSER ===")
-        for key, info in statuses.items():
+        for info in statuses.values():
             print(f"Platform: {info['platform']} | Valid: {info['is_valid']} | Profile: {info['profile_dir']}")
         print("=" * 40)
 
@@ -238,7 +238,7 @@ def handle_scraping_menu():
 
         if HAS_RICH:
             console.print("\n[bold cyan]─── [MENU 2] SCRAPING DATA MEDIA SOSIAL ───[/bold cyan]")
-            for key, s in get_all_sessions_status().items():
+            for s in get_all_sessions_status().values():
                 badge = "[green]●[/green]" if s["is_valid"] else "[red]○[/red]"
                 console.print(f"  {badge} Sesi {s['platform']}: {'AKTIF' if s['is_valid'] else 'Belum Ada/Expired'}")
             console.print(f"  🎯 Mode Pencarian: [{mode_color}]{mode_label}[/{mode_color}]")
@@ -1100,7 +1100,7 @@ def main():
         
         print_info("Status Sesi Saat Ini:")
         statuses = get_all_sessions_status()
-        for key, s in statuses.items():
+        for s in statuses.values():
             status_text = "[green]AKTIF[/green]" if s["is_valid"] else "[red]BELUM ADA / EXPIRED[/red]"
             if HAS_RICH:
                 console.print(f"  • [bold]{s['platform']}[/bold]: {status_text}")

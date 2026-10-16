@@ -114,18 +114,21 @@ class AuthService:
     @staticmethod
     async def run_login_task(platform: str):
         """Menjalankan proses login interaktif Playwright di background."""
+        from app.services.job_service import job_manager
+
         plat = platform.lower().strip()
         try:
-            if plat == "x":
-                logger.info("AuthService: Memulai background login X...")
-                await setup_x_login(str(X_PROFILE_DIR))
-                logger.info("AuthService: Background login X selesai.")
-            elif plat == "threads":
-                logger.info("AuthService: Memulai background login Threads...")
-                await setup_threads_login(str(THREADS_PROFILE_DIR))
-                logger.info("AuthService: Background login Threads selesai.")
-            else:
-                logger.warning(f"AuthService: Platform tidak dikenal: {platform}")
+            async with job_manager.platform_lock(plat):
+                if plat == "x":
+                    logger.info("AuthService: Memulai background login X...")
+                    await setup_x_login(str(X_PROFILE_DIR))
+                    logger.info("AuthService: Background login X selesai.")
+                elif plat == "threads":
+                    logger.info("AuthService: Memulai background login Threads...")
+                    await setup_threads_login(str(THREADS_PROFILE_DIR))
+                    logger.info("AuthService: Background login Threads selesai.")
+                else:
+                    logger.warning(f"AuthService: Platform tidak dikenal: {platform}")
         except Exception as e:
             logger.error(f"AuthService: Error saat login {platform}: {e}", exc_info=True)
 

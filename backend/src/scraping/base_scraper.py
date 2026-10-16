@@ -6,7 +6,6 @@ import random
 from pathlib import Path
 
 import pandas as pd
-from playwright.async_api import Page
 
 logger = logging.getLogger("base_scraper")
 
@@ -60,22 +59,6 @@ async def create_browser(playwright, profile_dir: str, headless: bool = False):
 async def random_delay(delay_range: tuple):
     """Tunda eksekusi dengan durasi acak (mitigasi deteksi bot)."""
     await asyncio.sleep(random.uniform(*delay_range))
-
-
-async def scroll_page(page: Page, times: int, delay_range: tuple):
-    """Scroll ke bawah `times` kali dengan delay acak (berhenti bila mentok)."""
-    prev_height = 0
-    for _ in range(times):
-        try:
-            curr_height = await page.evaluate("document.body.scrollHeight")
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            await random_delay(delay_range)
-            if curr_height == prev_height:
-                break
-            prev_height = curr_height
-        except Exception as e:
-            logger.warning(f"scroll_page berhenti lebih awal: {e}")
-            break
 
 
 # Penanganan Data & Penyimpanan

@@ -1107,8 +1107,6 @@ async def run_threads_scraper(
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> "pd.DataFrame":
     """Pipeline lengkap Threads: Stage 1 cari URL → Stage 2 deep crawl → DataFrame."""
-    import pandas as pd
-
     config      = config or ThreadsScrapeConfig()
     keywords    = keywords or []
     direct_urls = direct_urls or []
@@ -1244,7 +1242,6 @@ async def run_threads_scraper(
 
 
 if __name__ == "__main__":
-    import asyncio
     keywords = sys.argv[1:] if len(sys.argv) > 1 else []
     if not keywords:
         print("Penggunaan: python threads_scraper.py <keyword1> [keyword2 ...]")

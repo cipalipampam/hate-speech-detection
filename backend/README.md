@@ -113,19 +113,19 @@ backend/
 
 * **Pretrained Base**: `indobenchmark/indobert-base-p1`
 * **Mekanisme Dual Head**:
-  - `encoder`: Shared IndoBERT Transformer layer (768 hidden dimensions).
+  - `bert`: Shared IndoBERT Transformer layer (768 hidden dimensions).
   - `head_lvl1`: `Linear(768, 2)` $\rightarrow$ Output logits untuk 2 kelas.
   - `head_lvl2`: `Linear(768, 6)` $\rightarrow$ Output logits untuk 6 kelas.
 
 ```python
 # Definisi arsitektur dual head di src/classification/model_loader.py:
-class HierarchicalIndoBERT(nn.Module):
+class IndoBERTHierarchicalClassifier(nn.Module):
     def __init__(self, pretrained_model, num_classes_lvl1=2, num_classes_lvl2=6, dropout_rate=0.3):
         super().__init__()
-        self.encoder = AutoModel.from_pretrained(pretrained_model)
+        self.bert = AutoModel.from_pretrained(pretrained_model)
         self.dropout = nn.Dropout(dropout_rate)
-        self.classifier_lvl1 = nn.Linear(768, num_classes_lvl1)
-        self.classifier_lvl2 = nn.Linear(768, num_classes_lvl2)
+        self.head_lvl1 = nn.Linear(768, num_classes_lvl1)
+        self.head_lvl2 = nn.Linear(768, num_classes_lvl2)
 ```
 
 ### Taksonomi Label

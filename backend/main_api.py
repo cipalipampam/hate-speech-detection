@@ -22,6 +22,7 @@ from app.routers import (
     classification_router,
     pipeline_router,
 )
+from app.services import classification_service
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,7 +54,6 @@ async def lifespan(app: FastAPI):
 
         # Injeksi predictor ke ClassificationService agar semua service layer
         # menggunakan instance yang sama — mencegah double-load model 490 MB.
-        from app.services import classification_service
         classification_service.set_predictor(predictor)
         logger.info("ClassificationService: Predictor IndoBERT berhasil di-share dari app.state.")
 
@@ -64,7 +64,6 @@ async def lifespan(app: FastAPI):
             "sampai model berhasil dimuat. Periksa file 'saved_models/best_model.pt'."
         )
         app.state.predictor = None
-        from app.services import classification_service
         classification_service.set_predictor(None)
 
     logger.info("Server siap menerima request.")
@@ -75,7 +74,6 @@ async def lifespan(app: FastAPI):
 
     logger.info("Server shutdown. Membersihkan resource...")
     app.state.predictor = None
-    from app.services import classification_service
     classification_service.set_predictor(None)
     logger.info("Server berhasil dimatikan.")
 

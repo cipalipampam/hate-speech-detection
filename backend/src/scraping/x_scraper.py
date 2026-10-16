@@ -390,9 +390,6 @@ async def _slow_scan_comments(page: Page, source_link: str, config: XScrapeConfi
 
 
 
-_TIME_AGO_RE    = re.compile(r'^\d+[smhdw]$', re.IGNORECASE)
-_DATE_FORMAT_RE = re.compile(r'^(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2}|\d{1,2}\s+[a-zA-Z]{3,9}(\s+\d{2,4})?|[a-zA-Z]{3,9}\s+\d{1,2}(\s+\d{2,4})?)$', re.IGNORECASE)
-_COUNT_TOKEN_RE = re.compile(r'^\d+([.,]\d+)?[KMB]?$', re.IGNORECASE)
 _ACTION_NOISE_RE = re.compile(r'^(reply|repost|like|share|bookmark|copy link|salin tautan|suka|balas|posting ulang|bagikan|penanda|analytics|views)$', re.IGNORECASE)
 
 
@@ -598,8 +595,6 @@ async def run_x_scraper(
     status_callback: Optional[Callable[[str], None]] = None,
 ) -> "pd.DataFrame":
     """Pipeline lengkap X (Twitter): Stage 1 cari URL → Stage 2 deep crawl → DataFrame."""
-    import pandas as pd
-
     config      = config or XScrapeConfig()
     keywords    = keywords or []
     direct_urls = direct_urls or []
@@ -691,7 +686,6 @@ async def run_x_scraper(
 
 
 if __name__ == "__main__":
-    import asyncio
     keywords = sys.argv[1:] if len(sys.argv) > 1 else []
     if not keywords:
         print("Penggunaan: python x_scraper.py <keyword1> [keyword2 ...]")
