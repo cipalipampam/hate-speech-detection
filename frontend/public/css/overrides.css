@@ -1,0 +1,45 @@
+/*
+ * HateSense ID Lab — Runtime Responsive Overrides
+ *
+ * These rules supplement the compiled Vite bundle (app.css).
+ * They are served as a static file to guarantee responsive behaviour
+ * without requiring a Vite rebuild. When Vite is rebuilt, these rules
+ * should already be present in resources/css/app.css as well.
+ *
+ * Source of truth: resources/css/app.css
+ * Static fallback: public/css/overrides.css (this file)
+ */
+
+/* ── Masthead link base padding ── */
+.masthead-link { padding: 0 0.75rem !important; }
+
+/* ── 14" laptop / 1366px breakpoint ── */
+@media (max-width: 1366px) {
+    .masthead-link         { padding: 0 0.55rem !important; font-size: 0.71875rem !important; }
+    .masthead-brand-sub    { display: none !important; }
+}
+
+/* ── Collapse nav to hamburger ── */
+@media (max-width: 1200px) {
+    .masthead-nav          { display: none !important; }
+    .masthead-hamburger    { display: inline-flex !important; }
+}
+
+/* ── Single-column grid on tablet ── */
+@media (max-width: 1024px) {
+    .charts-row,
+    .bottom-row,
+    .split-pane-grid       { grid-template-columns: 1fr !important; }
+}
+
+/* ── Anti-blowout card constraints ── */
+.card                                               { min-width: 0 !important; max-width: 100% !important; }
+.charts-row > *,
+.bottom-row > *,
+.split-pane-grid > *                                { min-width: 0 !important; max-width: 100% !important; }
+
+/* ── ApexCharts canvas overflow guard ── */
+.apexcharts-canvas,
+.apexcharts-svg,
+.apexcharts-canvas svg                              { max-width: 100% !important; }
+

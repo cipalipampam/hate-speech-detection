@@ -32,7 +32,13 @@ export default function initDashboard() {
     // ── 1. Sentiment Donut (Hazard Yellow & Klein Blue) ───────────────────
     const chartSentiment = new ApexCharts(elSentiment, {
         series: hasData ? sentimentData.series : [1, 1],
-        chart: { type: 'donut', height: 210, sparkline: { enabled: true } },
+        chart: {
+            type: 'donut',
+            height: 210,
+            sparkline: { enabled: true },
+            redrawOnParentResize: true,
+            redrawOnWindowResize: true
+        },
         labels: sentimentData.labels,
         colors: hasData ? ['#FACC15', '#002FA7'] : ['#E3E2DC', '#E3E2DC'],
         stroke: { width: 2, colors: ['#0A0A0A'] },
@@ -67,7 +73,13 @@ export default function initDashboard() {
     // ── 2. Level 2 Bar Chart (Stark Solid Black / Klein Blue Bars) ────────
     const chartLevel2 = new ApexCharts(elLevel2, {
         series: level2Data.series,
-        chart: { type: 'bar', height: 230, toolbar: { show: false } },
+        chart: {
+            type: 'bar',
+            height: 230,
+            toolbar: { show: false },
+            redrawOnParentResize: true,
+            redrawOnWindowResize: true
+        },
         plotOptions: { bar: { horizontal: true, borderRadius: 0, barHeight: '55%' } },
         xaxis: {
             categories: level2Data.categories,
@@ -89,7 +101,13 @@ export default function initDashboard() {
     // ── 3. Platform Donut (Monochrome & Klein Blue) ───────────────────────
     const chartPlatform = new ApexCharts(elPlatform, {
         series: platHasData ? platformData.series : [1, 1],
-        chart: { type: 'donut', height: 175, sparkline: { enabled: true } },
+        chart: {
+            type: 'donut',
+            height: 175,
+            sparkline: { enabled: true },
+            redrawOnParentResize: true,
+            redrawOnWindowResize: true
+        },
         labels: platformData.labels,
         colors: platHasData ? ['#0A0A0A', '#002FA7'] : ['#E3E2DC', '#E3E2DC'],
         stroke: { width: 2, colors: ['#0A0A0A'] },
@@ -263,7 +281,27 @@ export default function initDashboard() {
 
     scheduleNextPoll(isCurrentlyRunning ? 3000 : 15000);
 
+    // ── Instant Resize Handler on Zoom In/Out & Viewport Flex ───────────
+    let resizeTimer = null;
+    const handleZoomOrResize = () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (chartLevel2 && typeof chartLevel2.windowResizeHandler === 'function') {
+                chartLevel2.windowResizeHandler();
+            }
+            if (chartSentiment && typeof chartSentiment.windowResizeHandler === 'function') {
+                chartSentiment.windowResizeHandler();
+            }
+            if (chartPlatform && typeof chartPlatform.windowResizeHandler === 'function') {
+                chartPlatform.windowResizeHandler();
+            }
+        }, 150);
+    };
+
+    window.addEventListener('resize', handleZoomOrResize, { passive: true });
+
     window.addEventListener('beforeunload', () => {
         if (pollTimer) clearTimeout(pollTimer);
+        window.removeEventListener('resize', handleZoomOrResize);
     });
 }

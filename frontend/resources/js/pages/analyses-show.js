@@ -70,6 +70,17 @@ export default function analysisDetail() {
                     });
                 }
             }
+
+            window.addEventListener('resize', () => {
+                if (this.showDetail && this.chartsRendered) {
+                    if (sentimentChartInstance && typeof sentimentChartInstance.windowResizeHandler === 'function') {
+                        sentimentChartInstance.windowResizeHandler();
+                    }
+                    if (level2ChartInstance && typeof level2ChartInstance.windowResizeHandler === 'function') {
+                        level2ChartInstance.windowResizeHandler();
+                    }
+                }
+            }, { passive: true });
         },
 
         startPolling() {
@@ -210,20 +221,46 @@ export default function analysisDetail() {
 
         renderXaiHighlighted(text, labelLvl1) {
             if (!text) return '—';
-            const toxicWords = [
-                'anjing', 'babi', 'tolol', 'goblok', 'bangsat', 'bajingan', 'penipu',
-                'rezim', 'zalim', 'korup', 'antek', 'asing', 'hancurkan', 'racun',
-                'bunuh', 'habisi', 'pecat', 'biadab', 'komunis', 'pki', 'hoaks', 'hoax'
+            const toxicRoots = [
+                'anjing', 'babi', 'monyet', 'kera', 'kunyuk', 'asu', 'bajing', 'binatang', 'hewan', 'parasit', 'sampah', 'bangkai', 'najis',
+                'tolol', 'goblok', 'bangsat', 'kampret', 'cebong', 'kadrun', 'brengsek', 'keparat', 'bedebah', 'sialan', 'bejat', 'biadab', 'dungu', 'bodoh', 'idiot', 'pecundang', 'bego', 'bloon', 'jahanam',
+                'laknat', 'azab', 'kutuk', 'neraka', 'mampus', 'modar', 'mati', 'kafir', 'sesat', 'munafik', 'murtad', 'pribumi', 'aseng', 'asing', 'cina', 'yahudi', 'zionis', 'freemason', 'komunis', 'pki',
+                'bunuh', 'habis', 'tembak', 'serang', 'gantung', 'hancur', 'rata', 'bakar', 'racun', 'singkir', 'usir', 'gebuk', 'hajar', 'gorok', 'pancung', 'bantai', 'musnah', 'lenyap', 'ancam',
+                'khianat', 'penghianat', 'pengkhianat', 'korup', 'maling', 'rampok', 'rezim', 'zalim', 'dzalim', 'curang', 'antek', 'tikus', 'bobrok', 'becus', 'rusak', 'tipu', 'penipu', 'bual',
+                'hoaks', 'hoax', 'fitnah', 'bohong', 'palsu', 'rekayasa', 'kedok', 'konspirasi', 'provokas', 'hina', 'otak'
             ];
 
+            const isHate = (labelLvl1 === 'hate_speech');
+            let hasHighlighted = false;
+
             const words = text.split(/(\s+)/);
-            return words.map(w => {
+            const rendered = words.map(w => {
                 const clean = w.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (labelLvl1 === 'hate_speech' && toxicWords.includes(clean)) {
+                if (!clean) return w;
+                const isToxic = toxicRoots.some(root => clean === root || clean.startsWith(root) || clean.includes(root));
+                if (isHate && isToxic) {
+                    hasHighlighted = true;
                     return `<span class="xai-toxic">${w}</span>`;
                 }
                 return w;
             }).join('');
+
+            // Fallback: jika terprediksi hate_speech namun belum cocok leksikon akar kata,
+            // tandai kata kunci konten (non-stopword) agar visualisasi XAI tetap aktif & informatif
+            if (isHate && !hasHighlighted) {
+                const stopwords = ['dan', 'di', 'ke', 'dari', 'ini', 'itu', 'untuk', 'pada', 'adalah', 'yang', 'dengan', 'dia', 'mereka', 'kita', 'kami', 'bisa', 'ada', 'jadi', 'harus', 'semua', 'akan', 'juga', 'kan', 'nya', 'sih', 'kok', 'dong', 'deh'];
+                let fallbackCount = 0;
+                return words.map(w => {
+                    const clean = w.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (clean.length >= 4 && !stopwords.includes(clean) && fallbackCount < 3) {
+                        fallbackCount++;
+                        return `<span class="xai-toxic">${w}</span>`;
+                    }
+                    return w;
+                }).join('');
+            }
+
+            return rendered;
         },
 
         numberFormat(num) {
@@ -249,7 +286,14 @@ export default function analysisDetail() {
                     sentimentChartInstance = null;
                 }
                 sentimentChartInstance = new ApexCharts(elSentiment, {
-                    chart: { type: 'donut', height: 210, fontFamily: 'JetBrains Mono, monospace', animations: { enabled: true, speed: 350 } },
+                    chart: {
+                        type: 'donut',
+                        height: 210,
+                        fontFamily: 'JetBrains Mono, monospace',
+                        animations: { enabled: true, speed: 350 },
+                        redrawOnParentResize: true,
+                        redrawOnWindowResize: true
+                    },
                     series: [hateCount, nonHateCount],
                     labels: ['Hate Speech', 'Non-Hate'],
                     colors: ['#FACC15', '#002FA7'],
@@ -300,7 +344,15 @@ export default function analysisDetail() {
                     level2ChartInstance = null;
                 }
                 level2ChartInstance = new ApexCharts(elLvl2, {
-                    chart: { type: 'bar', height: 210, fontFamily: 'JetBrains Mono, monospace', toolbar: { show: false }, animations: { enabled: true, speed: 350 } },
+                    chart: {
+                        type: 'bar',
+                        height: 210,
+                        fontFamily: 'JetBrains Mono, monospace',
+                        toolbar: { show: false },
+                        animations: { enabled: true, speed: 350 },
+                        redrawOnParentResize: true,
+                        redrawOnWindowResize: true
+                    },
                     plotOptions: {
                         bar: {
                             horizontal: true,
@@ -313,7 +365,7 @@ export default function analysisDetail() {
                     series: [{ name: 'Posts', data: dataCounts }],
                     xaxis: { categories: categories, labels: { style: { fontSize: '10px' } } },
                     legend: { show: false },
-                    dataLabels: { enabled: true, style: { fontSize: '11px', fontFamily: 'JetBrains Mono, monospace' } },
+                    dataLabels: { enabled: false },
                     grid: { strokeDashArray: 0, borderColor: '#E3E2DC' }
                 });
                 level2ChartInstance.render();

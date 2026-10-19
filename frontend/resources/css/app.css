@@ -103,6 +103,8 @@ body {
     border-radius: 0;
     box-shadow: 2px 2px 0 #0A0A0A;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
+    min-width: 0;
+    max-width: 100%;
 }
 .card:hover {
     box-shadow: 3px 3px 0 #0A0A0A;
@@ -112,6 +114,8 @@ body {
     background-color: var(--color-surface-2);
     border: 1px solid var(--color-border);
     border-radius: 0;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .card-klein {
@@ -119,6 +123,8 @@ body {
     color: #FFFFFF;
     border: 1px solid var(--color-border);
     box-shadow: 2px 2px 0 #0A0A0A;
+    min-width: 0;
+    max-width: 100%;
 }
 
 /* ===================================================================
@@ -317,7 +323,7 @@ body {
     height: 56px;
     display: inline-flex;
     align-items: center;
-    padding: 0 0.875rem;
+    padding: 0 0.75rem;
     border-right: 1px solid var(--color-border);
     transition: background-color 0.12s;
     letter-spacing: 0.02em;
@@ -336,15 +342,27 @@ body {
     display: none !important;
 }
 
+/* ── 14" laptop breakpoint ── */
+@media (max-width: 1366px) {
+    .masthead-link {
+        padding: 0 0.55rem !important;
+        font-size: 0.71875rem !important;
+    }
+    .masthead-brand-sub {
+        display: none !important;
+    }
+    .telemetry-pill-text {
+        display: none !important;
+    }
+}
+
+/* ── Collapse nav to hamburger ── */
 @media (max-width: 1200px) {
     .masthead-nav {
         display: none !important;
     }
     .masthead-hamburger {
         display: inline-flex !important;
-    }
-    .telemetry-pill-text {
-        display: none !important;
     }
 }
 
@@ -595,8 +613,49 @@ body {
     display: inline-block;
     animation: telemetry-flash 0.8s ease-out;
 }
+
+/* ===================================================================
+   SWISS MONOGRAPH EDITORIAL GRID (Anti-Blowout & Auto-Resize)
+=================================================================== */
+.charts-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.bottom-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.split-pane-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+    gap: 1.25rem;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.charts-row > *,
+.bottom-row > *,
+.split-pane-grid > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+/* Ensure ApexCharts canvases & SVGs never lock or overflow grid columns */
+.apexcharts-canvas,
+.apexcharts-svg,
+.apexcharts-canvas svg {
+    max-width: 100% !important;
+}
+
 @media (max-width: 1024px) {
     .charts-row, .bottom-row, .split-pane-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
     }
 }
