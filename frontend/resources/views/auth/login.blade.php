@@ -23,7 +23,7 @@
         </a>
 
         <div class="hidden sm:flex" style="align-items:center;gap:0.5rem;padding-left:1rem;">
-            <span class="badge badge-black" style="font-size:0.625rem;">MODUL § 00.1</span>
+            <span class="badge badge-black" style="font-size:0.625rem;">GATEWAY § 00.0</span>
             <span style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);">HATE SPEECH DETECTION SYSTEM</span>
         </div>
     </div>
@@ -54,7 +54,7 @@
                 <div>
                     {{-- Section Tag --}}
                     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.875rem;">
-                        <span class="badge badge-black" style="font-size:0.625rem;">DOSSIER § 00.1</span>
+                        <span class="badge badge-black" style="font-size:0.625rem;">GATEWAY § 00.0</span>
                         <span style="font-family:var(--font-mono);font-size:0.6875rem;color:var(--color-text-muted);letter-spacing:0.04em;">RESEARCHER GATEWAY</span>
                     </div>
 

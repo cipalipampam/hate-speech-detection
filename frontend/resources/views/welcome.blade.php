@@ -42,7 +42,7 @@
     <div style="display:flex;align-items:center;gap:0.75rem;">
         @auth
             <a href="{{ route('dashboard') }}" class="btn btn-primary btn-sm">
-                <span>OPEN DASHBOARD [→]</span>
+                <span>OPEN OVERVIEW [→]</span>
             </a>
         @else
             <a href="{{ route('login') }}" class="btn btn-primary btn-sm">
@@ -81,7 +81,7 @@
                         <span>+ START NEW ANALYSIS</span>
                     </a>
                     <a href="{{ route('dashboard') }}" class="btn btn-outline btn-lg">
-                        <span>OPEN DASHBOARD</span>
+                        <span>OPEN OVERVIEW</span>
                     </a>
                 @else
                     <a href="{{ route('login') }}" class="btn btn-primary btn-lg">

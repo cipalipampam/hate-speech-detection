@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', '§ 02.0 Analysis History')
+@section('title', '§ 02.0 Analysis Archive')
 
 @section('breadcrumb')
-<span style="color:#0A0A0A;">§ 02.0 ANALYSIS HISTORY</span>
+<span style="color:#0A0A0A;">§ 02.0 BATCH ANALYSES / ARCHIVE</span>
 @endsection
 
 @section('content')
@@ -39,7 +39,7 @@
                 <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">HISTORICAL ANALYSIS ARCHIVE</span>
             </div>
             <h1 style="font-size:2.25rem;font-weight:900;letter-spacing:-0.035em;color:#0A0A0A;margin:0;line-height:1.1;">
-                ANALYSIS HISTORY
+                ANALYSIS ARCHIVE
             </h1>
             <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0.35rem 0 0;">
                 Browse stored multi-platform hate speech analysis records.

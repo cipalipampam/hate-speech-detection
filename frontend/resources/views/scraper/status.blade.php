@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', '§ 04.0 Scraper Telemetry')
+@section('title', '§ 04.0 System Telemetry')
 
 @section('breadcrumb')
-<span style="color:#0A0A0A;">§ 04.0 SCRAPER TELEMETRY</span>
+<span style="color:#0A0A0A;">§ 04.0 SYSTEM TELEMETRY</span>
 @endsection
 
 @section('content')
@@ -23,8 +23,8 @@
     <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1.25rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
         <div>
             <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
-                <span class="badge badge-black">SECTION § 04.0</span>
-                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">AI INFRASTRUCTURE DIAGNOSTICS</span>
+                <span class="badge badge-black">SYSTEM § 04.0</span>
+                <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">AI ENGINE & CRAWLER DIAGNOSTICS</span>
             </div>
             <h1 style="font-size:2.25rem;font-weight:900;letter-spacing:-0.035em;color:#0A0A0A;margin:0;line-height:1.1;">
                 ENGINE & SESSION TELEMETRY

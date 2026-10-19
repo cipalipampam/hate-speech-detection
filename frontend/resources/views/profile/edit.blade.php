@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', '§ 00.0 Profile Settings')
+@section('title', '§ 00.1 Researcher Profile')
 
 @section('breadcrumb')
-<span style="color:#0A0A0A;">§ 00.0 PROFILE SETTINGS</span>
+<span style="color:#0A0A0A;">§ 00.1 RESEARCHER PROFILE</span>
 @endsection
 
 @section('content')
@@ -13,11 +13,11 @@
     {{-- Monograph Section Header --}}
     <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1rem;margin-bottom:1.75rem;">
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
-            <span class="badge badge-black">SECTION § 00.0</span>
+            <span class="badge badge-black">ACCOUNT § 00.1</span>
             <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">RESEARCHER ACCOUNT</span>
         </div>
         <h1 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0;line-height:1.1;">
-            PROFILE SETTINGS
+            PROFILE & SECURITY SETTINGS
         </h1>
         <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0.35rem 0 0;">
             Manage researcher identity details and account password security.

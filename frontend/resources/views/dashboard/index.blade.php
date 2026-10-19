@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', '§ 01.0 Overview Dashboard')
+@section('title', '§ 01.0 System Overview')
 
 @section('breadcrumb')
-<span>§ 01.0 OVERVIEW</span>
+<span style="color:#0A0A0A;">§ 01.0 SYSTEM OVERVIEW</span>
 @endsection
 
 @section('content')
@@ -35,12 +35,7 @@
         </p>
     </div>
 
-    @can('run-analysis')
-    <a href="{{ route('analyses.create') }}" class="btn btn-primary btn-lg">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        <span>+ NEW ANALYSIS</span>
-    </a>
-    @endcan
+
 </div>
 
 {{-- ── 4 Stark Metric Blocks ── --}}
@@ -91,10 +86,10 @@
 </div>
 
 {{-- ── Charts Row ── --}}
-<div style="display:grid;grid-template-columns:1fr 1.6fr;gap:1.5rem;margin-bottom:2rem;" class="charts-row">
+<div class="charts-row" style="display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1.6fr);gap:1.5rem;margin-bottom:2rem;">
 
     {{-- Sentiment Ratio Donut --}}
-    <div class="card" style="padding:1.5rem;">
+    <div class="card" style="padding:1.5rem;min-width:0;">
         <div style="border-bottom:1px solid #0A0A0A;padding-bottom:0.75rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;">
             <div>
                 <span class="badge badge-mono" style="font-size:0.65rem;">LEVEL 1 INFERENCE</span>
@@ -119,7 +114,7 @@
     </div>
 
     {{-- Sub-Kategori Level 2 Bar Chart --}}
-    <div class="card" style="padding:1.5rem;">
+    <div class="card" style="padding:1.5rem;min-width:0;">
         <div style="border-bottom:1px solid #0A0A0A;padding-bottom:0.75rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;">
             <div>
                 <span class="badge badge-mono" style="font-size:0.65rem;">LEVEL 2 TAXONOMY</span>
@@ -134,10 +129,10 @@
 </div>
 
 {{-- ── Bottom Row: Platform Disparity & Recent Analysis Dossier ── --}}
-<div style="display:grid;grid-template-columns:1fr 2fr;gap:1.5rem;" class="bottom-row">
+<div class="bottom-row" style="display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 2fr);gap:1.5rem;">
 
     {{-- Platform Comparison --}}
-    <div class="card" style="padding:1.5rem;display:flex;flex-direction:column;justify-content:space-between;">
+    <div class="card" style="padding:1.5rem;display:flex;flex-direction:column;justify-content:space-between;min-width:0;">
         <div>
             <div style="border-bottom:1px solid #0A0A0A;padding-bottom:0.75rem;margin-bottom:1.25rem;">
                 <span class="badge badge-mono" style="font-size:0.65rem;">MULTI-SOURCE CORPUS</span>
@@ -166,7 +161,7 @@
     </div>
 
     {{-- Recent Analysis Dossier Table --}}
-    <div class="card" style="padding:0;overflow:hidden;">
+    <div class="card" style="padding:0;overflow:hidden;min-width:0;">
         <div style="padding:1rem 1.25rem;background:#0A0A0A;color:#FFFFFF;display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:0.5rem;">
                 <span style="font-family:var(--font-mono);font-weight:800;font-size:0.875rem;">§ 01.5 RECENT ANALYSIS DOSSIER</span>

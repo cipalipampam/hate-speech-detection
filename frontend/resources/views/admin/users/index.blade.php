@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
-@section('title', '§ 05.0 User Management')
+@section('title', '§ 05.0 User Directory')
 
 @section('breadcrumb')
-<span style="color:#0A0A0A;">§ 05.0 USER MANAGEMENT</span>
+<span style="color:#0A0A0A;">§ 05.0 USER DIRECTORY</span>
 @endsection
 
 @section('content')
@@ -12,7 +12,7 @@
 <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1.25rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
     <div>
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
-            <span class="badge badge-black">SECTION § 05.0</span>
+            <span class="badge badge-black">DIRECTORY § 05.0</span>
             <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">RESEARCH PERSONNEL & AUTHORIZATION</span>
         </div>
         <h1 style="font-size:2.25rem;font-weight:900;letter-spacing:-0.035em;color:#0A0A0A;margin:0;line-height:1.1;">

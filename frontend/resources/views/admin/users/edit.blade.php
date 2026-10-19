@@ -3,7 +3,7 @@
 @section('title', '§ 05.2 Edit User: ' . $user->name)
 
 @section('breadcrumb')
-<a href="{{ route('admin.users.index') }}" style="color:var(--color-text-muted);text-decoration:none;">§ 05.0 USER MANAGEMENT</a>
+<a href="{{ route('admin.users.index') }}" style="color:var(--color-text-muted);text-decoration:none;">§ 05.0 USER DIRECTORY</a>
 <span>/</span>
 <span style="color:#0A0A0A;">EDIT #{{ $user->id }}</span>
 @endsection
@@ -14,11 +14,11 @@
     {{-- Monograph Section Header --}}
     <div style="border-bottom:2px solid #0A0A0A;padding-bottom:1rem;margin-bottom:1.75rem;">
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
-            <span class="badge badge-black">SECTION § 05.2</span>
+            <span class="badge badge-black">PERSONNEL § 05.2</span>
             <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--color-text-muted);">RESEARCH PERSONNEL UPDATE</span>
         </div>
         <h1 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;color:#0A0A0A;margin:0;line-height:1.1;">
-            EDIT USER
+            EDIT RESEARCHER ACCOUNT
         </h1>
         <p style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--color-text-muted);margin:0.35rem 0 0;">
             User ID: #{{ str_pad($user->id, 4, '0', STR_PAD_LEFT) }} — Joined: {{ $user->created_at->format('d M Y') }}
