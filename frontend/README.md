@@ -264,9 +264,9 @@ Komunikasi antara Laravel dan FastAPI dikelola sepenuhnya oleh **`app/Services/F
 ## 💻 Panduan Instalasi & Menjalankan
 
 ### Menggunakan Docker Compose (Direkomendasikan)
-Frontend otomatis dibangun sebagai container PHP-FPM dan disajikan oleh web server Nginx pada port **8000**:
+Frontend otomatis dibangun sebagai container PHP CLI dan dijalankan menggunakan Laravel Artisan pada port **8000**:
 ```bash
-docker compose up -d --build frontend nginx
+docker compose up -d --build frontend
 ```
 
 ### Menjalankan Manual / Lokal

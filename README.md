@@ -80,7 +80,7 @@ Model dilatih menggunakan arsitektur fine-tuning **IndoBERT Base (`indobenchmark
   - Pembersihan URL, mention (`@user`), hashtag, angka, dan emoji.
   - Normalisasi kata tidak baku (slang/bahasa gaul) menggunakan kamus korpus `kamusalay.csv`.
 - 📊 **Dashboard Analitik & Visualisasi**
-  - Grafik perbandingan ujaran kebencian vs non-kebencian (Donut & Bar Charts via Chart.js).
+  - Grafik perbandingan ujaran kebencian vs non-kebencian (Donut & Bar Charts via ApexCharts).
   - Distribusi sub-kategori kebencian yang paling dominan.
   - Riwayat analisis tersimpan rapi per sesi investigasi.
 - 📑 **Ekspor Laporan**
@@ -100,8 +100,8 @@ flowchart LR
 
     subgraph Frontend["Frontend Service (Port 8000)"]
         L["Laravel 13 (PHP 8.3+)"]
-        B["Blade + Chart.js"]
-        N["Nginx Web Server"]
+      B["Blade + ApexCharts"]
+      N["Laravel Artisan Server"]
     end
 
     subgraph Backend["AI Engine Service (Port 8080)"]
@@ -134,7 +134,7 @@ flowchart LR
 | **Backend API** | FastAPI, Uvicorn, Pydantic | Arsitektur RESTful cepat & async |
 | **Scraping Engine** | Playwright (Python Headless Chromium) | Automasi browser untuk X & Threads |
 | **Frontend Framework** | Laravel 13, PHP 8.3+ | Arsitektur MVC & orkestrasi bisnis |
-| **UI & Visualisasi** | Blade Template, Chart.js, Vanilla CSS | Antarmuka responsif & interaktif |
+| **UI & Visualisasi** | Blade Template, ApexCharts, Vanilla CSS | Antarmuka responsif & interaktif |
 | **Database** | MySQL 8.0 | Penyimpanan relasional pengguna & analisis |
 | **Otentikasi & RBAC** | Custom Auth + Spatie Permission | Multi-role user management (Admin, Analyst) |
 | **Containerization** | Docker, Docker Compose | Orkestrasi container lintas platform |
@@ -170,8 +170,7 @@ hate-speech-detection/
 │
 ├── docker/                         # Konfigurasi Dockerfile & Script Startup
 │   ├── backend/                    # Dockerfile backend (Python + Playwright) & entrypoint.sh
-│   ├── frontend/                   # Dockerfile frontend (PHP-FPM) & entrypoint.sh
-│   └── nginx/                      # Konfigurasi web server Nginx
+│   └── frontend/                   # Dockerfile frontend (PHP CLI) & entrypoint.sh
 │
 ├── .env.example                    # Template variabel lingkungan
 ├── docker-compose.yml              # Konfigurasi orkestrasi Docker
