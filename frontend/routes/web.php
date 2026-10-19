@@ -27,55 +27,59 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // § 01.0 System Overview (URL: /overview)
+    Route::get('/overview', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', fn () => redirect()->route('dashboard')); // Backward compatibility alias
 
-    // ── Analisis ────────────────────────────────────────────────────────────────
+    // § 02.0 Batch Analyses (URL: /analyses)
     Route::prefix('analyses')->name('analyses.')->group(function () {
         Route::get('/', [AnalysisController::class, 'index'])->name('index');
-        Route::get('/new', [AnalysisController::class, 'create'])->name('create')->middleware('can:run-analysis');
+        Route::get('/create', [AnalysisController::class, 'create'])->name('create')->middleware('can:run-analysis');
+        Route::get('/new', fn () => redirect()->route('analyses.create')); // Backward compatibility alias
         Route::post('/', [AnalysisController::class, 'store'])->name('store')->middleware('can:run-analysis');
         Route::get('/{analysis}', [AnalysisController::class, 'show'])->name('show');
-        // Permission export-reports akhirnya ditegakkan (sebelumnya hanya `auth`).
         Route::get('/{analysis}/export', [AnalysisController::class, 'exportCsv'])
             ->name('export')
             ->middleware('can:export-reports');
     });
 
-    // ── Live Text Classifier ───────────────────────────────────────────────────
-    Route::prefix('predict')->name('predict.')->middleware('can:test-single-prediction')->group(function () {
+    // § 03.0 Interactive Live Text Classifier (URL: /classifier)
+    Route::prefix('classifier')->name('predict.')->middleware('can:test-single-prediction')->group(function () {
         Route::get('/', [PredictController::class, 'index'])->name('index');
         Route::post('/classify', [PredictController::class, 'classify'])->name('classify');
     });
+    Route::get('/predict', fn () => redirect()->route('predict.index')); // Backward compatibility alias
+    Route::post('/predict/classify', [PredictController::class, 'classify'])->middleware('can:test-single-prediction');
 
-    // ── Monitor Scraper ───────────────────────────────────────────────────────
+    // § 04.0 Infrastructure & Session Telemetry (URL: /telemetry)
+    Route::get('/telemetry', [ScraperMonitorController::class, 'status'])->name('scraper.status');
+    Route::get('/scraper/status', fn () => redirect()->route('scraper.status')); // Backward compatibility alias
     Route::prefix('scraper')->name('scraper.')->group(function () {
-        Route::get('/status', [ScraperMonitorController::class, 'status'])->name('status');
         Route::post('/login-trigger/{platform}', [ScraperMonitorController::class, 'triggerLogin'])->name('login-trigger')->middleware('can:manage-auth-sessions');
     });
 
-    // ── Telemetry Health API (Masthead Header) ──────────────────────────────────
+    // Telemetry Health API (Masthead Header)
     Route::get('/api/fastapi/health', [ScraperMonitorController::class, 'health'])->name('fastapi.health');
 
-    // ── Profil ────────────────────────────────────────────────────────────────
+    // § 00.1 Researcher Profile & Security Settings (URL: /profile/edit)
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
         Route::patch('/info', [ProfileController::class, 'updateInfo'])->name('update');
         Route::patch('/password', [ProfileController::class, 'updatePassword'])->name('password');
     });
 
-    // ── Admin ─────────────────────────────────────────────────────────────────
-    Route::prefix('admin')->name('admin.')->middleware('can:manage-users')->group(function () {
-        Route::prefix('users')->name('users.')->group(function () {
-            Route::get('/', [UserManagementController::class, 'index'])->name('index');
-            Route::get('/create', [UserManagementController::class, 'create'])->name('create');
-            Route::post('/', [UserManagementController::class, 'store'])->name('store');
-            Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
-            Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
-            Route::patch('/{user}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('toggle-status');
-            // Hapus akun: service menolak bila akun masih memiliki sesi analisis.
-            Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
-        });
+    // § 05.0 User Directory & Personnel Management (URL: /user-directory)
+    Route::prefix('user-directory')->name('admin.users.')->middleware('can:manage-users')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::get('/create', [UserManagementController::class, 'create'])->name('create');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
+        Route::patch('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::patch('/{user}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('toggle-status');
+        Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
     });
+    // Backward compatibility redirects for legacy /admin/users URLs
+    Route::get('/admin/users', fn () => redirect()->route('admin.users.index'))->middleware('can:manage-users');
+    Route::get('/users', fn () => redirect()->route('admin.users.index'))->middleware('can:manage-users');
 
 });
