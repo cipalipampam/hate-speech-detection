@@ -21,6 +21,7 @@
             'prev_page_url' => $analyses->previousPageUrl(),
             'next_page_url' => $analyses->nextPageUrl(),
         ],
+        'has_running' => $hasRunning,
         'filters'    => [
             'search'   => request('search', ''),
             'platform' => request('platform', 'all'),
@@ -60,8 +61,8 @@
             {{-- Debounced Search Input --}}
             <div style="flex:1;min-width:240px;position:relative;">
                 <input type="text"
-                       x-model.debounce.350ms="filters.search"
-                       @input="fetchData(1)"
+                      x-model="filters.search"
+                      @input.debounce.350ms="fetchData(1)"
                        placeholder="Search analysis title or topic keyword... (/)"
                        class="input"
                        style="height:38px;padding-left:0.75rem;font-size:0.8125rem;">

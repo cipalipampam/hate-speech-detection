@@ -27,15 +27,18 @@ export default function analysesIndex() {
         analyses:   initial.items || [],
         pagination: initial.pagination || {},
         filters:    initial.filters || { search: '', platform: 'all', status: 'all' },
+        hasRunning: Boolean(initial.has_running),
         loading:    false,
         pollTimer:  null,
+        requestController: null,
+        requestSequence: 0,
 
         init() {
             this.checkAndStartPolling();
         },
 
         checkAndStartPolling() {
-            const anyRunning = this.analyses && this.analyses.some(item => item.status === 'running' || item.status === 'queued');
+            const anyRunning = this.hasRunning || (this.analyses && this.analyses.some(item => item.status === 'running' || item.status === 'queued'));
             if (anyRunning && !this.pollTimer) {
                 this.pollTimer = setInterval(() => {
                     this.fetchData(this.pagination.current_page || 1, false);
@@ -47,6 +50,15 @@ export default function analysesIndex() {
         },
 
         async fetchData(page = 1, showLoading = true) {
+            const requestId = ++this.requestSequence;
+
+            if (this.requestController) {
+                this.requestController.abort();
+            }
+
+            const controller = new AbortController();
+            this.requestController = controller;
+
             if (showLoading) {
                 this.loading = true;
             }
@@ -62,10 +74,17 @@ export default function analysesIndex() {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
-                    }
+                    },
+                    signal: controller.signal,
                 });
+
+                if (!res.ok) {
+                    throw new Error(`Analysis request failed with status ${res.status}`);
+                }
+
                 const data = await res.json();
-                if (data && data.analyses) {
+                if (requestId === this.requestSequence && data && data.analyses) {
+                    this.hasRunning = Boolean(data.has_running);
                     this.analyses = data.analyses.data || [];
                     this.pagination = {
                         current_page:  data.analyses.current_page,
@@ -79,10 +98,15 @@ export default function analysesIndex() {
                     this.checkAndStartPolling();
                 }
             } catch (e) {
-                console.error('Failed to fetch analyses:', e);
+                if (e.name !== 'AbortError') {
+                    console.error('Failed to fetch analyses:', e);
+                }
             } finally {
-                if (showLoading) {
+                if (requestId === this.requestSequence && showLoading) {
                     this.loading = false;
+                }
+                if (this.requestController === controller) {
+                    this.requestController = null;
                 }
             }
         },

@@ -9,6 +9,7 @@ use App\Models\Analysis;
 use App\Services\AnalysisService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -24,7 +25,10 @@ class AnalysisController extends Controller
      */
     public function index(FilterAnalysisRequest $request): View|JsonResponse
     {
-        $userId = auth()->user()->hasRole('admin') ? null : auth()->id();
+        $user = Auth::user();
+        $userId = $user && method_exists($user, 'hasRole') && $user->hasRole('admin')
+            ? null
+            : Auth::id();
 
         // 1. Sinkronisasi status analisis yang masih running / queued ke FastAPI.
         //    Dicek SEKALI saja dan di-scope ke user ini (admin: semua) agar indikator
@@ -71,7 +75,7 @@ class AnalysisController extends Controller
     {
         $analysis = $this->analysisService->startAnalysis(
             data: $request->validated(),
-            userId: auth()->id()
+            userId: Auth::id()
         );
 
         if ($analysis->status === 'failed') {
