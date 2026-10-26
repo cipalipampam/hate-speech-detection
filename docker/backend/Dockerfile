@@ -1,4 +1,7 @@
-FROM python:3.10-slim
+# Python 3.10 reached end-of-life on 2026-10-01. 3.15.1 is the newest
+# fully published slim image; Python 3.15.2 can still be used for local work.
+ARG PYTHON_VERSION=3.15.1
+FROM python:${PYTHON_VERSION}-slim
 
 LABEL maintainer="HateSense ID Lab"
 LABEL description="FastAPI + IndoBERT Hierarchical Classifier + Playwright + noVNC"

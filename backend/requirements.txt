@@ -1,19 +1,23 @@
 # FastAPI & Web Server
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-pydantic>=2.6.0
-python-dotenv>=1.0.0
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.1
+python-dotenv==1.2.4
 
 # Deep Learning & NLP
-torch>=2.0.0
-transformers>=4.36.0
-pandas>=2.1.0
-numpy>=1.26.0
+# Python 3.15 wheels are published by the official PyTorch CPU index, rather
+# than PyPI. This service uses CPU inference; choose a CUDA index explicitly
+# if GPU inference is added later.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1
+transformers==5.20.2
+pandas==3.1.0
+numpy==2.5.4
 
 # Web Scraping & Automation
-playwright>=1.41.0
-parsel>=1.9.0
+playwright==1.64.1
+parsel==1.12.1
 
 # Terminal UI & Utilitas
-rich>=13.7.0
-tqdm>=4.66.0
+rich==15.0.0
+tqdm==4.70.1

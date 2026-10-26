@@ -3,8 +3,8 @@
 # 💻 HateSense ID Lab — Frontend Web Dashboard
 ### Modern Web Interface, Data Visualization, & Business Orchestration Layer
 
-[![PHP 8.3+](https://img.shields.io/badge/PHP-8.3+-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
-[![Laravel 11/12+](https://img.shields.io/badge/Laravel-11%2F12+-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
+[![PHP 8.5](https://img.shields.io/badge/PHP-8.5-777BB4.svg?logo=php&logoColor=white)](https://www.php.net/)
+[![Laravel 13](https://img.shields.io/badge/Laravel-13-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Spatie Permission](https://img.shields.io/badge/Spatie-Roles_&_Permissions-555555.svg)](https://spatie.be/docs/laravel-permission)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-38B2AC.svg?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Alpine.js](https://img.shields.io/badge/Alpine.js-3.x-8BC0D0.svg?logo=alpinedotjs&logoColor=white)](https://alpinejs.dev/)
@@ -270,7 +270,7 @@ docker compose up -d --build frontend
 ```
 
 ### Menjalankan Manual / Lokal
-1. Pastikan terpasang **PHP >= 8.3** dan **Composer**.
+1. Pastikan terpasang **PHP 8.5**, **Composer**, dan **Node.js 24 LTS**.
 2. Masuk ke folder frontend dan pasang dependensi:
    ```bash
    cd frontend

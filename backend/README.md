@@ -3,9 +3,9 @@
 # 🧠 HateSense ID Lab — Backend AI Engine & REST API
 ### Core Intelligence Service: IndoBERT Classifier, NLP Preprocessing, & Playwright Scraper
 
-[![Python 3.10](https://img.shields.io/badge/Python-3.10-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.2-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Python 3.15](https://img.shields.io/badge/Python-3.15-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.162-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.14-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Transformers](https://img.shields.io/badge/HuggingFace-Transformers-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/)
 [![Playwright](https://img.shields.io/badge/Playwright-Chromium-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev/python/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
@@ -199,6 +199,7 @@ Auto-download bobot model `best_model.pt` akan dieksekusi oleh `docker/backend/e
 ### Menjalankan Mandiri / Lokal (Development Mode)
 1. Buat dan aktifkan virtual environment:
    ```bash
+   # Requires Python 3.15.1 or later in the 3.15 series.
    python -m venv venv
    # Windows PowerShell:
    .\venv\Scripts\Activate.ps1

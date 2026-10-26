@@ -3,9 +3,9 @@
 # 🛡️ HateSense ID Lab
 ### Sistem Analisis & Deteksi Ujaran Kebencian Bahasa Indonesia Berbasis IndoBERT Hierarki
 
-[![Python Version](https://img.shields.io/badge/Python-3.10-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Python Version](https://img.shields.io/badge/Python-3.15-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.162-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.14-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Hugging Face](https://img.shields.io/badge/Transformers-IndoBERT-FFD21E.svg?logo=huggingface&logoColor=black)](https://huggingface.co/indobenchmark/indobert-base-p1)
 [![Laravel](https://img.shields.io/badge/Laravel-13.x-FF2D20.svg?logo=laravel&logoColor=white)](https://laravel.com/)
 [![Docker](https://img.shields.io/badge/Docker-Compose_Ready-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
@@ -130,8 +130,8 @@ flowchart LR
 
 | Komponen | Teknologi | Keterangan |
 |---|---|---|
-| **Deep Learning** | PyTorch 2.2+, Transformers | Fine-tuned `indobenchmark/indobert-base-p1` |
-| **Backend API** | FastAPI, Uvicorn, Pydantic | Arsitektur RESTful cepat & async |
+| **Deep Learning** | PyTorch 2.14, Transformers 5 | Fine-tuned `indobenchmark/indobert-base-p1` |
+| **Backend API** | Python 3.15, FastAPI, Uvicorn, Pydantic | Arsitektur RESTful cepat & async |
 | **Scraping Engine** | Playwright (Python Headless Chromium) | Automasi browser untuk X & Threads |
 | **Frontend Framework** | Laravel 13, PHP 8.3+ | Arsitektur MVC & orkestrasi bisnis |
 | **UI & Visualisasi** | Blade Template, ApexCharts, Vanilla CSS | Antarmuka responsif & interaktif |
@@ -234,6 +234,7 @@ Metode ini paling mudah dan tidak membutuhkan instalasi manual PHP, Python, atau
 #### 1. Setup Backend (FastAPI):
 ```bash
 cd backend
+# Python 3.15.1 (or a later 3.15 patch release) is required.
 python -m venv venv
 
 # Aktivasi venv:

@@ -1,10 +1,13 @@
-FROM php:8.4-cli
+# Track the supported PHP 8.5 release line; Docker Hub publishes patch tags
+# asynchronously, so an exact patch tag is not always immediately available.
+ARG PHP_VERSION=8.5
+FROM php:${PHP_VERSION}-cli
 
 LABEL maintainer="HateSense ID Lab"
-LABEL description="Laravel 13 + Vite + PHP 8.4 Frontend Container"
+LABEL description="Laravel 13 + Vite + PHP 8.5 Frontend Container"
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    NODE_VERSION=20 \
+    NODE_VERSION=24 \
     COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_HOME=/root/.composer
 
@@ -32,7 +35,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         gd \
         zip \
         intl \
-        opcache \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
